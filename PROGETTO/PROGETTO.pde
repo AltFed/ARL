@@ -3,7 +3,7 @@ float g = 50;
 float xd=0,yd=0,zd=0;
 float q[] = {0,0,0,0,0,0};
 float xBase, yBase;
-float eyeY,segno;
+float eyeY,segno = 1;
 float alfa,beta,theta;
 void setup(){
   size(1000,800,P3D);
@@ -150,4 +150,9 @@ void graphic(float xd,float yd,float zd,float alfa,float beta,float theta){
   text(beta,160,40);
   text("theta = ",110,60);
   text(theta,170,60);
+  if(segno==1){
+    text("gomito alto ",10,80);
+  }else if ( segno == -1){
+    text("gomito basso",10,80);
+  }
 }
