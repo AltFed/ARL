@@ -128,6 +128,11 @@ void initR03(){
 
 
 void robot(){
+// creo la sfera che indica il punto desiderato
+ translate(xd,yd,zd);
+ ellipse(0,0,10,10);
+ translate(-xd,-yd,-zd);
+// centro base manipolatore
   translate(xBase, yBase, 0);
 //--------link 0--------
   box(l1,l1,l1);           
