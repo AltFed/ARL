@@ -4,13 +4,15 @@ float xd=0,yd=0,zd=0;
 float q[] = {0,0,0,0,0,0};
 float xBase, yBase;
 float eyeY,segno = 1;
-float alfa,beta,theta;
+float alfa=0,beta=0,theta=0;//pinza orientata verso il basso
+float R3_6[][];
 void setup(){
   size(1000,800,P3D);
   strokeWeight(2);
   stroke(0);
   xBase=width/2;
   yBase=height/2;
+  initR36();
 }
 void draw()
 {
@@ -34,22 +36,22 @@ void draw()
     }
     // movimento alfa,beta,theta(pinza)
     if(key == 'a'){
-      alfa -= .1;
+      alfa -= .01;
     }
     if(key == 'A'){
-      alfa += .1;
+      alfa += .01;
     }
     if(key == 'b'){
-      beta -= .1;
+      beta -= .01;
     }
     if(key == 'B'){
-      beta += .1;
+      beta += .01;
     }
     if(key == 't'){
-      theta -= .1;
+      theta -= .01;
     }
     if(key == 'T'){
-      theta += .1;
+      theta += .01;
     }
     // gomito alto-gomito basso
     if(key == '+'){
@@ -86,6 +88,9 @@ void draw()
   // funzione per la grafica
    popMatrix();
    graphic(xd,yd,zd,alfa,beta,theta);
+}
+void initR36(){
+  R36[0][0]=
 }
 
 void robot(float q[]){
@@ -127,6 +132,7 @@ void robot(float q[]){
   
 //link 6
   translate(l5/2+lw/2,0,0);
+  rotateY(beta);
   box(l6,lw,lw);
 }
 void muovi(){
