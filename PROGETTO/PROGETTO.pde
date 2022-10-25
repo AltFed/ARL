@@ -1,9 +1,10 @@
 float lw=30,l1=50,l2=200,l3=100,l4=100,l5=50,l6=30;  //link
 float g = 50;
-float xd,yd,zd;
+float xd=0,yd=0,zd=0;
 float q[] = {0,0,0,0,0,0};
 float xBase, yBase;
-float eyeY;
+float eyeY,segno;
+float alfa,beta,theta;
 void setup(){
   size(1000,800,P3D);
   strokeWeight(2);
@@ -16,6 +17,10 @@ void draw()
   background(50);
   lights();
   camera((width/2.0), height/2 - eyeY, (height/2.0) / tan(PI*60.0 / 360.0), width/2.0, height/2.0, 0, 0, 1, 0);
+  if(mousePressed){
+    xBase = mouseX;
+    yBase = mouseY;
+  }
   if (keyPressed)
   {
     // movimento camera
@@ -27,27 +32,60 @@ void draw()
     {
       eyeY += 5;
     }
-    if(key=='x'){
+    // movimento alfa,beta,theta(pinza)
+    if(key == 'a'){
+      alfa -= .1;
+    }
+    if(key == 'A'){
+      alfa += .1;
+    }
+    if(key == 'b'){
+      beta -= .1;
+    }
+    if(key == 'B'){
+      beta += .1;
+    }
+    if(key == 't'){
+      theta -= .1;
+    }
+    if(key == 'T'){
+      theta += .1;
+    }
+    // gomito alto-gomito basso
+    if(key == '+'){
+      segno = 1;
+    }
+    if(key == '-'){
+      segno = -1;
+    }
+    // movimento punto desiderato
+    if(key == 'x'){
       xd -= 5;
     }
-    if(key=='X'){
+    if(key == 'X'){
       xd += 5;
     }
-    if(key=='y'){
+    if(key == 'y'){
       yd -= 5;
     }
-    if(key=='Y'){
+    if(key == 'Y'){
       yd += 5;
     }
-    if(key=='z'){
+    if(key == 'z'){
       zd -= 5;
     }
-    if(key=='Z'){
+    if(key == 'Z'){
       zd += 5;
     }
   }
-  robot(q);
- 
+  pushMatrix();
+   // funzione per il movimento 
+    muovi();
+   //  funzione per definire il manipolatore
+    robot(q); 
+  // funzione per la grafica
+   popMatrix();
+   graphic(xd,yd,zd,alfa,beta,theta);
 }
 
 void robot(float q[]){
@@ -90,7 +128,26 @@ void robot(float q[]){
 //link 6
   translate(l5/2+lw/2,0,0);
   box(l6,lw,lw);
-  
-  
-  
+}
+void muovi(){
+  //cinematica inversa 
+}
+void graphic(float xd,float yd,float zd,float alfa,float beta,float theta){
+  textSize(20);
+  fill(255);
+  // grafica punto desiderato 
+  //tali coordinate vanno scritte rispetto alla base aggiornare
+  text("xd = ",10,20);
+  text(xd,50,20);
+  text("yd = ",10,40);
+  text(yd,50,40);
+  text("zd = ",10,60);
+  text(zd,50,60);
+  // orientamento della pinza
+  text("alfa = ",110,20);
+  text(alfa,153,20);
+  text("beta = ",110,40);
+  text(beta,160,40);
+  text("theta = ",110,60);
+  text(theta,170,60);
 }
