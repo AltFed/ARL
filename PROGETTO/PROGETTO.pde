@@ -2,7 +2,7 @@ float lw=30,l1=50,l2=200,l3=100,l4=100,l5=50,l6=30;  //link
 float g = 50;
 float xd=200,yd=300,zd=0;
 float q[] = {0,0,0,0,0,0};
-float xBase, yBase;
+float xBase, yBase,zBase;
 float eyeY,segno = 1;
 float alfa=0,beta=0,theta=0;//pinza orientata verso il basso
 float[][] Re = new float[3][3]; // matrice 3x3 dichiarata ma non inizializzata
@@ -22,6 +22,7 @@ void setup(){
   stroke(0);
   xBase=width/2;
   yBase=height/2;
+  zBase=0;
 }
 
 
@@ -96,8 +97,8 @@ void draw()
    // funzione per il movimento 
     muovi();
     initR03();
-   //  funzione per definire il manipolatore
-    robot(); 
+   //  funzione per definire il manipolatore 
+   robot(); 
   // funzione per la grafica
    popMatrix();
    graphic();
@@ -105,15 +106,15 @@ void draw()
 
 
 void initRe(){
-  Re[0][0]=(-cos(alfa)*cos(beta)*cos(theta)-sin(alfa)*sin(theta));
-  Re[0][1]=(-cos(alfa)*sin(beta)*sin(theta)+sin(alfa)*cos(theta));
+  Re[0][0]=(cos(alfa)*sin(beta)*cos(theta)-sin(alfa)*sin(theta));
+  Re[0][1]=(-cos(alfa)*sin(beta)*sin(theta)-sin(alfa)*cos(theta));
   Re[0][2]=(cos(alfa)*cos(beta));
-  Re[1][0]=(sin(alfa)*sin(beta)*cos(theta)-sin(theta)*cos(alfa));
-  Re[1][1]=(sin(alfa)*sin(beta)*sin(theta)+cos(alfa)*cos(theta));
-  Re[1][2]=(-sin(alfa)*sin(beta));
+  Re[1][0]=(sin(alfa)*sin(beta)*cos(theta)+sin(theta)*cos(alfa));
+  Re[1][1]=(-sin(alfa)*sin(beta)*sin(theta)+cos(alfa)*cos(theta));
+  Re[1][2]=(sin(alfa)*cos(beta));
   Re[2][0]=(-cos(theta)*cos(beta));
   Re[2][1]=(cos(beta)*sin(theta));
-  Re[2][2]=(-sin(beta));
+  Re[2][2]=(sin(beta));
 }
 
 
@@ -131,12 +132,10 @@ void initR03(){
 
 
 void robot(){
+  // centro base manipolatore
+  translate(xBase, yBase, zBase);
 // creo la sfera che indica il punto desiderato
- translate(xd,yd,zd);
- ellipse(0,0,10,10);
- translate(-xd,-yd,-zd);
-// centro base manipolatore
-  translate(xBase, yBase, 0);
+ ellipse(xd-xBase,yBase-yd,20,20);
 //--------link 0--------
   box(l1,l1,l1);           
   fill(255,0,0);
@@ -187,9 +186,9 @@ void robot(){
 
 void muovi(){
   //cinematica inversa 
- pwx=(xd-xBase)-((l5+l6)*Re[0][2]);
- pwy=(-yd+yBase)-((l5+l6)*Re[1][2]);
- pwz=zd-(l5+l6)*Re[2][2];  
+ pwx=((xd-xBase)-((l5+l6)*Re[0][2]));
+ pwy=((-yd+yBase)-((l5+l6)*Re[1][2]));
+ pwz=(zd-zBase)-(l5+l6)*Re[2][2];  
  q[0]=atan2(pwy,pwx);
  A1=pwx*cos(q[0])+pwy*sin(q[0])-l1;
  A2=(l1+l1)-pwz;
@@ -197,17 +196,10 @@ void muovi(){
  q[1]=atan2((l3+l4)*cos(q[2])*A1-(l2+(l3+l4)*sin(q[2]))*A2,l2+(l3+l4)*sin(q[2])*A1+(l3+l4)*cos(q[2])*A2);
  R03T=trasposta(R03);
  R36=mProd(R03T,Re);
- q[4]=acos(R36[2][2]);// ho preso il segno positivo
- if(sin(q[4])>0){
-   q[3]=atan2(R36[1][2],R36[0][2]);
-   q[5]=atan2(R36[2][1],-R36[2][0]);
- }
- if(sin(q[4])<0){
-  q[3]=atan2(-R36[1][2],-R36[0][2]);
-  q[5]=atan2(-R36[2][1],R36[2][0]);
-  }
+ q[3]=alfa;
+ q[4]=(PI/2)-beta;
+ q[5]=theta;
 }
-
 void graphic(){
   textSize(20);
   fill(255);
@@ -219,7 +211,7 @@ void graphic(){
   text(-yd+yBase,50,40);//coordinate rispetto alla base
   
   text("zd = ",10,60);
-  text(zd,50,60);
+  text(zd-zBase,50,60);
   
 
   text("alfa = ",120,20);
