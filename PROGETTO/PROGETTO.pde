@@ -1,7 +1,7 @@
 float lw=30,l1=50,l2=200,l3=100,l4=100,l5=50,l6=30;  //link
 float g = 50;
-float xd=0,yd=0,zd=0;
-float q[] = {30,45,45,45,45,45};
+float xd=200,yd=300,zd=0;
+float q[] = {0,0,0,0,0,0};
 float xBase, yBase;
 float eyeY,segno = 1;
 float alfa=0,beta=0,theta=0;//pinza orientata verso il basso
@@ -188,7 +188,7 @@ void robot(){
 void muovi(){
   //cinematica inversa 
  pwx=(xd-xBase)-((l5+l6)*Re[0][2]);
- pwy=(yd-yBase)-((l5+l6)*Re[1][2]);
+ pwy=(-yd+yBase)-((l5+l6)*Re[1][2]);
  pwz=zd-(l5+l6)*Re[2][2];  
  q[0]=atan2(pwy,pwx);
  A1=pwx*cos(q[0])+pwy*sin(q[0])-l1;
@@ -216,7 +216,7 @@ void graphic(){
   text(xd-xBase,50,20);//coordinate rispetto alla base
   
   text("yd = ",10,40);
-  text(yd-yBase,50,40);//coordinate rispetto alla base
+  text(-yd+yBase,50,40);//coordinate rispetto alla base
   
   text("zd = ",10,60);
   text(zd,50,60);
