@@ -5,7 +5,7 @@ float q_eff[]={0,0,0,0,0,0};
 float xBase, yBase,zBase,xDes,yDes,zDes;
 float xd,yd,zd;
 float eyeY,segno = 1;
-float alfa=-PI/2,beta=PI/2,theta=0;//pinza orientata verso il basso
+float alfa=0,beta=0,theta=0;//pinza orientata verso il basso
 float[][] Re = new float[3][3]; // matrice 3x3 dichiarata ma non inizializzata
 float[][] R03 = new float[3][3]; // matrice 3x3 dichiarata ma non inizializzata
 float[][] R03T = new float[3][3]; // matrice 3x3 dichiarata ma non inizializzata
@@ -50,22 +50,22 @@ void draw()
     }
     // movimento alfa,beta,theta(pinza)
     if(key == 'a'){
-      alfa -= .01;
+      alfa -= .1;
     }
     if(key == 'A'){
-      alfa += .01;
+      alfa += .1;
     }
     if(key == 'b'){
-      beta -= .01;
+      beta -= .1;
     }
     if(key == 'B'){
-      beta += .01;
+      beta += .1;
     }
     if(key == 't'){
-      theta -= .01;
+      theta -= .1;
     }
     if(key == 'T'){
-      theta += .01;
+      theta += .1;
     }
     // gomito alto-gomito basso
     if(key == '+'){
@@ -93,7 +93,7 @@ void draw()
     if(key == 'Z'){
       zd += 5;
     }
-    if(key == 'k'){  //new
+    if(key == 'k'){  
       kp -= 0.001;
     }
     if(key == 'K'){
@@ -234,7 +234,7 @@ void muovi(){
  q[1]=atan2((l3+l4+lw)*cos(q[2])*A1-(l2+lw+(l3+l4+lw)*sin(q[2]))*A2,(l2+lw+(l3+l4+lw)*sin(q[2]))*A1+(l3+l4+lw)*cos(q[2])*A2);
  R03T=trasposta(R03);
  R36=mProd(R03T,Re);
- q[4]=acos(R36[2][2]);// ho preso il segno positivo
+ q[4]=atan2(sqrt(pow(R36[0][2],2)+pow(R36[1][2],2)),R36[2][2]);// ho preso il segno positivo
  if(sin(q[4])>0){
    q[3]=atan2(R36[1][2],R36[0][2]);
    q[5]=atan2(R36[2][1],-R36[2][0]);
@@ -259,13 +259,13 @@ void graphic(){
   
 
   text("alfa = ",120,20);
-  text((alfa*180)/PI,173,20);
+  text((alfa*PI)/180,173,20);
   
   text("beta = ",120,40);
-  text((beta*180)/PI,180,40);
+  text((beta*PI)/180,180,40);
   
   text("theta = ",120,60);
-  text((theta*180)/PI,190,60);
+  text((theta*PI)/180,190,60);
   text("kp = ",120,80);
   text(kp,180,80);
   
