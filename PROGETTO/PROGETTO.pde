@@ -164,10 +164,12 @@ void robot(){
     {
       q_eff[5] += kp*(q[5]-q_eff[5]);
     }
+    translate(0,0,zd);
+     ellipse(xd,yd,20,20);
+     translate(0,0,-zd);
   // centro base manipolatore
   translate(xBase, yBase, zBase);
 // creo la sfera che indica il punto desiderato
- ellipse(xd,yd,20,20);
 //--------link 0--------
   box(l1,l1,l1);           
   fill(255,0,0);
@@ -209,7 +211,7 @@ void robot(){
   translate(l5/2+lw/2,0,0);
   box(l5,lw,lw);
   
-//link 6
+//PINZA
   translate(l5/2+lw/2,0,0);
   rotateX(q_eff[5]);
   box(l6,lw,lw);
@@ -218,11 +220,11 @@ void robot(){
 
 void muovi(){
   //cinematica inversa 
- pwx=((xd-xBase)-((l5+l6)*Re[0][2]));
- pwy=((-yd+yBase)-((l5+l6)*Re[1][2]));
- pwz=(zd-zBase)-(l5+l6)*Re[2][2];  
+ pwx=((xd-xBase)-((l5+lw)*Re[0][2]));
+ pwy=((-yd+yBase)-((l5+lw)*Re[1][2]));
+ pwz=(zd-zBase)-(l5+lw)*Re[2][2];  
  q[0]=atan2(pwy,pwx);
- A1=pwx*cos(q[0])+pwy*sin(q[0])-l1;
+ A1=pwx*cos(q[0])+pwy*sin(q[0])-lw;
  A2=(l1+l1)-pwz;
  q[2]=asin((pow(A1,2) +pow(A2,2)-pow(l2,2)-pow(l3+l4,2))/(2*l2*(l3+l4)));
  q[1]=atan2((l3+l4)*cos(q[2])*A1-(l2+(l3+l4)*sin(q[2]))*A2,(l2+(l3+l4)*sin(q[2]))*A1+(l3+l4)*cos(q[2])*A2);
@@ -241,13 +243,13 @@ void graphic(){
   fill(255);
 
   text("xd = ",10,20);
-  text(xd,50,20);//coordinate rispetto alla base
+  text(xd-xBase,50,20);//coordinate rispetto alla base
   
   text("yd = ",10,40);
-  text(yd,50,40);//coordinate rispetto alla base
+  text(yBase-yd,50,40);//coordinate rispetto alla base
   
   text("zd = ",10,60);
-  text(zd,50,60);
+  text(zd-zBase,50,60);
   
 
   text("alfa = ",120,20);
@@ -290,28 +292,32 @@ void graphic(){
   T03[0][0]=(cos(q[0])*cos(q[1]+q[2]));
   T03[0][1]=sin(q[0]);
   T03[0][2]=(cos(q[0])*sin(q[1]+q[2]));
-  T03[0][3]=(l1*cos(q[0])+l2*cos(q[0])*cos(q[1]));
+  T03[0][3]=(lw*cos(q[0])+l2*cos(q[0])*cos(q[1]));
   T03[1][0]=(sin(q[0])*cos(q[1]+q[2]));
   T03[1][1]=-cos(q[0]);
   T03[1][2]=(sin(q[0])*sin(q[1]+q[2]));
-  T03[1][3]=(l1*sin(q[0])+l2*sin(q[0])*cos(q[1]));
-  T03[2][0]=0;
+  T03[1][3]=(lw*sin(q[0])+l2*sin(q[0])*cos(q[1]));
+  T03[2][0]=sin(q[1]+q[2]);
   T03[2][1]=0;
-  T03[2][2]=0;
-  T03[2][3]=1;
+  T03[2][2]=-cos(q[1]+q[2]);
+  T03[2][3]=(l1+l1)+l2*sin(q[1]);
+  T03[3][0]=0;
+  T03[3][1]=0;
+  T03[3][2]=0;
+  T03[3][3]=1;
   // scrivo T36
   T36[0][0]=(cos(q[3])*cos(q[4])*cos(q[5])-sin(q[3])*sin(q[5]));
   T36[0][1]=(-cos(q[3])*cos(q[4])*sin(q[5])-sin(q[3])*cos(q[5]));
   T36[0][2]=(cos(q[3])*sin(q[4]));
-  T36[0][3]=((l5+l6)*cos(q[3])*sin(q[4]));
+  T36[0][3]=((l5+lw)*cos(q[3])*sin(q[4]));
   T36[1][0]=(sin(q[3])*cos(q[4])*cos(q[5])+cos(q[3])*sin(q[5]));
   T36[1][1]=(-sin(q[3])*cos(q[4])*sin(q[5])+cos(q[3])*cos(q[5]));
   T36[1][2]=(sin(q[3])*sin(q[4]));
-  T36[1][3]=((l5+l6)*sin(q[3])*sin(q[4]));
+  T36[1][3]=((l5+lw)*sin(q[3])*sin(q[4]));
   T36[2][0]=(-sin(q[4])*cos(q[5]));
   T36[2][1]=(sin(q[4])*sin(q[5]));
   T36[2][2]=cos(q[4]);
-  T36[2][3]=((l5+l6)*cos(q[4])+(l3+l4));
+  T36[2][3]=((l5+lw)*cos(q[4])+(l3+l4));
   T36[3][0]=0;
   T36[3][1]=0;
   T36[3][2]=0;
