@@ -220,9 +220,9 @@ void robot(){
 
 void muovi(){
   //cinematica inversa 
- pwx=((xd-xBase)-((l5+lw)*Re[0][2]));
- pwy=((-yd+yBase)-((l5+lw)*Re[1][2]));
- pwz=(zd-zBase)-(l5+lw)*Re[2][2];  
+ pwx=((xd-xBase)-((l5+lw+l6)*Re[0][2]));
+ pwy=((-yd+yBase)-((l5+lw+l6)*Re[1][2]));
+ pwz=(zd-zBase)-(l5+lw+l6)*Re[2][2];  
  q[0]=atan2(pwy,pwx);
  A1=pwx*cos(q[0])+pwy*sin(q[0])-lw;
  A2=(l1+l1)-pwz;
@@ -309,15 +309,15 @@ void graphic(){
   T36[0][0]=(cos(q[3])*cos(q[4])*cos(q[5])-sin(q[3])*sin(q[5]));
   T36[0][1]=(-cos(q[3])*cos(q[4])*sin(q[5])-sin(q[3])*cos(q[5]));
   T36[0][2]=(cos(q[3])*sin(q[4]));
-  T36[0][3]=((l5+lw)*cos(q[3])*sin(q[4]));
+  T36[0][3]=((l5+lw+l6)*cos(q[3])*sin(q[4]));
   T36[1][0]=(sin(q[3])*cos(q[4])*cos(q[5])+cos(q[3])*sin(q[5]));
   T36[1][1]=(-sin(q[3])*cos(q[4])*sin(q[5])+cos(q[3])*cos(q[5]));
   T36[1][2]=(sin(q[3])*sin(q[4]));
-  T36[1][3]=((l5+lw)*sin(q[3])*sin(q[4]));
+  T36[1][3]=((l5+lw+l6)*sin(q[3])*sin(q[4]));
   T36[2][0]=(-sin(q[4])*cos(q[5]));
   T36[2][1]=(sin(q[4])*sin(q[5]));
   T36[2][2]=cos(q[4]);
-  T36[2][3]=((l5+lw)*cos(q[4])+(l3+l4));
+  T36[2][3]=((l5+lw+l6)*cos(q[4])+(l3+l4));
   T36[3][0]=0;
   T36[3][1]=0;
   T36[3][2]=0;
