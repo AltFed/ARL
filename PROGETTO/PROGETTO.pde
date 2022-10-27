@@ -1,7 +1,7 @@
 float lw=30,l1=50,l2=200,l3=100,l4=100,l5=50,l6=30;  //link
 float g = 50;
 float q[] = {0,0,0,0,0,0};
-float q_eff[]={0,0,90,0,0,0};
+float q_eff[]={0,0,0,0,0,0};
 float xBase, yBase,zBase;
 float xd,yd,zd;
 float eyeY,segno = 1;
@@ -103,7 +103,7 @@ void draw()
      initRe();
    // funzione per il movimento 
     muovi();
-    initR03();
+    //initR03();
    //  funzione per definire il manipolatore 
    robot(); 
   // funzione per la grafica
@@ -125,33 +125,33 @@ void initRe(){
 }
 
 
-void initR03(){
-  R03[0][0]=(cos(q[0])*cos(q[1]+q[2]));
-  R03[0][1]=(-cos(q[0])*sin(q[1]+q[2]));
-  R03[0][2]=(-sin(q[0]));
-  R03[1][0]=(sin(q[0])*cos(q[1]+q[2]));
-  R03[1][1]=(-sin(q[0])*sin(q[1]+q[2]));
-  R03[1][2]=(cos(q[0]));
-  R03[2][0]=(-sin(q[1]+q[2]));
-  R03[2][1]=(-cos(q[1]+q[2]));
-  R03[2][2]=0;
-}
+//void initR03(){
+//  R03[0][0]=(cos(q[0])*cos(q[1]+q[2]));
+//  R03[0][1]=(-cos(q[0])*sin(q[1]+q[2]));
+//  R03[0][2]=(-sin(q[0]));
+//  R03[1][0]=(sin(q[0])*cos(q[1]+q[2]));
+//  R03[1][1]=(-sin(q[0])*sin(q[1]+q[2]));
+//  R03[1][2]=(cos(q[0]));
+//  R03[2][0]=(-sin(q[1]+q[2]));
+//  R03[2][1]=(-cos(q[1]+q[2]));
+//  R03[2][2]=0;
+//}
 
 
 void robot(){
   //spostamento angoli del manipolatore
-  if (abs(q_eff[0]-q[0])>dis)
-    {
-      q_eff[0] += kp*(q[0]-q_eff[0]);
-    }
-    if (abs(q_eff[1]-q[1])>dis)
-    {
-      q_eff[1] += kp*(q[1]-q_eff[1]);
-    }
-    if (abs(q_eff[2]-q[2])>dis)
-    {
-      q_eff[2] += kp*(q[2]-q_eff[2]);
-    }
+    //if (abs(q_eff[0]-q[0])>dis)
+    //{
+    //  q_eff[0] += kp*(q[0]-q_eff[0]);
+    //}
+    //if (abs(q_eff[1]-q[1])>dis)
+    //{
+    //  q_eff[1] += kp*(q[1]-q_eff[1]);
+    //}
+    //if (abs(q_eff[2]-q[2])>dis)
+    //{
+    //  q_eff[2] += kp*(q[2]-q_eff[2]);
+    //}
     if (abs(q_eff[3]-q[3])>dis)
     {
       q_eff[3] += kp*(q[3]-q_eff[3]);
@@ -164,38 +164,38 @@ void robot(){
     {
       q_eff[5] += kp*(q[5]-q_eff[5]);
     }
-    translate(0,0,zd);
+     translate(0,0,zd);
      ellipse(xd,yd,20,20);
      translate(0,0,-zd);
   // centro base manipolatore
   translate(xBase, yBase, zBase);
 // creo la sfera che indica il punto desiderato
-//--------link 0--------
-  box(l1,l1,l1);           
-  fill(255,0,0);
-//link 1
-  rotateY(q_eff[0]);   
-  translate(0,-l1,0);
-  box(l1,l1,l1);
+////--------link 0--------
+//  box(l1,l1,l1);           
+//  fill(255,0,0);
+////link 1
+//  rotateY(q_eff[0]);   
+//  translate(0,-l1,0);
+//  box(l1,l1,l1);
   
-//struttura per il link 2
-  translate(l1/2-lw/2,-l1/2-lw/2,0);
-  rotateZ(q_eff[1]);  
-  box(lw,lw,g);     
+////struttura per il link 2
+//  translate(l1/2-lw/2,-l1/2-lw/2,0);
+//  rotateZ(q_eff[1]);  
+//  box(lw,lw,g);     
   
-//link 2
-  translate(l2/2+lw/2,0,0); // TRANSLATE ORIGINALE
-  box(l2,lw,lw);          
+////link 2
+//  translate(l2/2+lw/2,0,0); // TRANSLATE ORIGINALE
+//  box(l2,lw,lw);          
   
-//struttura link 3
-  translate(l2/2-lw/2,0,0);
-  rotateZ(q_eff[2]);
-  box(lw,lw,g);          
+////struttura link 3
+//  translate(l2/2-lw/2,0,0);
+//  rotateZ(q_eff[2]);
+//  box(lw,lw,g);          
 
-//link3  
-  translate(0,-l3/2-lw/2,0);
+////link3  
+//  translate(0,-l3/2-lw/2,0);
   
-  box(lw,l3,lw); 
+//  box(lw,l3,lw); 
   
 //link 4
   translate(0,-l4,0);
@@ -204,7 +204,7 @@ void robot(){
   
 //struttura link 5
   translate(0,-l4/2-lw/2,0);
-  rotateY(q_eff[4]);
+  rotateZ(-q_eff[4]);//perchè atan2 tra -90 e 90
   box(lw,lw,g);
   
 //link 5
@@ -220,14 +220,14 @@ void robot(){
 
 void muovi(){
   //cinematica inversa 
- pwx=((xd-xBase)-((l5+lw+l6)*Re[0][2]));
- pwy=((-yd+yBase)-((l5+lw+l6)*Re[1][2]));
- pwz=(zd-zBase)-(l5+lw+l6)*Re[2][2];  
- q[0]=atan2(pwy,pwx);
- A1=pwx*cos(q[0])+pwy*sin(q[0])-lw;
- A2=(l1+l1)-pwz;
- q[2]=asin((pow(A1,2) +pow(A2,2)-pow(l2,2)-pow(l3+l4,2))/(2*l2*(l3+l4)));
- q[1]=atan2((l3+l4)*cos(q[2])*A1-(l2+(l3+l4)*sin(q[2]))*A2,(l2+(l3+l4)*sin(q[2]))*A1+(l3+l4)*cos(q[2])*A2);
+ //pwx=((xd-xBase)-((l5+lw/2+l6)*Re[0][2]));
+ //pwy=((-yd+yBase)-((l5+lw/2+l6)*Re[1][2]));
+ //pwz=(zd-zBase)-(l5+lw/2+l6)*Re[2][2];  
+ //q[0]=atan2(pwy,pwx);
+ //A1=pwx*cos(q[0])+pwy*sin(q[0])-0;
+ //A2=(l1+l1+lw/2)-pwz;
+ //q[2]=asin((pow(A1,2) +pow(A2,2)-pow(l2+lw,2)-pow(l3+l4+lw,2))/(2*(l2+lw)*(l3+l4+lw)));
+ //q[1]=atan2((l3+l4+lw)*cos(q[2])*A1-(l2+lw+(l3+l4+lw)*sin(q[2]))*A2,(l2+lw+(l3+l4+lw)*sin(q[2]))*A1+(l3+l4+lw)*cos(q[2])*A2);
  q[4]=acos(Re[2][2]);// ho preso il segno positivo
  if(sin(q[4])>0){
    q[3]=atan2(Re[1][2],Re[0][2]);
@@ -270,15 +270,15 @@ void graphic(){
   }
   
   scriviMatrice("Re = ",Re,10,100);
-  text("theta 1 = ", 300, 120);
-  text(sin(q[0]), 400, 120);
-  text(q[0]*180/PI, 480, 120);
-  text("theta 2 = ", 300, 120+100);
-  text(sin(q[1]), 400, 120+100);
-  text(q[1]*180/PI, 480, 120+100);
-  text("theta 3 = ", 300, 120+200);
-  text(sin(q[2]), 400, 120+200);
-  text(q[2]*180/PI, 480, 120+200);
+  //text("theta 1 = ", 300, 120);
+  //text(sin(q[0]), 400, 120);
+  //text(q[0]*180/PI, 480, 120);
+  //text("theta 2 = ", 300, 120+100);
+  //text(sin(q[1]), 400, 120+100);
+  //text(q[1]*180/PI, 480, 120+100);
+  //text("theta 3 = ", 300, 120+200);
+  //text(sin(q[2]), 400, 120+200);
+  //text(q[2]*180/PI, 480, 120+200);
   text("theta 4 = ", 300, 120+300);
   text(sin(q[3]), 400, 120+300);
   text(q[3]*180/PI, 480, 120+300);
@@ -288,48 +288,48 @@ void graphic(){
   text("theta 6 = ", 300, 120+500);
   text(sin(q[5]), 400, 120+500);
   text(q[5]*180/PI, 480, 120+500);
-  //scrivo matrice di traslazione T03
-  T03[0][0]=(cos(q[0])*cos(q[1]+q[2]));
-  T03[0][1]=sin(q[0]);
-  T03[0][2]=(cos(q[0])*sin(q[1]+q[2]));
-  T03[0][3]=(lw*cos(q[0])+l2*cos(q[0])*cos(q[1]));
-  T03[1][0]=(sin(q[0])*cos(q[1]+q[2]));
-  T03[1][1]=-cos(q[0]);
-  T03[1][2]=(sin(q[0])*sin(q[1]+q[2]));
-  T03[1][3]=(lw*sin(q[0])+l2*sin(q[0])*cos(q[1]));
-  T03[2][0]=sin(q[1]+q[2]);
-  T03[2][1]=0;
-  T03[2][2]=-cos(q[1]+q[2]);
-  T03[2][3]=(l1+l1)+l2*sin(q[1]);
-  T03[3][0]=0;
-  T03[3][1]=0;
-  T03[3][2]=0;
-  T03[3][3]=1;
+  ////scrivo matrice di traslazione T03
+  //T03[0][0]=(cos(q[0])*cos(q[1]+q[2]));
+  //T03[0][1]=sin(q[0]);
+  //T03[0][2]=(cos(q[0])*sin(q[1]+q[2]));
+  //T03[0][3]=(0*cos(q[0])+(l2+lw)*cos(q[0])*cos(q[1]));
+  //T03[1][0]=(sin(q[0])*cos(q[1]+q[2]));
+  //T03[1][1]=-cos(q[0]);
+  //T03[1][2]=(sin(q[0])*sin(q[1]+q[2]));
+  //T03[1][3]=(0*sin(q[0])+(l2+lw)*sin(q[0])*cos(q[1]));
+  //T03[2][0]=sin(q[1]+q[2]);
+  //T03[2][1]=0;
+  //T03[2][2]=-cos(q[1]+q[2]);
+  //T03[2][3]=(l1+l1+lw/2)+(l2+lw)*sin(q[1]);
+  //T03[3][0]=0;
+  //T03[3][1]=0;
+  //T03[3][2]=0;
+  //T03[3][3]=1;
   // scrivo T36
   T36[0][0]=(cos(q[3])*cos(q[4])*cos(q[5])-sin(q[3])*sin(q[5]));
   T36[0][1]=(-cos(q[3])*cos(q[4])*sin(q[5])-sin(q[3])*cos(q[5]));
   T36[0][2]=(cos(q[3])*sin(q[4]));
-  T36[0][3]=((l5+lw+l6)*cos(q[3])*sin(q[4]));
+  T36[0][3]=((l5+lw/2+l6)*cos(q[3])*sin(q[4]));
   T36[1][0]=(sin(q[3])*cos(q[4])*cos(q[5])+cos(q[3])*sin(q[5]));
   T36[1][1]=(-sin(q[3])*cos(q[4])*sin(q[5])+cos(q[3])*cos(q[5]));
   T36[1][2]=(sin(q[3])*sin(q[4]));
-  T36[1][3]=((l5+lw+l6)*sin(q[3])*sin(q[4]));
+  T36[1][3]=((l5+lw/2+l6)*sin(q[3])*sin(q[4]));
   T36[2][0]=(-sin(q[4])*cos(q[5]));
   T36[2][1]=(sin(q[4])*sin(q[5]));
   T36[2][2]=cos(q[4]);
-  T36[2][3]=((l5+lw+l6)*cos(q[4])+(l3+l4));
+  T36[2][3]=((l5+lw/2+l6)*cos(q[4])+(l3+l4+lw));
   T36[3][0]=0;
   T36[3][1]=0;
   T36[3][2]=0;
   T36[3][3]=1;
   //voglio calcolare T06 e poi ottenere xd yd zd (cinematica diretta)
-  T06=mProd(T03,T36);
+  //T06=mProd(T03,T36);
   text("xd effettivo = ",700,120);
-  text(T06[0][3],800,120);
+  text(T36[0][3],800,120);
   text("yd effettivo = ",700,120+70);
-  text(T06[1][3],800,120+70);
+  text(T36[1][3],800,120+70);
   text("zd effettivo = ",700,120+120);
-  text(T06[2][3],800,120+120);
+  text(T36[2][3],800,120+120);
   
 }
 
