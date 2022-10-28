@@ -5,7 +5,7 @@ float q_eff[]={0,0,0,0,0,0};
 float xBase, yBase,zBase,xDes,yDes,zDes;
 float xd,yd,zd;
 float eyeY,segno = 1;
-float alfa=0,beta=0,theta=0;//pinza orientata verso il basso
+float alfa=PI/4,beta=PI,theta=PI/2;//pinza orientata verso il basso
 float[][] Re = new float[3][3]; // matrice 3x3 dichiarata ma non inizializzata
 float[][] R03 = new float[3][3]; // matrice 3x3 dichiarata ma non inizializzata
 float[][] R03T = new float[3][3]; // matrice 3x3 dichiarata ma non inizializzata
@@ -177,9 +177,9 @@ void robot(){
 ////--------link 0--------
   box(l1,l1,l1);           
   fill(255,0,0);
-//link 1
-  rotateY(q_eff[0]);   
+//link 1  
   translate(0,-l1,0);
+  rotateY(q_eff[0]); 
   box(l1,l1,l1);
   
 //struttura per il link 2
@@ -230,19 +230,17 @@ void muovi(){
  q[0]=atan2(pwy,pwx);
  A1=pwx*cos(q[0])+pwy*sin(q[0])-0;
  A2=(l1+l1+lw/2)-pwz;
- q[2]=asin((pow(A1,2) +pow(A2,2)-pow(l2+lw,2)-pow(l3+l4+lw,2))/(2*(l2+lw)*(l3+l4+lw)));
+ if(segno==1){
+   q[2]=PI-asin((pow(A1,2) +pow(A2,2)-pow(l2+lw,2)-pow(l3+l4+lw,2))/(2*(l2+lw)*(l3+l4+lw)));
+ }if(segno==-1){
+   q[2]=asin((pow(A1,2) +pow(A2,2)-pow(l2+lw,2)-pow(l3+l4+lw,2))/(2*(l2+lw)*(l3+l4+lw)));
+ }
  q[1]=atan2((l3+l4+lw)*cos(q[2])*A1-(l2+lw+(l3+l4+lw)*sin(q[2]))*A2,(l2+lw+(l3+l4+lw)*sin(q[2]))*A1+(l3+l4+lw)*cos(q[2])*A2);
  R03T=trasposta(R03);
  R36=mProd(R03T,Re);
  q[4]=atan2(sqrt(pow(R36[0][2],2)+pow(R36[1][2],2)),R36[2][2]);// ho preso il segno positivo
- if(sin(q[4])>0){
-   q[3]=atan2(R36[1][2],R36[0][2]);
-   q[5]=atan2(R36[2][1],-R36[2][0]);
- }
- if(sin(q[4])<0){
-  q[3]=atan2(-R36[1][2],-R36[0][2]);
-  q[5]=atan2(-R36[2][1],R36[2][0]);
-  }
+ q[3]=atan2(R36[1][2],R36[0][2]);
+ q[5]=atan2(R36[2][1],-R36[2][0]);
 }
 void graphic(){
   textSize(20);
@@ -259,13 +257,13 @@ void graphic(){
   
 
   text("alfa = ",120,20);
-  text((alfa*PI)/180,173,20);
+  text((alfa*180)/PI,173,20);
   
   text("beta = ",120,40);
-  text((beta*PI)/180,180,40);
+  text((beta*180)/PI,180,40);
   
   text("theta = ",120,60);
-  text((theta*PI)/180,190,60);
+  text((theta*180)/PI,190,60);
   text("kp = ",120,80);
   text(kp,180,80);
   
@@ -285,15 +283,15 @@ void graphic(){
   text("theta 3 = ", 300, 120+200);
   text(sin(q[2]), 400, 120+200);
   text(q[2]*180/PI, 480, 120+200);
-  //text("theta 4 = ", 300, 120+300);
-  //text(sin(q[3]), 400, 120+300);
-  //text(q[3]*180/PI, 480, 120+300);
-  //text("theta 5 = ", 300, 120+400);
-  //text(sin(q[4]), 400, 120+400);
-  //text(q[4]*180/PI, 480, 120+400);
-  //text("theta 6 = ", 300, 120+500);
-  //text(sin(q[5]), 400, 120+500);
-  //text(q[5]*180/PI, 480, 120+500);
+  text("theta 4 = ", 300, 120+300);
+  text(sin(q[3]), 400, 120+300);
+  text(q[3]*180/PI, 480, 120+300);
+  text("theta 5 = ", 300, 120+400);
+  text(sin(q[4]), 400, 120+400);
+  text(q[4]*180/PI, 480, 120+400);
+  text("theta 6 = ", 300, 120+500);
+  text(sin(q[5]), 400, 120+500);
+  text(q[5]*180/PI, 480, 120+500);
   ////scrivo matrice di traslazione T03
   T03[0][0]=(cos(q[0])*cos(q[1]+q[2]));
   T03[0][1]=sin(q[0]);
