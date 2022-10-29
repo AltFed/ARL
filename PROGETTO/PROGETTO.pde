@@ -3,9 +3,10 @@ float g = 50;
 float q[] = {0,0,0,0,0,0};
 float q_eff[]={0,0,0,0,0,0};
 float xBase, yBase,zBase,xDes,yDes,zDes;
-float xd,yd,zd;
+float x6,y6,z6;
+float xd=0,yd=0,zd=0;
 float eyeY,segno = 1;
-float alfa=PI/4,beta=PI,theta=PI/2;//pinza orientata verso il basso
+float alfa=0,beta=0,theta=0;//pinza orientata verso il basso
 float[][] Re = new float[3][3]; // matrice 3x3 dichiarata ma non inizializzata
 float[][] R03 = new float[3][3]; // matrice 3x3 dichiarata ma non inizializzata
 float[][] R03T = new float[3][3]; // matrice 3x3 dichiarata ma non inizializzata
@@ -33,10 +34,10 @@ void draw()
   background(50);
   lights();
   camera((width/2.0), height/2 - eyeY, (height/2.0) / tan(PI*60.0 / 360.0), width/2.0, height/2.0, 0, 0, 1, 0);
-  //if(mousePressed){
-  //  xBase = mouseX;
-  //  yBase = mouseY;
-  //}
+  if(mousePressed){
+    xBase = mouseX;
+    yBase = mouseY;
+  }
   if (keyPressed)
   {
     // movimento camera
@@ -100,9 +101,9 @@ void draw()
       kp += 0.001;
   }
   }
-  xDes=mouseX-xBase;
-  yDes=(-mouseY+yBase);
-  zDes=zd-zBase;
+  xDes=xd-xBase+width/2;
+  yDes=(-yd+yBase-height/2);
+  zDes=zd+zBase;
   pushMatrix();
      initRe();
    // funzione per il movimento 
@@ -117,28 +118,37 @@ void draw()
 
 
 void initRe(){
-  Re[0][0]=(cos(alfa)*sin(beta)*cos(theta)-sin(alfa)*sin(theta));
-  Re[0][1]=(-cos(alfa)*sin(beta)*sin(theta)-sin(alfa)*cos(theta));
-  Re[0][2]=(cos(alfa)*cos(beta));
-  Re[1][0]=(sin(alfa)*sin(beta)*cos(theta)+sin(theta)*cos(alfa));
-  Re[1][1]=(-sin(alfa)*sin(beta)*sin(theta)+cos(alfa)*cos(theta));
-  Re[1][2]=(sin(alfa)*cos(beta));
-  Re[2][0]=(-cos(theta)*cos(beta));
-  Re[2][1]=(cos(beta)*sin(theta));
-  Re[2][2]=(sin(beta));
+  Re[0][0]=-1;
+  Re[0][1]=0;
+  Re[0][2]=0;
+  Re[1][0]=0;
+  Re[1][1]=-1;
+  Re[1][2]=0;
+  Re[2][0]=0;
+  Re[2][1]=0;
+  Re[2][2]=-1;
+  //Re[0][0]=(cos(alfa)*sin(beta)*cos(theta)-sin(alfa)*sin(theta));
+  //Re[0][1]=(-cos(alfa)*sin(beta)*sin(theta)-sin(alfa)*cos(theta));
+  //Re[0][2]=(cos(alfa)*cos(beta));
+  //Re[1][0]=(sin(alfa)*sin(beta)*cos(theta)+sin(theta)*cos(alfa));
+  //Re[1][1]=(-sin(alfa)*sin(beta)*sin(theta)+cos(alfa)*cos(theta));
+  //Re[1][2]=(sin(alfa)*cos(beta));
+  //Re[2][0]=(-cos(theta)*cos(beta));
+  //Re[2][1]=(cos(beta)*sin(theta));
+  //Re[2][2]=(sin(beta));
 }
 
 
 void initR03(){
   R03[0][0]=(cos(q[0])*cos(q[1]+q[2]));
-  R03[0][1]=(-cos(q[0])*sin(q[1]+q[2]));
-  R03[0][2]=(-sin(q[0]));
+  R03[0][2]=(-cos(q[0])*sin(q[1]+q[2]));
+  R03[0][1]=(sin(q[0]));
   R03[1][0]=(sin(q[0])*cos(q[1]+q[2]));
-  R03[1][1]=(-sin(q[0])*sin(q[1]+q[2]));
-  R03[1][2]=(cos(q[0]));
-  R03[2][0]=(-sin(q[1]+q[2]));
-  R03[2][1]=(-cos(q[1]+q[2]));
-  R03[2][2]=0;
+  R03[1][2]=(sin(q[0])*sin(q[1]+q[2]));
+  R03[1][1]=(-cos(q[0]));
+  R03[2][0]=(sin(q[1]+q[2]));
+  R03[2][2]=(-cos(q[1]+q[2]));
+  R03[2][1]=0;
 }
 
 
@@ -168,11 +178,18 @@ void robot(){
     {
       q_eff[5] += kp*(q[5]-q_eff[5]);
     }
-     translate(0,0,zd);
+    fill(0,255,0);
+     ellipse(width/2+100,height/2+50,30,30);
+     translate(width/2,height/2,zDes);
+     fill(255);
      ellipse(xd,yd,20,20);
-     translate(0,0,-zd);
+     translate(-width/2,-height/2,-zDes);
   // centro base manipolatore
+  
   translate(xBase, yBase, zBase);
+  translate(x6,z6,-y6);
+  box(l6,lw,lw);
+  translate(-x6,-z6,y6);
 // creo la sfera che indica il punto desiderato
 ////--------link 0--------
   box(l1,l1,l1);           
@@ -192,7 +209,7 @@ void robot(){
   box(l2,lw,lw);          
   
 //struttura link 3
-  translate(l2/2-lw/2,0,0);
+  translate(l2/2+lw/2,0,0); //x tolto -lw/2 e aggiunto +lw/2
   rotateZ(q_eff[2]);
   box(lw,lw,g);          
 
@@ -208,7 +225,7 @@ void robot(){
   
 //struttura link 5
   translate(0,-l4/2-lw/2,0);
-  rotateZ(q_eff[4]);
+  rotateZ(q_eff[4]+PI/2);
   box(lw,lw,g);
   
 //link 5
@@ -216,17 +233,22 @@ void robot(){
   box(l5,lw,lw);
   
 //PINZA
-  translate(l5/2+lw/2,0,0);
+  translate(l5/2+lw/2,0,0);// x tolto +lw/2
   rotateX(q_eff[5]);
   box(l6,lw,lw);
 }
 
 
 void muovi(){
+  //calcolo x6 y6 z6
+  x6=(l2+lw)*cos(q[0])*cos(q[1]) + (l3+l4+lw)*cos(q[0])*sin(q[1]+q[2]) + (l5+l6+lw/2)*(cos(q[0])*(cos(q[1]+q[2])*cos(q[3])*sin(q[4])+ sin(q[1]+q[2])*cos(q[4])) + sin(q[0])*sin(q[3])*sin(q[4]));
+  y6=(l2+lw)*sin(q[0])*cos(q[1]) + (l3+l4+lw)*sin(q[0])*sin(q[1]+q[2]) + (l5+l6+lw/2)*(sin(q[0])*(cos(q[1]+q[2])*cos(q[3])*sin(q[4])+ sin(q[1]+q[2])*cos(q[4])) - cos(q[0])*sin(q[3])*sin(q[4]));
+  z6=(l1+l1+lw)+(l2+lw)*sin(q[1])-(l3+l4+lw)*cos(q[1]+q[2])+(l5+l6+lw/2)*(sin(q[1]+q[2])*cos(q[3])*sin(q[4])-cos(q[1]+q[2])*cos(q[4]));
+  //
   //cinematica inversa 
  pwx=(xDes-((l5+lw/2+l6)*Re[0][2]));
- pwy=(yDes-((l5+lw/2+l6)*Re[1][2]));
- pwz=zDes-(l5+lw/2+l6)*Re[2][2];  
+ pwy=(-zDes-((l5+lw/2+l6)*Re[1][2]));
+ pwz=-yDes-(l5+lw/2+l6)*Re[2][2];  
  q[0]=atan2(pwy,pwx);
  A1=pwx*cos(q[0])+pwy*sin(q[0])-0;
  A2=(l1+l1+lw/2)-pwz;
@@ -239,21 +261,26 @@ void muovi(){
  R03T=trasposta(R03);
  R36=mProd(R03T,Re);
  q[4]=atan2(sqrt(pow(R36[0][2],2)+pow(R36[1][2],2)),R36[2][2]);// ho preso il segno positivo
+ if(sin(q[4])>0){
  q[3]=atan2(R36[1][2],R36[0][2]);
- q[5]=atan2(R36[2][1],-R36[2][0]);
+ q[5]=atan2(R36[2][1],-R36[2][0])+theta;
+}if(sin(q[4])<0){
+  q[3]=atan2(-R36[1][2],-R36[0][2]);
+  q[5]=atan2(-R36[2][1],R36[2][0])+theta;
+}
 }
 void graphic(){
   textSize(20);
   fill(255);
 
   text("xd = ",10,20);
-  text(xDes,50,20);//coordinate rispetto alla base
+  text(xd-xBase+width/2,50,20);//coordinate rispetto alla base
   
   text("yd = ",10,40);
-  text(yDes,50,40);//coordinate rispetto alla base
+  text(-yd+yBase-height/2,50,40);//coordinate rispetto alla base
   
   text("zd = ",10,60);
-  text(zDes,50,60);
+  text(zd-zBase,50,60);
   
 
   text("alfa = ",120,20);
@@ -331,9 +358,9 @@ void graphic(){
   text("xd effettivo = ",700,120);
   text(T06[0][3],800,120);
   text("yd effettivo = ",700,120+70);
-  text(T06[1][3],800,120+70);
+  text(T06[2][3],800,120+70);
   text("zd effettivo = ",700,120+120);
-  text(T06[2][3],800,120+120);
+  text(T06[1][3],800,120+120);
   
 }
 
