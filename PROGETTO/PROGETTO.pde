@@ -243,7 +243,7 @@ void muovi(){
   //calcolo x6 y6 z6
   x6=(l2+lw)*cos(q[0])*cos(q[1]) + (l3+l4+lw)*cos(q[0])*sin(q[1]+q[2]) + (l5+l6+lw/2)*(cos(q[0])*(cos(q[1]+q[2])*cos(q[3])*sin(q[4])+ sin(q[1]+q[2])*cos(q[4])) + sin(q[0])*sin(q[3])*sin(q[4]));
   y6=(l2+lw)*sin(q[0])*cos(q[1]) + (l3+l4+lw)*sin(q[0])*sin(q[1]+q[2]) + (l5+l6+lw/2)*(sin(q[0])*(cos(q[1]+q[2])*cos(q[3])*sin(q[4])+ sin(q[1]+q[2])*cos(q[4])) - cos(q[0])*sin(q[3])*sin(q[4]));
-  z6=(l1+l1+lw)+(l2+lw)*sin(q[1])-(l3+l4+lw)*cos(q[1]+q[2])+(l5+l6+lw/2)*(sin(q[1]+q[2])*cos(q[3])*sin(q[4])-cos(q[1]+q[2])*cos(q[4]));
+  z6=(l1+l1/2+lw)+(l2+lw)*sin(q[1])-(l3+l4+lw)*cos(q[1]+q[2])+(l5+l6+lw/2)*(sin(q[1]+q[2])*cos(q[3])*sin(q[4])-cos(q[1]+q[2])*cos(q[4]));
   //
   //cinematica inversa 
  pwx=(xDes-((l5+lw/2+l6)*Re[0][2]));
@@ -251,7 +251,7 @@ void muovi(){
  pwz=-yDes-(l5+lw/2+l6)*Re[2][2];  
  q[0]=atan2(pwy,pwx);
  A1=pwx*cos(q[0])+pwy*sin(q[0])-0;
- A2=(l1+l1+lw/2)-pwz;
+ A2=(l1+l1/2+lw/2)-pwz;
  if(segno==1){
    q[2]=PI-asin((pow(A1,2) +pow(A2,2)-pow(l2+lw,2)-pow(l3+l4+lw,2))/(2*(l2+lw)*(l3+l4+lw)));
  }if(segno==-1){
@@ -331,7 +331,7 @@ void graphic(){
   T03[2][0]=sin(q[1]+q[2]);
   T03[2][1]=0;
   T03[2][2]=-cos(q[1]+q[2]);
-  T03[2][3]=(l1+l1+lw/2)+(l2+lw)*sin(q[1]);
+  T03[2][3]=(l1+l1/2+lw/2)+(l2+lw)*sin(q[1]);
   T03[3][0]=0;
   T03[3][1]=0;
   T03[3][2]=0;
