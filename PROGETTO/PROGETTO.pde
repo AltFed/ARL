@@ -183,6 +183,19 @@ void robot(){
   ellipse(0,0,20,20);
   translate(-width/2-xd,-height/2-yd,-zd);
   // centro base manipolatore
+  
+  //ASSE Y0
+  stroke(0,255,0);
+  line(xBase,yBase,zBase, xBase+ 120, yBase,zBase);
+  //ASSE Z0
+  stroke(0,0,255);
+  line(xBase,yBase,zBase, xBase, yBase-120,zBase);
+  //ASSE X0
+  stroke(255,0,0);
+  line(xBase,yBase,zBase, xBase, yBase,zBase+120);
+  stroke(0);
+  
+  
   translate(xBase, yBase, zBase);
   
   translate(x6,z6,-y6);
@@ -235,7 +248,17 @@ void robot(){
   translate(l5/2+lw/2,0,0);// x tolto +lw/2
   rotateX(q_eff[5]);
   box(l6,lw,lw);
- 
+  
+  //ASSE X6
+  stroke(255,0,0);
+  line(0,0,0,120,0,0);
+  //ASSE Y6
+  stroke(0,255,0);
+  line(0,0,0,0,120,0);
+  //ASSE Z6
+  stroke(0,0,255);
+  line(0,0,0,0,0,120);
+  stroke(0);
 }
 
 
@@ -357,8 +380,7 @@ void graphic(){
   text("yd effettivo = ",700,120+70);
   text(T06[2][3],800,120+70);
   text("zd effettivo = ",700,120+120);
-  text(T06[1][3],800,120+120);
-  
+  text(T06[1][3],800,120+120);  
 }
 
 // ----- FUNZIONI PER MATRICI -----
