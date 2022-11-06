@@ -4,7 +4,7 @@ float q[] = {0,0,0,0,0,0};
 float q_eff[]={0,0,0,0,0,0};
 float xBase, yBase,zBase,xDes,yDes,zDes;
 float x6,y6,z6;
-float xd=0,yd=0,zd=0,a;
+float xd=200,yd=-100,zd=0,a;
 float eyeY,segno = 1;
 float alfa=0,beta=0,theta=0;//pinza orientata verso il basso
 float[][] Re = new float[3][3]; // matrice 3x3 dichiarata ma non inizializzata
@@ -249,11 +249,11 @@ void robot(){
   rotateX(q_eff[5]);
   box(l6,lw,lw);
   
-  //ASSE X6
-  stroke(255,0,0);
-  line(0,0,0,120,0,0);
   //ASSE Y6
   stroke(0,255,0);
+  line(0,0,0,120,0,0);
+  //ASSE X6
+  stroke(255,0,0);
   line(0,0,0,0,120,0);
   //ASSE Z6
   stroke(0,0,255);
