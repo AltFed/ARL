@@ -4,9 +4,9 @@ float q[] = {0,0,0,0,0,0};
 float q_eff[]={0,0,0,0,0,0};
 float xBase, yBase,zBase,xDes,yDes,zDes;
 float x6,y6,z6;
-float xd=200,yd=-100,zd=0,a;
+float xd=60,yd=30,zd=40,a;
 float eyeY,segno = 1;
-float alfa=0,beta=0,theta=0;//pinza orientata verso il basso
+float alfa=PI/2,beta=0,theta=0;//pinza orientata verso il basso
 float[][] Re = new float[3][3]; // matrice 3x3 dichiarata ma non inizializzata
 float[][] R03 = new float[3][3]; // matrice 3x3 dichiarata ma non inizializzata
 float[][] R03T = new float[3][3]; // matrice 3x3 dichiarata ma non inizializzata
@@ -122,20 +122,20 @@ void initRe(){
   //Re[0][1]=0;
   //Re[0][2]=0;
   //Re[1][0]=0;
-  //Re[1][1]=1;
+  //Re[1][1]=-1;
   //Re[1][2]=0;
   //Re[2][0]=0;
   //Re[2][1]=0;
   //Re[2][2]=-1;
-  Re[0][0]=(cos(alfa)*cos(PI/2-beta)*cos(theta)-sin(alfa)*sin(theta));
-  Re[0][1]=(-cos(alfa)*cos(PI/2-beta)*sin(theta)-sin(alfa)*cos(theta));
-  Re[0][2]=(cos(alfa)*sin(PI/2-beta));
-  Re[1][0]=(sin(alfa)*cos(PI/2-beta)*cos(theta)+sin(theta)*cos(alfa));
-  Re[1][1]=(-sin(alfa)*cos(PI/2-beta)*sin(theta)+cos(alfa)*cos(theta));
-  Re[1][2]=(sin(alfa)*sin(PI/2-beta));
-  Re[2][0]=(-cos(theta)*sin(PI/2-beta));
-  Re[2][1]=(sin(PI/2-beta)*sin(theta));
-  Re[2][2]=(cos(PI/2-beta));
+  Re[0][0]=(cos(alfa)*sin(beta)*cos(theta)-sin(alfa)*sin(theta));
+  Re[0][1]=(-cos(alfa)*sin(beta)*sin(theta)-sin(alfa)*cos(theta));
+  Re[0][2]=(cos(alfa)*cos(beta));
+  Re[1][0]=(sin(alfa)*sin(beta)*cos(theta)+cos(alfa)*sin(theta));
+  Re[1][1]=(-sin(alfa)*sin(beta)*sin(theta)+cos(alfa)*cos(theta));
+  Re[1][2]=(sin(alfa)*cos(beta));
+  Re[2][0]=(-cos(theta)*cos(beta));
+  Re[2][1]=(cos(beta)*sin(theta));
+  Re[2][2]=(sin(beta));
 
 }
 
@@ -179,6 +179,7 @@ void robot(){
     {
       q_eff[5] += kp*(q[5]-q_eff[5]);
     }
+    //pushMatrix();
   translate(width/2+xd,height/2+yd,zd);
   ellipse(0,0,20,20);
   translate(-width/2-xd,-height/2-yd,-zd);
@@ -198,9 +199,19 @@ void robot(){
   
   translate(xBase, yBase, zBase);
   
-  translate(x6,z6,-y6);
+  translate(T06[1][3],-T06[2][3],T06[0][3]);
+  //ASSE Z6
+  stroke(0,0,255);
+  line(0,0,0,200,0,0);
+  //ASSE Y6
+  stroke(0,255,0);
+  line(0,0,0,0,200,0);
+  //ASSE X6
+  stroke(255,0,0);
+  line(0,0,0,0,0,120);
+  stroke(0);
   box(l6,lw,lw);
-  translate(-x6,-z6,y6);
+  translate(-T06[1][3],T06[2][3],-T06[0][3]);
   
 // creo la sfera che indica il punto desiderato
 ////--------link 0--------
@@ -227,17 +238,17 @@ void robot(){
   box(lw,lw,g);          
 
 //link3  
-  translate(0,-l3/2-lw/2,0);
-  box(lw,l3,lw); 
+  translate(lw/2+l3/2,0,0);
+  box(l3,lw,lw); 
   
 //link 4
-  translate(0,-l4,0);
-  rotateY(q_eff[3]);
-  box(lw,l4,lw);
+  translate(l3/2+l4/2,0,0);
+  rotateX(q_eff[3]);
+  box(l4,lw,lw);
   
 //struttura link 5
-  translate(0,-l4/2-lw/2,0);
-  rotateZ(q_eff[4]+PI/2);
+  translate(l4/2+lw/2,0,0);
+  rotateZ(q_eff[4]);
   box(lw,lw,g);
   
 //link 5
@@ -248,98 +259,48 @@ void robot(){
   translate(l5/2+lw/2,0,0);// x tolto +lw/2
   rotateX(q_eff[5]);
   box(l6,lw,lw);
-  
-  //ASSE Y6
-  stroke(0,255,0);
-  line(0,0,0,120,0,0);
-  //ASSE X6
-  stroke(255,0,0);
-  line(0,0,0,0,120,0);
   //ASSE Z6
   stroke(0,0,255);
+  line(0,0,0,200,0,0);
+  //ASSE Y6
+  stroke(0,255,0);
+  line(0,0,0,0,200,0);
+  //ASSE X6
+  stroke(255,0,0);
   line(0,0,0,0,0,120);
   stroke(0);
 }
 
 
 void muovi(){
- pwx=(xf-((l5+lw/2+l6)*Re[0][2]));
- pwy=(-zf-((l5+lw/2+l6)*Re[1][2]));
- pwz=yf-(l5+lw/2+l6)*Re[2][2]; 
- q[0]=atan2(pwy,pwx);
- A1=pwx*cos(q[0])+pwy*sin(q[0])-lw/2;
- A2=(l1+l1+lw/2)-pwz;
+ pwx=(zf-((l5+lw/2+l6)*Re[0][2]));//60
+ pwy=(xf-((l5+lw/2+l6)*Re[1][2]));//40
+ pwz=-yf-((l5+lw/2+l6)*Re[2][2]); //125
+ text("val = ",300,400);
+ q[0]=atan2(pwy,pwx);//26.57
+ A1=pwx*cos(q[0])+pwy*sin(q[0])-lw/2;//52,08
+ A2=(l1+l1+lw/2)-pwz;//-20
  if(segno==1){
    q[2]=PI-asin((pow(A1,2) +pow(A2,2)-pow(l2+lw,2)-pow(l3+l4+lw,2))/(2*(l2+lw)*(l3+l4+lw)));
  }if(segno==-1){
-   q[2]=asin((pow(A1,2) +pow(A2,2)-pow(l2+lw,2)-pow(l3+l4+lw,2))/(2*(l2+lw)*(l3+l4+lw)));
+   q[2]=asin((pow(A1,2) +pow(A2,2)-pow(l2+lw,2)-pow(l3+l4+lw,2))/(2*(l2+lw)*(l3+l4+lw)));//-76.06
  }
- q[1]=atan2((l3+l4+lw)*cos(q[2])*A1-(l2+lw+(l3+l4+lw)*sin(q[2]))*A2,(l2+lw+(l3+l4+lw)*sin(q[2]))*A1+(l3+l4+lw)*cos(q[2])*A2);
+ q[1]=atan2((l3+l4+lw)*cos(q[2])*A1-(l2+lw+(l3+l4+lw)*sin(q[2]))*A2,(l2+lw+(l3+l4+lw)*sin(q[2]))*A1+(l3+l4+lw)*cos(q[2])*A2);//104,04
+  text((l3+l4+lw)*cos(q[2])*A1,300,450);
  R03T=trasposta(R03);
  R36=mProd(R03T,Re);
  q[4]=atan2(sqrt(pow(R36[0][2],2)+pow(R36[1][2],2)),R36[2][2]);
  // ho preso il segno positivo
- if(sin(q[4])>0){
  q[3]=atan2(R36[1][2],R36[0][2]);
  q[5]=atan2(R36[2][1],-R36[2][0]);
- }
  //calcolo x6 y6 z6
   x6=lw/2*cos(q[0])+(l2+lw)*cos(q[0])*cos(q[1]) + (l3+l4+lw)*cos(q[0])*sin(q[1]+q[2]) + (l5+l6+lw/2)*(cos(q[0])*(cos(q[1]+q[2])*cos(q[3])*sin(q[4])+ sin(q[1]+q[2])*cos(q[4])) + sin(q[0])*sin(q[3])*sin(q[4]));
   y6=lw/2*sin(q[0])+(l2+lw)*sin(q[0])*cos(q[1]) + (l3+l4+lw)*sin(q[0])*sin(q[1]+q[2]) + (l5+l6+lw/2)*(sin(q[0])*(cos(q[1]+q[2])*cos(q[3])*sin(q[4])+ sin(q[1]+q[2])*cos(q[4])) - cos(q[0])*sin(q[3])*sin(q[4]));
   z6=(l1+l1+lw/2)+(l2+lw)*sin(q[1])-(l3+l4+lw)*cos(q[1]+q[2])+(l5+l6+lw/2)*(sin(q[1]+q[2])*cos(q[3])*sin(q[4])-cos(q[1]+q[2])*cos(q[4]));
-  //
-  //cinematica inversa 
-}
-void graphic(){
-  textSize(20);
-  fill(255);
-  text("xf = ",10,20);
-  text(xf,50,20);//coordinate rispetto alla base
   
-  text("yf = ",10,40);
-  text(yf,50,40);//coordinate rispetto alla base
   
-  text("zf = ",10,60);
-  text(zf,50,60);
-  
-
-  text("pwx = ",120,20);
-  text(pwx,173,20);
-  
-  text("pwy = ",120,40);
-  text(pwz,180,40);
-  
-  text("pwz = ",120,60);
-  text(pwy,190,60);
-  text("kp = ",120,80);
-  text(kp,180,80);
-  
-  if(segno==1){
-    text("gomito alto ",10,80);
-  }else if ( segno == -1){
-    text("gomito basso",10,80);
-  }
-  scriviMatrice("R36 = ",R36,10,400);
-  scriviMatrice("Re = ",Re,10,100);
-  text("theta 1 = ", 300, 120);
-  text(sin(q[0]), 400, 120);
-  text(q[0]*180/PI, 480, 120);
-  text("theta 2 = ", 300, 120+100);
-  text(sin(q[1]), 400, 120+100);
-  text(q[1]*180/PI, 480, 120+100);
-  text("theta 3 = ", 300, 120+200);
-  text(sin(q[2]), 400, 120+200);
-  text(q[2]*180/PI, 480, 120+200);
-  text("theta 4 = ", 300, 120+300);
-  text(sin(q[3]), 400, 120+300);
-  text(q[3]*180/PI, 480, 120+300);
-  text("theta 5 = ", 300, 120+400);
-  text(sin(q[4]), 400, 120+400);
-  text(q[4]*180/PI, 480, 120+400);
-  text("theta 6 = ", 300, 120+500);
-  text(sin(q[5]), 400, 120+500);
-  text(q[5]*180/PI, 480, 120+500);
-  ////scrivo matrice di traslazione T03
+  //cinematica diretta
+////scrivo matrice di traslazione T03
   T03[0][0]=(cos(q[0])*cos(q[1]+q[2]));
   T03[0][1]=sin(q[0]);
   T03[0][2]=(cos(q[0])*sin(q[1]+q[2]));
@@ -375,12 +336,73 @@ void graphic(){
   T36[3][3]=1;
   //voglio calcolare T06 e poi ottenere xd yd zd (cinematica diretta)
   T06=mProd(T03,T36);
-  text("xd effettivo = ",700,120);
-  text(T06[0][3],800,120);
-  text("yd effettivo = ",700,120+70);
-  text(T06[2][3],800,120+70);
-  text("zd effettivo = ",700,120+120);
-  text(T06[1][3],800,120+120);  
+
+
+
+
+
+}
+void graphic(){
+  textSize(20);
+  fill(255);
+  text("xf = ",10,20);
+  text(xf,50,20);//coordinate rispetto alla base
+  
+  text("yf = ",10,40);
+  text(yf,50,40);//coordinate rispetto alla base
+  
+  text("zf = ",10,60);
+  text(zf,50,60);
+  
+
+  text("pwx = ",120,20);
+  text(pwx,200,20);
+  
+  text("pwy = ",120,40);
+  text(pwy,400,40);
+  
+  text("pwz = ",120,60);
+  text(pwz,400,60);
+  text("A1 = ",500,40);
+  text(A1,600,40);
+  text("A2 = ",500,60);
+  text(A2,600,60);
+  text("kp = ",120,80);
+  text(kp,180,80);
+  
+  if(segno==1){
+    text("gomito alto ",10,80);
+  }else if ( segno == -1){
+    text("gomito basso",10,80);
+  }
+  scriviMatrice("R36 = ",R36,10,400);
+  scriviMatrice("Re = ",Re,10,100);
+  scriviMatrice("R03 =",R03,10,600);
+  text("theta 1 = ", 300, 120);
+  text(sin(q[0]), 400, 120);
+  text(q[0]*180/PI, 480, 120);
+  text("theta 2 = ", 300, 120+100);
+  text(sin(q[1]), 400, 120+100);
+  text(q[1]*180/PI, 480, 120+100);
+  text("theta 3 = ", 300, 120+200);
+  text(sin(q[2]), 400, 120+200);
+  text(q[2]*180/PI, 600, 120+200);
+  text("theta 4 = ", 300, 120+300);
+  text(sin(q[3]), 400, 120+300);
+  text(q[3]*180/PI, 600, 120+300);
+  text("theta 5 = ", 300, 120+400);
+  text(sin(q[4]), 400, 120+400);
+  text(q[4]*180/PI, 480, 120+400);
+  text("theta 6 = ", 300, 120+500);
+  text(sin(q[5]), 400, 120+500);
+  text(q[5]*180/PI, 480, 120+500);
+  
+  text("xd base = ",700,120);
+  text(T06[0][3],850,120);
+  text("yd base = ",700,120+70);
+  text(T06[1][3],850,120+70);
+  text("zd base = ",700,120+120);
+  text(T06[2][3],850,120+120);  
 }
 
 // ----- FUNZIONI PER MATRICI -----
