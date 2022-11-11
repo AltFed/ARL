@@ -1,4 +1,4 @@
-float lw=30,l1=50,l2=200,l3=100,l4=100,l5=50,l6=30;  //link
+float lw=30,l1=50,l2=400,l3=100,l4=100,l5=50,l6=30;  //link
 float g = 50;
 float q[] = {0,0,0,0,0,0};
 float q_eff[]={0,0,0,0,0,0};
@@ -238,26 +238,26 @@ void robot(){
   box(lw,lw,g);          
 
 //link3  
-  translate(lw/2+l3/2,0,0);
-  box(l3,lw,lw); 
+  translate(0,l3/2+lw/2,0);
+  box(lw,l3,lw); 
   
 //link 4
-  translate(l3/2+l4/2,0,0);
-  rotateX(q_eff[3]);
-  box(l4,lw,lw);
+  translate(0,l3/2+l4/2,0);
+  rotateY(q_eff[3]);
+  box(lw,l4,lw);
   
 //struttura link 5
-  translate(l4/2+lw/2,0,0);
+  translate(0,l4/2+lw/2,0);
   rotateZ(q_eff[4]);
   box(lw,lw,g);
   
 //link 5
-  translate(l5/2+lw/2,0,0);
-  box(l5,lw,lw);
+  translate(0,l5/2+lw/2,0);
+  box(lw,l5,lw);
   
 //PINZA
-  translate(l5/2+lw/2,0,0);// x tolto +lw/2
-  rotateX(q_eff[5]);
+  translate(0,l5/2+lw/2,0);// x tolto +lw/2
+  rotateY(q_eff[4]);
   box(l6,lw,lw);
   //ASSE Z6
   stroke(0,0,255);
