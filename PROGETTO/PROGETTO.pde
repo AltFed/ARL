@@ -1,10 +1,10 @@
-float lw=30,l1=50,l2=400,l3=100,l4=100,l5=50,l6=30;  //link
+float lw=30,l1=50,l2=200,l3=100,l4=100,l5=50,l6=30;  //link
 float g = 50;
 float q[] = {0,0,0,0,0,0};
 float q_eff[]={0,0,0,0,0,0};
 float xBase, yBase,zBase,xDes,yDes,zDes;
 float x6,y6,z6;
-float xd=60,yd=30,zd=40,a;
+float xd=-95,yd=0,zd=0,a;
 float eyeY,segno = 1;
 float alfa=PI/2,beta=0,theta=0;//pinza orientata verso il basso
 float[][] Re = new float[3][3]; // matrice 3x3 dichiarata ma non inizializzata
@@ -18,6 +18,7 @@ float pwx,pwy,pwz;
 float A1,A2;
 float kp=.1,dis=0.0001;
 float xf=0,yf=0,zf=0;
+float T1,T2,d1,d4,d6;
 
 void setup(){
   size(1000,800,P3D);
@@ -26,6 +27,11 @@ void setup(){
   xBase=width/2;
   yBase=height/2;
   zBase=0;
+  T1=lw/2;
+  T2=l2+lw;
+  d1=l1+l1+lw/2;
+  d4=lw+l3+l4;
+  d6=lw/2+l5+l6;
 }
 
 
@@ -220,12 +226,12 @@ void robot(){
   
 //link 1  
   translate(0,-l1,0);
-  rotateY(q_eff[0]); 
+  rotateY(0); 
   box(l1,l1,l1);
   
 //struttura per il link 2
   translate(l1/2-lw/2,-l1/2-lw/2,0);
-  rotateZ(q_eff[1]);  
+  rotateZ(-q_eff[1]);  
   box(lw,lw,g); 
   
 //link 2
@@ -234,7 +240,7 @@ void robot(){
   
 //struttura link 3
   translate(l2/2+lw/2,0,0); //x tolto -lw/2 e aggiunto +lw/2
-  rotateZ(q_eff[2]);
+  rotateZ(-q_eff[2]);
   box(lw,lw,g);          
 
 //link3  
@@ -243,12 +249,12 @@ void robot(){
   
 //link 4
   translate(0,l3/2+l4/2,0);
-  rotateY(q_eff[3]);
+  rotateY(-q_eff[3]);
   box(lw,l4,lw);
   
 //struttura link 5
   translate(0,l4/2+lw/2,0);
-  rotateZ(q_eff[4]);
+  rotateZ(-q_eff[4]);
   box(lw,lw,g);
   
 //link 5
@@ -257,7 +263,7 @@ void robot(){
   
 //PINZA
   translate(0,l5/2+lw/2,0);// x tolto +lw/2
-  rotateY(q_eff[4]);
+  rotateY(-q_eff[5]);
   box(l6,lw,lw);
   //ASSE Z6
   stroke(0,0,255);
@@ -273,19 +279,19 @@ void robot(){
 
 
 void muovi(){
- pwx=(zf-((l5+lw/2+l6)*Re[0][2]));//60
- pwy=(xf-((l5+lw/2+l6)*Re[1][2]));//40
- pwz=-yf-((l5+lw/2+l6)*Re[2][2]); //125
+ pwx=(zf-((d6)*Re[0][2]));//60
+ pwy=(xf-((d6)*Re[1][2]));//40
+ pwz=-yf-((d6)*Re[2][2]); //125
  text("val = ",300,400);
  q[0]=atan2(pwy,pwx);//26.57
- A1=pwx*cos(q[0])+pwy*sin(q[0])-lw/2;//52,08
- A2=(l1+l1+lw/2)-pwz;//-20
+ A1=pwx*cos(q[0])+pwy*sin(q[0])-T1;//52,08
+ A2=(d1)-pwz;//-20
  if(segno==1){
-   q[2]=PI-asin((pow(A1,2) +pow(A2,2)-pow(l2+lw,2)-pow(l3+l4+lw,2))/(2*(l2+lw)*(l3+l4+lw)));
+   q[2]=PI-asin((pow(A1,2) +pow(A2,2)-pow(T2,2)-pow(d4,2))/(2*(T2)*(d4)));
  }if(segno==-1){
-   q[2]=asin((pow(A1,2) +pow(A2,2)-pow(l2+lw,2)-pow(l3+l4+lw,2))/(2*(l2+lw)*(l3+l4+lw)));//-76.06
+   q[2]=asin((pow(A1,2) +pow(A2,2)-pow(T2,2)-pow(d4,2))/(2*(T2)*(d4)));
  }
- q[1]=atan2((l3+l4+lw)*cos(q[2])*A1-(l2+lw+(l3+l4+lw)*sin(q[2]))*A2,(l2+lw+(l3+l4+lw)*sin(q[2]))*A1+(l3+l4+lw)*cos(q[2])*A2);//104,04
+ q[1]=atan2((d4)*cos(q[2])*A1-(T2+(d4)*sin(q[2]))*A2,(T2+(d4)*sin(q[2]))*A1+(d4)*cos(q[2])*A2);
   text((l3+l4+lw)*cos(q[2])*A1,300,450);
  R03T=trasposta(R03);
  R36=mProd(R03T,Re);
@@ -294,9 +300,9 @@ void muovi(){
  q[3]=atan2(R36[1][2],R36[0][2]);
  q[5]=atan2(R36[2][1],-R36[2][0]);
  //calcolo x6 y6 z6
-  x6=lw/2*cos(q[0])+(l2+lw)*cos(q[0])*cos(q[1]) + (l3+l4+lw)*cos(q[0])*sin(q[1]+q[2]) + (l5+l6+lw/2)*(cos(q[0])*(cos(q[1]+q[2])*cos(q[3])*sin(q[4])+ sin(q[1]+q[2])*cos(q[4])) + sin(q[0])*sin(q[3])*sin(q[4]));
-  y6=lw/2*sin(q[0])+(l2+lw)*sin(q[0])*cos(q[1]) + (l3+l4+lw)*sin(q[0])*sin(q[1]+q[2]) + (l5+l6+lw/2)*(sin(q[0])*(cos(q[1]+q[2])*cos(q[3])*sin(q[4])+ sin(q[1]+q[2])*cos(q[4])) - cos(q[0])*sin(q[3])*sin(q[4]));
-  z6=(l1+l1+lw/2)+(l2+lw)*sin(q[1])-(l3+l4+lw)*cos(q[1]+q[2])+(l5+l6+lw/2)*(sin(q[1]+q[2])*cos(q[3])*sin(q[4])-cos(q[1]+q[2])*cos(q[4]));
+  x6=T1*cos(q[0])+(T2)*cos(q[0])*cos(q[1]) + (d4)*cos(q[0])*sin(q[1]+q[2]) + (d6)*(cos(q[0])*(cos(q[1]+q[2])*cos(q[3])*sin(q[4])+ sin(q[1]+q[2])*cos(q[4])) + sin(q[0])*sin(q[3])*sin(q[4]));
+  y6=T1*sin(q[0])+(T2)*sin(q[0])*cos(q[1]) + (d4)*sin(q[0])*sin(q[1]+q[2]) + (d6)*(sin(q[0])*(cos(q[1]+q[2])*cos(q[3])*sin(q[4])+ sin(q[1]+q[2])*cos(q[4])) - cos(q[0])*sin(q[3])*sin(q[4]));
+  z6=(d1)+(T2)*sin(q[1])-(d4)*cos(q[1]+q[2])+(d6)*(sin(q[1]+q[2])*cos(q[3])*sin(q[4])-cos(q[1]+q[2])*cos(q[4]));
   
   
   //cinematica diretta
@@ -304,15 +310,15 @@ void muovi(){
   T03[0][0]=(cos(q[0])*cos(q[1]+q[2]));
   T03[0][1]=sin(q[0]);
   T03[0][2]=(cos(q[0])*sin(q[1]+q[2]));
-  T03[0][3]=(lw/2*cos(q[0])+(l2+lw)*cos(q[0])*cos(q[1]));
+  T03[0][3]=(T1*cos(q[0])+(T2)*cos(q[0])*cos(q[1]));
   T03[1][0]=(sin(q[0])*cos(q[1]+q[2]));
   T03[1][1]=-cos(q[0]);
   T03[1][2]=(sin(q[0])*sin(q[1]+q[2]));
-  T03[1][3]=(lw/2*sin(q[0])+(l2+lw)*sin(q[0])*cos(q[1]));
+  T03[1][3]=(T1*sin(q[0])+(T2)*sin(q[0])*cos(q[1]));
   T03[2][0]=sin(q[1]+q[2]);
   T03[2][1]=0;
   T03[2][2]=-cos(q[1]+q[2]);
-  T03[2][3]=(l1+l1+lw/2)+(l2+lw)*sin(q[1]);
+  T03[2][3]=(d1)+(T2)*sin(q[1]);
   T03[3][0]=0;
   T03[3][1]=0;
   T03[3][2]=0;
@@ -321,15 +327,15 @@ void muovi(){
   T36[0][0]=(cos(q[3])*cos(q[4])*cos(q[5])-sin(q[3])*sin(q[5]));
   T36[0][1]=(-cos(q[3])*cos(q[4])*sin(q[5])-sin(q[3])*cos(q[5]));
   T36[0][2]=(cos(q[3])*sin(q[4]));
-  T36[0][3]=((l5+lw/2+l6)*cos(q[3])*sin(q[4]));
+  T36[0][3]=((d6)*cos(q[3])*sin(q[4]));
   T36[1][0]=(sin(q[3])*cos(q[4])*cos(q[5])+cos(q[3])*sin(q[5]));
   T36[1][1]=(-sin(q[3])*cos(q[4])*sin(q[5])+cos(q[3])*cos(q[5]));
   T36[1][2]=(sin(q[3])*sin(q[4]));
-  T36[1][3]=((l5+lw/2+l6)*sin(q[3])*sin(q[4]));
+  T36[1][3]=((d6)*sin(q[3])*sin(q[4]));
   T36[2][0]=(-sin(q[4])*cos(q[5]));
   T36[2][1]=(sin(q[4])*sin(q[5]));
   T36[2][2]=cos(q[4]);
-  T36[2][3]=((l5+lw/2+l6)*cos(q[4])+(l3+l4+lw));
+  T36[2][3]=(((d6))*cos(q[4])+(l3+l4+lw));
   T36[3][0]=0;
   T36[3][1]=0;
   T36[3][2]=0;
