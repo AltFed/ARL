@@ -4,9 +4,9 @@ float q[] = {0,0,0,0,0,0};
 float q_eff[]={0,0,0,0,0,0};
 float xBase, yBase,zBase,xDes,yDes,zDes;
 float x6,y6,z6;
-float xd=-95,yd=0,zd=0,a;
+float xd=0,yd=0,zd=0,a;
 float eyeY,segno = 1;
-float alfa=PI/2,beta=0,theta=0;//pinza orientata verso il basso
+float alfa=0,beta=0,theta=0;//pinza orientata verso il basso
 float[][] Re = new float[3][3]; // matrice 3x3 dichiarata ma non inizializzata
 float[][] R03 = new float[3][3]; // matrice 3x3 dichiarata ma non inizializzata
 float[][] R03T = new float[3][3]; // matrice 3x3 dichiarata ma non inizializzata
@@ -19,7 +19,7 @@ float A1,A2;
 float kp=.1,dis=0.0001;
 float xf=0,yf=0,zf=0;
 float T1,T2,d1,d4,d6;
-
+///         rimettere gli assi della pinza calcolarli nella posizione senza le rotate
 void setup(){
   size(1000,800,P3D);
   strokeWeight(2);
@@ -111,7 +111,9 @@ void draw()
   yf=-yBase+yd+height/2;
   zf=zBase+zd;
   pushMatrix();
+  //inizializzo matrici
    initRe();
+   //
    initR03();
 // funzione per il movimento 
     muovi();
@@ -124,15 +126,7 @@ void draw()
 
 
 void initRe(){
-  //Re[0][0]=1;
-  //Re[0][1]=0;
-  //Re[0][2]=0;
-  //Re[1][0]=0;
-  //Re[1][1]=-1;
-  //Re[1][2]=0;
-  //Re[2][0]=0;
-  //Re[2][1]=0;
-  //Re[2][2]=-1;
+  
   Re[0][0]=(cos(alfa)*sin(beta)*cos(theta)-sin(alfa)*sin(theta));
   Re[0][1]=(-cos(alfa)*sin(beta)*sin(theta)-sin(alfa)*cos(theta));
   Re[0][2]=(cos(alfa)*cos(beta));
@@ -147,6 +141,7 @@ void initRe(){
 
 
 void initR03(){
+  
   R03[0][0]=(cos(q[0])*cos(q[1]+q[2]));
   R03[0][2]=(cos(q[0])*sin(q[1]+q[2]));
   R03[0][1]=(sin(q[0]));
@@ -156,6 +151,7 @@ void initR03(){
   R03[2][0]=(sin(q[1]+q[2]));
   R03[2][2]=(-cos(q[1]+q[2]));
   R03[2][1]=0;
+  
 }
 
 
@@ -185,12 +181,9 @@ void robot(){
     {
       q_eff[5] += kp*(q[5]-q_eff[5]);
     }
-    //pushMatrix();
   translate(width/2+xd,height/2+yd,zd);
   ellipse(0,0,20,20);
   translate(-width/2-xd,-height/2-yd,-zd);
-  // centro base manipolatore
-  
   //ASSE Y0
   stroke(0,255,0);
   line(xBase,yBase,zBase, xBase+ 120, yBase,zBase);
@@ -202,45 +195,33 @@ void robot(){
   line(xBase,yBase,zBase, xBase, yBase,zBase+120);
   stroke(0);
   
-  
   translate(xBase, yBase, zBase);
   
+  //box==pinza
   translate(T06[1][3],-T06[2][3],T06[0][3]);
-  //ASSE Z6
-  stroke(0,0,255);
-  line(0,0,0,200,0,0);
-  //ASSE Y6
-  stroke(0,255,0);
-  line(0,0,0,0,200,0);
-  //ASSE X6
-  stroke(255,0,0);
-  line(0,0,0,0,0,120);
-  stroke(0);
-  box(l6,lw,lw);
+  box(50,50,50);
   translate(-T06[1][3],T06[2][3],-T06[0][3]);
-  
-// creo la sfera che indica il punto desiderato
 ////--------link 0--------
   box(l1,l1,l1);           
   fill(255,0,0);
   
 //link 1  
   translate(0,-l1,0);
-  rotateY(0); 
+  rotateY(q_eff[0]); 
   box(l1,l1,l1);
   
 //struttura per il link 2
   translate(l1/2-lw/2,-l1/2-lw/2,0);
-  rotateZ(-q_eff[1]);  
+  rotateZ(q_eff[1]);  
   box(lw,lw,g); 
   
 //link 2
-  translate(l2/2+lw/2,0,0); // TRANSLATE ORIGINALE
+  translate(l2/2+lw/2,0,0); 
   box(l2,lw,lw);          
   
 //struttura link 3
-  translate(l2/2+lw/2,0,0); //x tolto -lw/2 e aggiunto +lw/2
-  rotateZ(-q_eff[2]);
+  translate(l2/2+lw/2,0,0); 
+  rotateZ(PI);
   box(lw,lw,g);          
 
 //link3  
@@ -249,12 +230,12 @@ void robot(){
   
 //link 4
   translate(0,l3/2+l4/2,0);
-  rotateY(-q_eff[3]);
+  rotateY(q_eff[3]);
   box(lw,l4,lw);
   
 //struttura link 5
   translate(0,l4/2+lw/2,0);
-  rotateZ(-q_eff[4]);
+  rotateZ(q_eff[4]);
   box(lw,lw,g);
   
 //link 5
@@ -262,17 +243,20 @@ void robot(){
   box(lw,l5,lw);
   
 //PINZA
-  translate(0,l5/2+lw/2,0);// x tolto +lw/2
-  rotateY(-q_eff[5]);
+  translate(0,l5/2+lw/2,0);
+  rotateY(q_eff[5]);
   box(l6,lw,lw);
-  //ASSE Z6
-  stroke(0,0,255);
-  line(0,0,0,200,0,0);
+  
+  //Sistema pinza rispetto la base
+  
   //ASSE Y6
   stroke(0,255,0);
-  line(0,0,0,0,200,0);
+  line(0,0,0,200,0,0);
   //ASSE X6
   stroke(255,0,0);
+  line(0,0,0,0,200,0);
+  //ASSE Z6
+  stroke(0,0,255);
   line(0,0,0,0,0,120);
   stroke(0);
 }
@@ -280,8 +264,9 @@ void robot(){
 
 void muovi(){
  pwx=(zf-((d6)*Re[0][2]));//60
+   text(d6*Re[0][2],300,450);
  pwy=(xf-((d6)*Re[1][2]));//40
- pwz=-yf-((d6)*Re[2][2]); //125
+ pwz=(-yf-((d6)*Re[2][2])); //125
  text("val = ",300,400);
  q[0]=atan2(pwy,pwx);//26.57
  A1=pwx*cos(q[0])+pwy*sin(q[0])-T1;//52,08
@@ -291,12 +276,11 @@ void muovi(){
  }if(segno==-1){
    q[2]=asin((pow(A1,2) +pow(A2,2)-pow(T2,2)-pow(d4,2))/(2*(T2)*(d4)));
  }
- q[1]=atan2((d4)*cos(q[2])*A1-(T2+(d4)*sin(q[2]))*A2,(T2+(d4)*sin(q[2]))*A1+(d4)*cos(q[2])*A2);
-  text((l3+l4+lw)*cos(q[2])*A1,300,450);
+ q[1]=atan2((d4)*cos(q[2])*A1-(T2+(d4)*sin(q[2]))*A2,(T2+(d4)*sin(q[2]))*A1+(d4)*cos(q[2])*A2); 
  R03T=trasposta(R03);
  R36=mProd(R03T,Re);
  q[4]=atan2(sqrt(pow(R36[0][2],2)+pow(R36[1][2],2)),R36[2][2]);
- // ho preso il segno positivo
+ // ho preso il segno positivo scelta arbitraria
  q[3]=atan2(R36[1][2],R36[0][2]);
  q[5]=atan2(R36[2][1],-R36[2][0]);
  //calcolo x6 y6 z6
@@ -335,7 +319,7 @@ void muovi(){
   T36[2][0]=(-sin(q[4])*cos(q[5]));
   T36[2][1]=(sin(q[4])*sin(q[5]));
   T36[2][2]=cos(q[4]);
-  T36[2][3]=(((d6))*cos(q[4])+(l3+l4+lw));
+  T36[2][3]=(((d6))*cos(q[4])+(d4));
   T36[3][0]=0;
   T36[3][1]=0;
   T36[3][2]=0;
@@ -348,6 +332,7 @@ void muovi(){
 
 
 }
+
 void graphic(){
   textSize(20);
   fill(255);
@@ -382,7 +367,7 @@ void graphic(){
     text("gomito basso",10,80);
   }
   scriviMatrice("R36 = ",R36,10,400);
-  scriviMatrice("Re = ",Re,10,100);
+  scriviMatriceColor("Re = ",Re,10,100);
   scriviMatrice("R03 =",R03,10,600);
   text("theta 1 = ", 300, 120);
   text(sin(q[0]), 400, 120);
@@ -465,4 +450,18 @@ void scriviMatrice(String s, float[][] M, int x, int y) // Scrive una matrice a 
   text(M[0][0],x,y+30); text(M[0][1],x+90,y+30); text(M[0][2],x+180,y+30);
   text(M[1][0],x,y+60); text(M[1][1],x+90,y+60); text(M[1][2],x+180,y+60); 
   text(M[2][0],x,y+90); text(M[2][1],x+90,y+90); text(M[2][2],x+180,y+90);
+}
+
+void scriviMatriceColor(String s, float[][] M, int x, int y) // Scrive una matrice a partire dal punto (x,y)
+{
+  textSize(20);
+  fill(255);
+  text(s,x,y);
+  fill(255,0,0);
+  text(M[0][0],x,y+30);  text(M[1][0],x,y+60);text(M[2][0],x,y+90);
+  fill(0,255,0);
+  text(M[0][1],x+90,y+30); text(M[1][1],x+90,y+60); text(M[2][1],x+90,y+90); 
+  fill(0,0,255);
+  text(M[0][2],x+180,y+30); text(M[1][2],x+180,y+60); text(M[2][2],x+180,y+90);
+  fill(0);
 }  
