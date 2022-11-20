@@ -1,10 +1,10 @@
-float lw=30,l1=50,l2=200,l3=100,l4=100,l5=50,l6=30;  //link
+float lw=40,l1=20,l2=40,l3=5,l4=5,l5=5,l6=5;  //link
 float g = 50;
 float q[] = {0,0,0,0,0,0};
 float q_eff[]={0,0,0,0,0,0};
 float xBase, yBase,zBase,xDes,yDes,zDes;
 float x6,y6,z6;
-float xd=0,yd=0,zd=0,a;
+float xd=60,yd=30,zd=40,a;
 float eyeY,segno = 1;
 float alfa=0,beta=0,theta=0;//pinza orientata verso il basso
 float[][] Re = new float[3][3]; // matrice 3x3 dichiarata ma non inizializzata
@@ -27,11 +27,17 @@ void setup(){
   xBase=width/2;
   yBase=height/2;
   zBase=0;
-  T1=lw/2;
-  T2=l2+lw;
-  d1=l1+l1+lw/2;
-  d4=lw+l3+l4;
-  d6=lw/2+l5+l6;
+  //T1=lw/2;
+  //T2=l2+lw;
+  //d1=l1+l1+lw/2;
+  //d4=lw+l3+l4;
+  //d6=lw/2+l5+l6;
+  d1=60;
+  T1=20;
+  T2=80;
+  d4=50;
+  d6=30;
+  
 }
 
 
@@ -127,15 +133,24 @@ void draw()
 
 void initRe(){
   
-  Re[0][0]=(cos(alfa)*sin(beta)*cos(theta)-sin(alfa)*sin(theta));
-  Re[0][1]=(-cos(alfa)*sin(beta)*sin(theta)-sin(alfa)*cos(theta));
-  Re[0][2]=(cos(alfa)*cos(beta));
-  Re[1][0]=(sin(alfa)*sin(beta)*cos(theta)+cos(alfa)*sin(theta));
-  Re[1][1]=(-sin(alfa)*sin(beta)*sin(theta)+cos(alfa)*cos(theta));
-  Re[1][2]=(sin(alfa)*cos(beta));
-  Re[2][0]=(-cos(theta)*cos(beta));
-  Re[2][1]=(cos(beta)*sin(theta));
-  Re[2][2]=(sin(beta));
+  //Re[0][0]=(cos(alfa)*sin(beta)*cos(theta)-sin(alfa)*sin(theta));
+  //Re[0][1]=(-cos(alfa)*sin(beta)*sin(theta)-sin(alfa)*cos(theta));
+  //Re[0][2]=(cos(alfa)*cos(beta));
+  //Re[1][0]=(sin(alfa)*sin(beta)*cos(theta)+cos(alfa)*sin(theta));
+  //Re[1][1]=(-sin(alfa)*sin(beta)*sin(theta)+cos(alfa)*cos(theta));
+  //Re[1][2]=(sin(alfa)*cos(beta));
+  //Re[2][0]=(-cos(theta)*cos(beta));
+  //Re[2][1]=(cos(beta)*sin(theta));
+  //Re[2][2]=(sin(beta));
+  Re[0][0]=1;
+  Re[0][1]=0;
+  Re[0][2]=0;
+  Re[1][0]=0;
+  Re[1][1]=-1;
+  Re[1][2]=0;
+  Re[2][0]=0;
+  Re[2][1]=0;
+  Re[2][2]=-1;
 
 }
 
@@ -198,9 +213,9 @@ void robot(){
   translate(xBase, yBase, zBase);
   
   //box==pinza
-  translate(T06[1][3],-T06[2][3],T06[0][3]);
-  box(50,50,50);
-  translate(-T06[1][3],T06[2][3],-T06[0][3]);
+  //translate(T06[1][3],-T06[2][3],T06[0][3]);
+  //box(50,50,50);
+  //translate(-T06[1][3],T06[2][3],-T06[0][3]);
 ////--------link 0--------
   box(l1,l1,l1);           
   fill(255,0,0);
@@ -221,7 +236,7 @@ void robot(){
   
 //struttura link 3
   translate(l2/2+lw/2,0,0); 
-  rotateZ(PI);
+  rotateZ(q_eff[2]);
   box(lw,lw,g);          
 
 //link3  
@@ -263,10 +278,10 @@ void robot(){
 
 
 void muovi(){
- pwx=(zf-((d6)*Re[0][2]));//60
+ pwx=(xf-((d6)*Re[0][2]));//60
    text(d6*Re[0][2],300,450);
- pwy=(xf-((d6)*Re[1][2]));//40
- pwz=(-yf-((d6)*Re[2][2])); //125
+ pwy=(yf-((d6)*Re[1][2]));//40
+ pwz=(zf-((d6)*Re[2][2])); //125
  text("val = ",300,400);
  q[0]=atan2(pwy,pwx);//26.57
  A1=pwx*cos(q[0])+pwy*sin(q[0])-T1;//52,08

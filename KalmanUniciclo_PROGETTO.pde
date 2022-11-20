@@ -111,7 +111,9 @@ float[][] correzione = new float[3][1]; // termine correttivo stima
 float tStep = 0; // tempo (in ms) tra una misura e la successiva (impostabile da tastiera)
 float rMax=200,betaMax=PI/10;
 float [] num= new float [3];
+float [] temp= new float [3];
 int ans=5;
+float [] premutoSU= new float [3];
 void setup() 
 {
   size(1250,950);
@@ -160,32 +162,41 @@ void draw()
       rMax += 50;
     }
     if(key == '1'){
-      //per risolvere lo sfarfallio vedere come il prof aumenta di una unità il valore es SoloKalmanUniciclo e usare un if sicuro va
-      num[0]=1-num[0];
-      if(num[0]==0){
-        ans=0;
-      }else{
-        ans=10;
-    }
+        premutoSU[0]=1;
     }
     if(key == '2'){
-      num[1]=1-num[1];
-      if(num[1]==0){
-        ans=1;
-      }else{
-        ans=10;
-    }
+        premutoSU[1]=1;
     }
     if(key == '3'){
-      num[2]=1-num[2];
-      if(num[2]==0){
-        ans=2;
-      }else{
-        ans=10;
+        premutoSU[2]=1;
+  }
+  }
+    else
+  {
+    if (premutoSU[0] == 1)
+    {
+      num[0]++;
+      premutoSU[0] = 0;
+    }
+    if(premutoSU[1] == 1){
+      num[1]++;
+      premutoSU[1] = 0;
+    }
+    if(premutoSU[2] == 1){
+      num[2]++;
+      premutoSU[2] = 0;
     }
   }
+  if(num[0] % 2 == 0){
+    ans=0;
   }
-  if(ans != 1 | ans!= 2  | ans!=3){
+  if(num[1] % 2 == 0){
+    ans=1;
+  }
+  if(num[2] % 2 == 0){
+    ans=2;
+  }
+  if(ans != 0 || ans!= 1  || ans!=2){
   for (int indLandmark=0; indLandmark<nL;indLandmark++)
   {
      stroke(255,0,0);
