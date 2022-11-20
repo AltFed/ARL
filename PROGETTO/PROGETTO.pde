@@ -6,7 +6,7 @@ float xBase, yBase,zBase,xDes,yDes,zDes;
 float x6,y6,z6;
 float xd=0,yd=0,zd=0,a;
 float eyeY,segno = 1;
-float alfa=0,beta=0,theta=0;//pinza orientata verso il basso
+float alfa=PI/2,beta=PI,theta=PI/2;//pinza orientata verso il basso
 float[][] Re = new float[3][3]; // matrice 3x3 dichiarata ma non inizializzata
 float[][] R03 = new float[3][3]; // matrice 3x3 dichiarata ma non inizializzata
 float[][] R03T = new float[3][3]; // matrice 3x3 dichiarata ma non inizializzata
@@ -181,10 +181,10 @@ void robot(){
     {
       q_eff[5] += kp*(q[5]-q_eff[5]);
     }
-  translate(width/2+xd,height/2+yd,zd);
-  ellipse(0,0,20,20);
-  translate(-width/2-xd,-height/2-yd,-zd);
-  //ASSE Y0
+ // translate(width/2+xd,height/2+yd,zd);
+ // ellipse(0,0,20,20);
+ // translate(-width/2-xd,-height/2-yd,-zd);
+ // ASSE Y0
   stroke(0,255,0);
   line(xBase,yBase,zBase, xBase+ 120, yBase,zBase);
   //ASSE Z0
@@ -199,53 +199,79 @@ void robot(){
   
   //box==pinza
   translate(T06[1][3],-T06[2][3],T06[0][3]);
-  box(50,50,50);
+  box(20,20,20);
   translate(-T06[1][3],T06[2][3],-T06[0][3]);
-////--------link 0--------
-  box(l1,l1,l1);           
-  fill(255,0,0);
   
-//link 1  
-  translate(0,-l1,0);
-  rotateY(q_eff[0]); 
-  box(l1,l1,l1);
-  
-//struttura per il link 2
-  translate(l1/2-lw/2,-l1/2-lw/2,0);
-  rotateZ(q_eff[1]);  
-  box(lw,lw,g); 
-  
-//link 2
-  translate(l2/2+lw/2,0,0); 
-  box(l2,lw,lw);          
-  
-//struttura link 3
-  translate(l2/2+lw/2,0,0); 
-  rotateZ(PI);
-  box(lw,lw,g);          
+//LINK 0 -----------------
 
-//link3  
+  box(lw,lw,lw);
+  fill(255,0,0);
+//------------------------
+
+//LINK 1 -----------------
+
+  translate(0,-lw,0);
+  rotateY(-PI/2+q_eff[0]);
+  box(l1,l1,l1);
+//------------------------
+
+//GIUNTO 2 --------------
+
+  translate(l1/2-lw/2,-l1/2-lw/2,0);
+  rotateZ(q_eff[1]);
+  box(lw,lw,l1);
+//-----------------------
+
+//LINK 2 ----------------
+
+  translate(lw/2+l2/2,0,0);
+  box(l2,lw,lw);
+//-----------------------
+
+//GIUNTO 3 --------------
+
+  translate(l2/2+lw/2,0,0);
+  rotateZ(PI+q_eff[2]);
+  box(lw,lw,lw);
+//-----------------------
+
+//LINK 3 ----------------
+
   translate(0,l3/2+lw/2,0);
-  box(lw,l3,lw); 
-  
-//link 4
-  translate(0,l3/2+l4/2,0);
+  box(lw,l3,lw);
+//-----------------------
+
+//LINK 4 ----------------
+
+  translate(0,l4,0);
   rotateY(q_eff[3]);
   box(lw,l4,lw);
-  
-//struttura link 5
-  translate(0,l4/2+lw/2,0);
+//-----------------------
+
+//GIUNTO 5 --------------
+
+  translate(0,lw/2+l4/2,0);
   rotateZ(q_eff[4]);
-  box(lw,lw,g);
+  box(lw,lw,lw+15);
+//-----------------------
+
+//LINK 5 ----------------
   
-//link 5
-  translate(0,l5/2+lw/2,0);
+  translate(0,lw/2+l5/2,0);
   box(lw,l5,lw);
+//------------------------
+
+//LINK 6 ----- PINZA -----
+
+  translate(0,lw/2+l5/2,0);
+  rotateX(q_eff[5]);
+  box(lw,lw,lw);
   
-//PINZA
-  translate(0,l5/2+lw/2,0);
-  rotateY(q_eff[5]);
-  box(l6,lw,lw);
+  
+  
+  
+  
+  
   
   //Sistema pinza rispetto la base
   
