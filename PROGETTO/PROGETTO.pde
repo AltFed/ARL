@@ -1,10 +1,10 @@
-float lw=40,l1=20,l2=40,l3=5,l4=5,l5=5,l6=5;  //link
+float lw=30,l1=50,l2=200,l3=100,l4=100,l5=50,l6=30;  //link
 float g = 50;
 float q[] = {0,0,0,0,0,0};
 float q_eff[]={0,0,0,0,0,0};
 float xBase, yBase,zBase,xDes,yDes,zDes;
 float x6,y6,z6;
-float xd=60,yd=30,zd=40,a;
+float xd=0,yd=0,zd=0,a;
 float eyeY,segno = 1;
 float alfa=PI/2,beta=PI,theta=PI/2;//pinza orientata verso il basso
 float[][] Re = new float[3][3]; // matrice 3x3 dichiarata ma non inizializzata
@@ -27,17 +27,11 @@ void setup(){
   xBase=width/2;
   yBase=height/2;
   zBase=0;
-  //T1=lw/2;
-  //T2=l2+lw;
-  //d1=l1+l1+lw/2;
-  //d4=lw+l3+l4;
-  //d6=lw/2+l5+l6;
-  d1=60;
-  T1=20;
-  T2=80;
-  d4=50;
-  d6=30;
-  
+  T1=lw/2;
+  T2=l2+lw;
+  d1=l1+l1+lw/2;
+  d4=lw+l3+l4;
+  d6=lw/2+l5+l6;
 }
 
 
@@ -106,7 +100,7 @@ void draw()
     if(key == 'Z'){
       zd += 5;
     }
-    if(key == 'k'){  
+    if(key == 'k'){
       kp -= 0.001;
     }
     if(key == 'K'){
@@ -121,9 +115,9 @@ void draw()
    initRe();
    //
    initR03();
-// funzione per il movimento 
+// funzione per il movimento
     muovi();
-//  funzione per definire il manipolatore  
+//  funzione per definire il manipolatore
    robot();
 // funzione per la grafica
    popMatrix();
@@ -132,31 +126,22 @@ void draw()
 
 
 void initRe(){
-  
-  //Re[0][0]=(cos(alfa)*sin(beta)*cos(theta)-sin(alfa)*sin(theta));
-  //Re[0][1]=(-cos(alfa)*sin(beta)*sin(theta)-sin(alfa)*cos(theta));
-  //Re[0][2]=(cos(alfa)*cos(beta));
-  //Re[1][0]=(sin(alfa)*sin(beta)*cos(theta)+cos(alfa)*sin(theta));
-  //Re[1][1]=(-sin(alfa)*sin(beta)*sin(theta)+cos(alfa)*cos(theta));
-  //Re[1][2]=(sin(alfa)*cos(beta));
-  //Re[2][0]=(-cos(theta)*cos(beta));
-  //Re[2][1]=(cos(beta)*sin(theta));
-  //Re[2][2]=(sin(beta));
-  Re[0][0]=1;
-  Re[0][1]=0;
-  Re[0][2]=0;
-  Re[1][0]=0;
-  Re[1][1]=-1;
-  Re[1][2]=0;
-  Re[2][0]=0;
-  Re[2][1]=0;
-  Re[2][2]=-1;
+
+  Re[0][0]=(cos(alfa)*sin(beta)*cos(theta)-sin(alfa)*sin(theta));
+  Re[0][1]=(-cos(alfa)*sin(beta)*sin(theta)-sin(alfa)*cos(theta));
+  Re[0][2]=(cos(alfa)*cos(beta));
+  Re[1][0]=(sin(alfa)*sin(beta)*cos(theta)+cos(alfa)*sin(theta));
+  Re[1][1]=(-sin(alfa)*sin(beta)*sin(theta)+cos(alfa)*cos(theta));
+  Re[1][2]=(sin(alfa)*cos(beta));
+  Re[2][0]=(-cos(theta)*cos(beta));
+  Re[2][1]=(cos(beta)*sin(theta));
+  Re[2][2]=(sin(beta));
 
 }
 
 
 void initR03(){
-  
+
   R03[0][0]=(cos(q[0])*cos(q[1]+q[2]));
   R03[0][2]=(cos(q[0])*sin(q[1]+q[2]));
   R03[0][1]=(sin(q[0]));
@@ -166,7 +151,7 @@ void initR03(){
   R03[2][0]=(sin(q[1]+q[2]));
   R03[2][2]=(-cos(q[1]+q[2]));
   R03[2][1]=0;
-  
+
 }
 
 
@@ -209,41 +194,14 @@ void robot(){
   stroke(255,0,0);
   line(xBase,yBase,zBase, xBase, yBase,zBase+120);
   stroke(0);
-  
+
   translate(xBase, yBase, zBase);
-  
+
   //box==pinza
-<<<<<<< HEAD
-  //translate(T06[1][3],-T06[2][3],T06[0][3]);
-  //box(50,50,50);
-  //translate(-T06[1][3],T06[2][3],-T06[0][3]);
-////--------link 0--------
-  box(l1,l1,l1);           
-  fill(255,0,0);
-  
-//link 1  
-  translate(0,-l1,0);
-  rotateY(q_eff[0]); 
-  box(l1,l1,l1);
-  
-//struttura per il link 2
-  translate(l1/2-lw/2,-l1/2-lw/2,0);
-  rotateZ(q_eff[1]);  
-  box(lw,lw,g); 
-  
-//link 2
-  translate(l2/2+lw/2,0,0); 
-  box(l2,lw,lw);          
-  
-//struttura link 3
-  translate(l2/2+lw/2,0,0); 
-  rotateZ(q_eff[2]);
-  box(lw,lw,g);          
-=======
   translate(T06[1][3],-T06[2][3],T06[0][3]);
   box(20,20,20);
   translate(-T06[1][3],T06[2][3],-T06[0][3]);
-  
+
 //LINK 0 -----------------
 
   box(lw,lw,lw);
@@ -278,7 +236,6 @@ void robot(){
 //-----------------------
 
 //LINK 3 ----------------
->>>>>>> 8f46472971749a4414d27887c82192840f57b402
 
   translate(0,l3/2+lw/2,0);
   box(lw,l3,lw);
@@ -299,7 +256,7 @@ void robot(){
 //-----------------------
 
 //LINK 5 ----------------
-  
+
   translate(0,lw/2+l5/2,0);
   box(lw,l5,lw);
 //------------------------
@@ -309,15 +266,15 @@ void robot(){
   translate(0,lw/2+l5/2,0);
   rotateX(q_eff[5]);
   box(lw,lw,lw);
-  
-  
-  
-  
-  
-  
-  
+
+
+
+
+
+
+
   //Sistema pinza rispetto la base
-  
+
   //ASSE Y6
   stroke(0,255,0);
   line(0,0,0,200,0,0);
@@ -332,10 +289,10 @@ void robot(){
 
 
 void muovi(){
- pwx=(xf-((d6)*Re[0][2]));//60
+ pwx=(zf-((d6)*Re[0][2]));//60
    text(d6*Re[0][2],300,450);
- pwy=(yf-((d6)*Re[1][2]));//40
- pwz=(zf-((d6)*Re[2][2])); //125
+ pwy=(xf-((d6)*Re[1][2]));//40
+ pwz=(-yf-((d6)*Re[2][2])); //125
  text("val = ",300,400);
  q[0]=atan2(pwy,pwx);//26.57
  A1=pwx*cos(q[0])+pwy*sin(q[0])-T1;//52,08
@@ -345,7 +302,7 @@ void muovi(){
  }if(segno==-1){
    q[2]=asin((pow(A1,2) +pow(A2,2)-pow(T2,2)-pow(d4,2))/(2*(T2)*(d4)));
  }
- q[1]=atan2((d4)*cos(q[2])*A1-(T2+(d4)*sin(q[2]))*A2,(T2+(d4)*sin(q[2]))*A1+(d4)*cos(q[2])*A2); 
+ q[1]=atan2((d4)*cos(q[2])*A1-(T2+(d4)*sin(q[2]))*A2,(T2+(d4)*sin(q[2]))*A1+(d4)*cos(q[2])*A2);
  R03T=trasposta(R03);
  R36=mProd(R03T,Re);
  q[4]=atan2(sqrt(pow(R36[0][2],2)+pow(R36[1][2],2)),R36[2][2]);
@@ -356,8 +313,8 @@ void muovi(){
   x6=T1*cos(q[0])+(T2)*cos(q[0])*cos(q[1]) + (d4)*cos(q[0])*sin(q[1]+q[2]) + (d6)*(cos(q[0])*(cos(q[1]+q[2])*cos(q[3])*sin(q[4])+ sin(q[1]+q[2])*cos(q[4])) + sin(q[0])*sin(q[3])*sin(q[4]));
   y6=T1*sin(q[0])+(T2)*sin(q[0])*cos(q[1]) + (d4)*sin(q[0])*sin(q[1]+q[2]) + (d6)*(sin(q[0])*(cos(q[1]+q[2])*cos(q[3])*sin(q[4])+ sin(q[1]+q[2])*cos(q[4])) - cos(q[0])*sin(q[3])*sin(q[4]));
   z6=(d1)+(T2)*sin(q[1])-(d4)*cos(q[1]+q[2])+(d6)*(sin(q[1]+q[2])*cos(q[3])*sin(q[4])-cos(q[1]+q[2])*cos(q[4]));
-  
-  
+
+
   //cinematica diretta
 ////scrivo matrice di traslazione T03
   T03[0][0]=(cos(q[0])*cos(q[1]+q[2]));
@@ -407,20 +364,20 @@ void graphic(){
   fill(255);
   text("xf = ",10,20);
   text(xf,50,20);//coordinate rispetto alla base
-  
+
   text("yf = ",10,40);
   text(yf,50,40);//coordinate rispetto alla base
-  
+
   text("zf = ",10,60);
   text(zf,50,60);
-  
+
 
   text("pwx = ",120,20);
   text(pwx,200,20);
-  
+
   text("pwy = ",120,40);
   text(pwy,400,40);
-  
+
   text("pwz = ",120,60);
   text(pwz,400,60);
   text("A1 = ",500,40);
@@ -429,7 +386,7 @@ void graphic(){
   text(A2,600,60);
   text("kp = ",120,80);
   text(kp,180,80);
-  
+
   if(segno==1){
     text("gomito alto ",10,80);
   }else if ( segno == -1){
@@ -456,13 +413,13 @@ void graphic(){
   text("theta 6 = ", 300, 120+500);
   text(sin(q[5]), 400, 120+500);
   text(q[5]*180/PI, 480, 120+500);
-  
+
   text("xd base = ",700,120);
   text(T06[0][3],850,120);
   text("yd base = ",700,120+70);
   text(T06[1][3],850,120+70);
   text("zd base = ",700,120+120);
-  text(T06[2][3],850,120+120);  
+  text(T06[2][3],850,120+120);
 }
 
 // ----- FUNZIONI PER MATRICI -----
@@ -474,14 +431,14 @@ float[][] mProd(float[][] A,float[][] B) // Calcola prodotto di due matrici A e 
   int nA = A.length;
   int nAB = A[0].length;
   int nB = B[0].length;
-  
-  float[][] C = new float[nA][nB]; 
 
-  for (int i=0; i < nA; i++) 
+  float[][] C = new float[nA][nB];
+
+  for (int i=0; i < nA; i++)
   {
-    for (int j=0; j < nB; j++) 
-    {  
-      for (int k=0; k < nAB; k++) 
+    for (int j=0; j < nB; j++)
+    {
+      for (int k=0; k < nAB; k++)
       {
         C[i][j] += A[i][k] * B[k][j];
       }
@@ -495,14 +452,14 @@ float[][] mProd(float[][] A,float[][] B) // Calcola prodotto di due matrici A e 
 float[][] trasposta(float[][] A) // Calcola la trasposta di una matrice A
 {
   int nR = A.length;
-  int nC = A[0].length; 
-  
-  float[][] C = new float[nC][nR]; 
+  int nC = A[0].length;
 
-  for (int i=0; i < nC; i++) 
+  float[][] C = new float[nC][nR];
+
+  for (int i=0; i < nC; i++)
   {
-    for (int j=0; j < nR; j++) 
-    {  
+    for (int j=0; j < nR; j++)
+    {
       C[i][j] = A[j][i];
     }
   }
@@ -515,9 +472,9 @@ void scriviMatrice(String s, float[][] M, int x, int y) // Scrive una matrice a 
 {
   textSize(20);
   fill(255);
-  text(s,x,y); 
+  text(s,x,y);
   text(M[0][0],x,y+30); text(M[0][1],x+90,y+30); text(M[0][2],x+180,y+30);
-  text(M[1][0],x,y+60); text(M[1][1],x+90,y+60); text(M[1][2],x+180,y+60); 
+  text(M[1][0],x,y+60); text(M[1][1],x+90,y+60); text(M[1][2],x+180,y+60);
   text(M[2][0],x,y+90); text(M[2][1],x+90,y+90); text(M[2][2],x+180,y+90);
 }
 
@@ -529,8 +486,8 @@ void scriviMatriceColor(String s, float[][] M, int x, int y) // Scrive una matri
   fill(255,0,0);
   text(M[0][0],x,y+30);  text(M[1][0],x,y+60);text(M[2][0],x,y+90);
   fill(0,255,0);
-  text(M[0][1],x+90,y+30); text(M[1][1],x+90,y+60); text(M[2][1],x+90,y+90); 
+  text(M[0][1],x+90,y+30); text(M[1][1],x+90,y+60); text(M[2][1],x+90,y+90);
   fill(0,0,255);
   text(M[0][2],x+180,y+30); text(M[1][2],x+180,y+60); text(M[2][2],x+180,y+90);
   fill(0);
-}  
+}
