@@ -181,9 +181,9 @@ void robot(){
     {
       q_eff[5] += kp*(q[5]-q_eff[5]);
     }
- // translate(width/2+xd,height/2+yd,zd);
- // ellipse(0,0,20,20);
- // translate(-width/2-xd,-height/2-yd,-zd);
+  translate(width/2+xd,height/2+yd,zd);
+  ellipse(0,0,20,20);
+  translate(-width/2-xd,-height/2-yd,-zd);
  // ASSE Y0
   stroke(0,255,0);
   line(xBase,yBase,zBase, xBase+ 120, yBase,zBase);
@@ -197,10 +197,10 @@ void robot(){
 
   translate(xBase, yBase, zBase);
 
-  //box==pinza
-  translate(T06[1][3],-T06[2][3],T06[0][3]);
-  box(20,20,20);
-  translate(-T06[1][3],T06[2][3],-T06[0][3]);
+  ////box==pinza
+  //translate(T06[1][3],-T06[2][3],T06[0][3]);
+  //box(20,20,20);
+  //translate(-T06[1][3],T06[2][3],-T06[0][3]);
 
 //LINK 0 -----------------
 
@@ -292,7 +292,7 @@ void muovi(){
  pwx=(zf-((d6)*Re[0][2]));//60
    text(d6*Re[0][2],300,450);
  pwy=(xf-((d6)*Re[1][2]));//40
- pwz=(-yf-((d6)*Re[2][2])); //125
+ pwz=(yf-((d6)*Re[2][2]))+185; //125
  text("val = ",300,400);
  q[0]=atan2(pwy,pwx);//26.57
  A1=pwx*cos(q[0])+pwy*sin(q[0])-T1;//52,08
