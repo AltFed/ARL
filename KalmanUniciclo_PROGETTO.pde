@@ -112,8 +112,9 @@ float tStep = 0; // tempo (in ms) tra una misura e la successiva (impostabile da
 float rMax=200,betaMax=PI/10;
 float [] num= new float [3];
 float [] temp= new float [3];
-int ans=5;
+//int ans=5;
 float [] premutoSU= new float [3];
+boolean [] ans= new boolean [3];
 void setup() 
 {
   size(1250,950);
@@ -130,7 +131,16 @@ void draw()
 
   pushMatrix();
   translate(sizeX/2,sizeY/2);
-  
+  text("num[0] =",100,200);
+  text(num[0],200,200);
+  text(str(ans[0]),300,200);
+  text("num[1]=",100,300);
+  text(num[1],200,300);
+  text(str(ans[1]),300,300);
+  text("num[2]=",100,400);
+  text(num[2],200,400);
+  text(str(ans[2]),300,400);
+
   if (keyPressed)
   {
     if (keyCode == UP) // aumento di 1 il tempo tra una misura e la successiva
@@ -168,10 +178,12 @@ void draw()
         premutoSU[1]=1;
     }
     if(key == '3'){
-        premutoSU[2]=1;
-  }
-  }
-    else
+        premutoSU[2]=1; 
+    }
+    
+
+  
+  } else
   {
     if (premutoSU[0] == 1)
     {
@@ -185,22 +197,27 @@ void draw()
     if(premutoSU[2] == 1){
       num[2]++;
       premutoSU[2] = 0;
-    }
-  }
+    }}
+    
   if(num[0] % 2 == 0){
-    ans=0;
+    ans[0] = true;
+  }else{
+    ans[0] = false;
   }
   if(num[1] % 2 == 0){
-    ans=1;
+    ans[1] = true;
+  }else{
+    ans[1] = false;
   }
   if(num[2] % 2 == 0){
-    ans=2;
+    ans[2]=true;
+  }else{
+    ans[2]= false;
   }
-  if(ans != 0 || ans!= 1  || ans!=2){
   for (int indLandmark=0; indLandmark<nL;indLandmark++)
   {
-     stroke(255,0,0);
-  strokeWeight(2);  
+    stroke(255,0,0);
+    strokeWeight(2);  
     fill(255,255,255);
     triangle(Landmark[indLandmark][0]-15,-Landmark[indLandmark][1]+15,Landmark[indLandmark][0]+15,-Landmark[indLandmark][1]+15,Landmark[indLandmark][0],-Landmark[indLandmark][1]-15);
     textSize(10);
@@ -210,47 +227,41 @@ void draw()
     stroke(0,0,0);
     strokeWeight(1);
   }
-  }
-  text(" num[0] =",100,300);
-  text(num[0],200,300);
-  text("num[1]=",100,400);
-  text(num[1],200,400);
-  if(ans!=90){
-     int indLandmark=ans;
-switch(ans){
-  //
-  case 0: 
+  if(ans[0]){
   stroke(255,0,0);
   strokeWeight(2);  
     fill(10,10,10);
-    triangle(Landmark[indLandmark][0]-15,-Landmark[indLandmark][1]+15,Landmark[indLandmark][0]+15,-Landmark[indLandmark][1]+15,Landmark[indLandmark][0],-Landmark[indLandmark][1]-15);
+    triangle(Landmark[0][0]-15,-Landmark[0][1]+15,Landmark[0][0]+15,-Landmark[0][1]+15,Landmark[0][0],-Landmark[0][1]-15);
     textSize(10);
     fill(0,0,0);
-    text("L",Landmark[indLandmark][0]-5,-Landmark[indLandmark][1]+8);
-    text(indLandmark+1,Landmark[indLandmark][0]+1,-Landmark[indLandmark][1]+8);
+    text("L",Landmark[0][0]-5,-Landmark[0][1]+8);
+    text(0+1,Landmark[0][0]+1,-Landmark[0][1]+8);
     noStroke();
-    break;
-    //
-    case 1:  
+    strokeWeight(1);
+  }
+  if(ans[1]){
+    stroke(255,0,0);
+    strokeWeight(2);
     fill(10,10,10);
-    triangle(Landmark[indLandmark][0]-15,-Landmark[indLandmark][1]+15,Landmark[indLandmark][0]+15,-Landmark[indLandmark][1]+15,Landmark[indLandmark][0],-Landmark[indLandmark][1]-15);
+    triangle(Landmark[1][0]-15,-Landmark[1][1]+15,Landmark[1][0]+15,-Landmark[1][1]+15,Landmark[1][0],-Landmark[1][1]-15);
     textSize(10);
     fill(0,0,0);
-    text("L",Landmark[indLandmark][0]-5,-Landmark[indLandmark][1]+8);
-    text(indLandmark+1,Landmark[indLandmark][0]+1,-Landmark[indLandmark][1]+8);
+    text("L",Landmark[1][0]-5,-Landmark[1][1]+8);
+    text(1+1,Landmark[1][0]+1,-Landmark[1][1]+8);
     noStroke();
-    break;
-    //
-    case 2:  
+    strokeWeight(1);
+  }
+  if(ans[2]){
+    stroke(255,0,0);
+    strokeWeight(2);
     fill(10,10,10);
-    triangle(Landmark[indLandmark][0]-15,-Landmark[indLandmark][1]+15,Landmark[indLandmark][0]+15,-Landmark[indLandmark][1]+15,Landmark[indLandmark][0],-Landmark[indLandmark][1]-15);
+    triangle(Landmark[2][0]-15,-Landmark[2][1]+15,Landmark[2][0]+15,-Landmark[2][1]+15,Landmark[2][0],-Landmark[2][1]-15);
     textSize(10);
     fill(0,0,0);
-    text("L",Landmark[indLandmark][0]-5,-Landmark[indLandmark][1]+8);
-    text(indLandmark+1,Landmark[indLandmark][0]+1,-Landmark[indLandmark][1]+8);
+    text("L",Landmark[2][0]-5,-Landmark[2][1]+8);
+    text(2+1,Landmark[2][0]+1,-Landmark[2][1]+8);
     noStroke();
-    break;
-}
+    strokeWeight(1);
   }
   if (mousePressed) // assegno target
   {
@@ -370,7 +381,7 @@ switch(ans){
     P = Pmeno;
   }
 // FINE EKF
-
+   
 // Disegno il robot vero e quello stimato
   robot(x,y,theta,1); // l'argomento 1 fa un robot rosso (robot reale)
   robot1(xHat,yHat,thetaHat,0); // l'argomento 0 un robot giallo (robot nella posa stimata)
@@ -439,6 +450,8 @@ switch(ans){
 
 void robot(float x, float y, float theta, int colore)
 {
+  stroke(0);
+  strokeWeight(1);
 // funzione che disegna uniciclo in (x,y) con orientamento theta      
   pushMatrix();
   translate(x,-y);
@@ -464,6 +477,8 @@ void robot(float x, float y, float theta, int colore)
 }
 void robot1(float x, float y, float theta, int colore)
 {
+  stroke(0);
+  strokeWeight(1);
 // funzione che disegna uniciclo in (x,y) con orientamento theta      
   pushMatrix();
   translate(x,-y);
@@ -666,3 +681,42 @@ float[][] idMat(int nA, float sigma) // Assegna una matrice identità di ordine 
   }
   return I;
 }
+
+
+
+
+
+//switch(ans){
+//  //
+//  case 0: 
+//  stroke(255,0,0);
+//  strokeWeight(2);  
+//    fill(10,10,10);
+//    triangle(Landmark[indLandmark][0]-15,-Landmark[indLandmark][1]+15,Landmark[indLandmark][0]+15,-Landmark[indLandmark][1]+15,Landmark[indLandmark][0],-Landmark[indLandmark][1]-15);
+//    textSize(10);
+//    fill(0,0,0);
+//    text("L",Landmark[indLandmark][0]-5,-Landmark[indLandmark][1]+8);
+//    text(indLandmark+1,Landmark[indLandmark][0]+1,-Landmark[indLandmark][1]+8);
+//    noStroke();
+//    break;
+//    //
+//    case 1:  
+//    fill(10,10,10);
+//    triangle(Landmark[indLandmark][0]-15,-Landmark[indLandmark][1]+15,Landmark[indLandmark][0]+15,-Landmark[indLandmark][1]+15,Landmark[indLandmark][0],-Landmark[indLandmark][1]-15);
+//    textSize(10);
+//    fill(0,0,0);
+//    text("L",Landmark[indLandmark][0]-5,-Landmark[indLandmark][1]+8);
+//    text(indLandmark+1,Landmark[indLandmark][0]+1,-Landmark[indLandmark][1]+8);
+//    noStroke();
+//    break;
+//    //
+//    case 2:  
+//    fill(10,10,10);
+//    triangle(Landmark[indLandmark][0]-15,-Landmark[indLandmark][1]+15,Landmark[indLandmark][0]+15,-Landmark[indLandmark][1]+15,Landmark[indLandmark][0],-Landmark[indLandmark][1]-15);
+//    textSize(10);
+//    fill(0,0,0);
+//    text("L",Landmark[indLandmark][0]-5,-Landmark[indLandmark][1]+8);
+//    text(indLandmark+1,Landmark[indLandmark][0]+1,-Landmark[indLandmark][1]+8);
+//    noStroke();
+//    break;
+//}
