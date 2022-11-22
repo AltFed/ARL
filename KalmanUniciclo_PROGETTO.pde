@@ -93,8 +93,8 @@ float stDevR,stDevL; // deviazione standard errore odometrico ruota destra e sin
 //float [][] Landmark = {{0,-sizeY/2+20},{0,sizeY/2-20}}; // Coordinate landmark (due landmark)
 float [][] Landmark = {{-sizeX/2+20,-sizeY/2+20},{sizeX/2-20,-sizeY/2+20},{0,sizeY/2-20}};  // Coordinate landmark (3 landmark)
 int nL = Landmark.length; // numero totale di landmark
-      float[] misureLandmark = new float[nL]; // vettore con le misure vere di distanza dagli nL landmark
-      float[] misureAtteseLandmark = new float[nL]; // vettore con le misure attese di distanza dagli nL landmark
+float[] misureLandmark = new float[nL]; // vettore con le misure vere di distanza dagli nL landmark
+float[] misureAtteseLandmark = new float[nL]; // vettore con le misure attese di distanza dagli nL landmark
 // Seguono le matrici utilizzate dal filtro di Kalman esteso (EKF)
 float[][] F = {{1, 0, 0},{0, 1, 0},{0, 0, 1}}; // matrice giacobiana F=df/dx (alcuni elementi delle prime due righe vanno aggiustati durante l'esecuzione)
 float[][] P = {{pow(sigmaX0,2), 0, 0},{0, pow(sigmaY0,2), 0},{0, 0, pow(sigmaTheta0,2)}}; // matrice di covarianza P inizializzata in base all'incertezza iniziale
@@ -114,6 +114,7 @@ float [] num= new float [3];
 float [] temp= new float [3];
 //int ans=5;
 float [] premutoSU= new float [3];
+float betai;
 boolean [] ans= new boolean [3];
 void setup() 
 {
@@ -354,12 +355,13 @@ void draw()
     {
       misureLandmark[indLandmark] = sqrt(pow(x-Landmark[indLandmark][0],2) + pow(y-Landmark[indLandmark][1],2))+Gaussian(0,sigmaLandmark);
       misureAtteseLandmark[indLandmark] = sqrt(pow(xHatMeno-Landmark[indLandmark][0],2) + pow(yHatMeno-Landmark[indLandmark][1],2));
-      DeltaX = xHatMeno-Landmark[indLandmark][0];
-      DeltaY = yHatMeno-Landmark[indLandmark][1];
-      DeltaXY = sqrt(pow(DeltaX,2)+pow(DeltaY,2));
-      H[indLandmark][0] = DeltaX/DeltaXY;
-      H[indLandmark][1] = DeltaY/DeltaXY;  
-      H[indLandmark][2] = 0;
+    //  DeltaX = xHatMeno-Landmark[indLandmark][0];
+    //  DeltaY = yHatMeno-Landmark[indLandmark][1];
+    //  DeltaXY = sqrt(pow(DeltaX,2)+pow(DeltaY,2));
+      betai = atan2(Landmark[indLandmark][1]-y,Landmark[indLandmark][0]-x)-theta;
+      H[indLandmark][0] = 0;
+      H[indLandmark][1] = 0;  
+      H[indLandmark][2] = betai;
       innovazione[indLandmark][0] = misureLandmark[indLandmark]-misureAtteseLandmark[indLandmark];
     }
     
