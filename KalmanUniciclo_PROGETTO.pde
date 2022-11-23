@@ -115,7 +115,7 @@ float rMax=200,betaMax=PI/10;
 float [] num= new float [3];
 float [] temp= new float [3];
 float [] premutoSU= new float [3];
-float betai;
+int nGiriT = 0;
 boolean [] ans= new boolean [3];
 void setup() 
 {
@@ -143,11 +143,14 @@ void draw()
   text(num[2],200,400);
   text(str(ans[2]),300,400);
   text("AngoloLandmark[0]=",200,50);
-  text(AngoloLandmark[0],400,50);
+  text((AngoloLandmark[0]*180)/PI,400,50);
   text("AngoloLandmark[1]=",200,100);
-  text(AngoloLandmark[1],400,100);
+  text((AngoloLandmark[1]*180)/PI,400,100);
   text("AngoloLandmark[2]=",200,150);
-  text(AngoloLandmark[2],400,150);
+  text((AngoloLandmark[2]*180)/PI,400,150);
+  text((AngoloLandmarkAtteso[0]*180)/PI,500,50);
+  text((AngoloLandmarkAtteso[1]*180)/PI,500,100);
+  text((AngoloLandmarkAtteso[2]*180)/PI,500,150);
   if (keyPressed)
   {
     if (keyCode == UP) // aumento di 1 il tempo tra una misura e la successiva
@@ -221,6 +224,11 @@ void draw()
   }else{
     ans[2]= false;
   }
+  
+  // Disegno il robot vero e quello stimato
+  robot(x,y,theta,1); // l'argomento 1 fa un robot rosso (robot reale)
+  robot1(xHat,yHat,thetaHat,0); // l'argomento 0 un robot giallo (robot nella posa stimata)
+  
   for (int indLandmark=0; indLandmark<nL;indLandmark++)
   {
     stroke(255,0,0);
@@ -361,16 +369,29 @@ void draw()
     {
       //misureLandmark[indLandmark] = sqrt(pow(x-Landmark[indLandmark][0],2) + pow(y-Landmark[indLandmark][1],2))+Gaussian(0,sigmaLandmark);
       //misureAtteseLandmark[indLandmark] = sqrt(pow(xHatMeno-Landmark[indLandmark][0],2) + pow(yHatMeno-Landmark[indLandmark][1],2));
-      AngoloLandmark[indLandmark]= atan2(Landmark[indLandmark][1]-y,Landmark[indLandmark][0]-x)- theta;
-      AngoloLandmarkAtteso[indLandmark]=atan2(Landmark[indLandmark][1]-yHatMeno,Landmark[indLandmark][0]-xHatMeno) - thetaHat;
+      AngoloLandmark[indLandmark]= atan2(Landmark[indLandmark][1]-y,Landmark[indLandmark][0]-x)- theta + Gaussian(0,sigmaTheta0);
+      AngoloLandmarkAtteso[indLandmark]=atan2(Landmark[indLandmark][1]-yHatMeno,Landmark[indLandmark][0]-xHatMeno) - thetaHat+nGiriT*2*PI;
+          if (abs(AngoloLandmarkAtteso[indLandmark]+2*PI-AngoloLandmark[indLandmark]) < abs(AngoloLandmarkAtteso[indLandmark]-AngoloLandmark[indLandmark]))
+    {
+      AngoloLandmarkAtteso[indLandmark] = AngoloLandmarkAtteso[indLandmark]+2*PI;
+      nGiriT += 1;
+    }
+    else
+    {
+      if (abs(AngoloLandmarkAtteso[indLandmark]-2*PI-AngoloLandmark[indLandmark]) < abs(AngoloLandmarkAtteso[indLandmark]-AngoloLandmark[indLandmark]))
+      {
+        AngoloLandmarkAtteso[indLandmark] = AngoloLandmarkAtteso[indLandmark]-2*PI;
+        nGiriT += -1;
+      }
+    }
     //  DeltaX = xHatMeno-Landmark[indLandmark][0];
     //  DeltaY = yHatMeno-Landmark[indLandmark][1];
     //  DeltaXY = sqrt(pow(DeltaX,2)+pow(DeltaY,2));
-      DeltaX=Landmark[indLandmark][0]-xHatMeno;
-      DeltaY=Landmark[indLandmark][1]-yHatMeno;
-      DeltaXY=pow(DeltaY,2)+pow(xHatMeno-Landmark[indLandmark][0],2);
+      DeltaY=Landmark[indLandmark][0]-xHatMeno;
+      DeltaX=Landmark[indLandmark][1]-yHatMeno;
+      DeltaXY=pow(DeltaX,2)+pow(DeltaY,2);
       H[indLandmark][0] = DeltaX/DeltaXY;
-      H[indLandmark][1] = DeltaY/DeltaXY;
+      H[indLandmark][1] = (-DeltaY)/DeltaXY;
       H[indLandmark][2] = -1;
       //innovazione[indLandmark][0] = misureLandmark[indLandmark]-misureAtteseLandmark[indLandmark];
       // innovazione = zk+1 - z=h(xhatmeno,0)
@@ -396,11 +417,6 @@ void draw()
     P = Pmeno;
   }
 // FINE EKF
-   
-// Disegno il robot vero e quello stimato
-  robot(x,y,theta,1); // l'argomento 1 fa un robot rosso (robot reale)
-  robot1(xHat,yHat,thetaHat,0); // l'argomento 0 un robot giallo (robot nella posa stimata)
-
 // Disegno i landmark con dei triangoli bianchi col contorno rosso e l'identificativo del landmark all'interno
   stroke(255,0,0);
   strokeWeight(2);  
@@ -460,7 +476,8 @@ void draw()
   text("P = ",10,460); 
   text(P[0][0],10,490); text(P[0][1],100,490); text(P[0][2],190,490);
   text(P[1][0],10,520); text(P[1][1],100,520); text(P[1][2],190,520); 
-  text(P[2][0],10,550); text(P[2][1],100,550); text(P[2][2],190,550);   
+  text(P[2][0],10,550); text(P[2][1],100,550); text(P[2][2],190,550);  
+  
 }
 
 void robot(float x, float y, float theta, int colore)
@@ -498,7 +515,7 @@ void robot1(float x, float y, float theta, int colore)
   pushMatrix();
   translate(x,-y);
   rotate(-theta);
-  fill(0,140,0);
+     fill(0,140,0);
   arc(0, 0, rMax, rMax, -betaMax, betaMax, PIE);
   if (colore==1)
   {
