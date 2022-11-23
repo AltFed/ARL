@@ -95,6 +95,8 @@ float [][] Landmark = {{-sizeX/2+20,-sizeY/2+20},{sizeX/2-20,-sizeY/2+20},{0,siz
 int nL = Landmark.length; // numero totale di landmark
 float[] misureLandmark = new float[nL]; // vettore con le misure vere di distanza dagli nL landmark
 float[] misureAtteseLandmark = new float[nL]; // vettore con le misure attese di distanza dagli nL landmark
+float[] AngoloLandmark = new float[nL];
+float[] AngoloLandmarkAtteso = new float[nL]; 
 // Seguono le matrici utilizzate dal filtro di Kalman esteso (EKF)
 float[][] F = {{1, 0, 0},{0, 1, 0},{0, 0, 1}}; // matrice giacobiana F=df/dx (alcuni elementi delle prime due righe vanno aggiustati durante l'esecuzione)
 float[][] P = {{pow(sigmaX0,2), 0, 0},{0, pow(sigmaY0,2), 0},{0, 0, pow(sigmaTheta0,2)}}; // matrice di covarianza P inizializzata in base all'incertezza iniziale
@@ -112,7 +114,6 @@ float tStep = 0; // tempo (in ms) tra una misura e la successiva (impostabile da
 float rMax=200,betaMax=PI/10;
 float [] num= new float [3];
 float [] temp= new float [3];
-//int ans=5;
 float [] premutoSU= new float [3];
 float betai;
 boolean [] ans= new boolean [3];
@@ -141,7 +142,12 @@ void draw()
   text("num[2]=",100,400);
   text(num[2],200,400);
   text(str(ans[2]),300,400);
-
+  text("AngoloLandmark[0]=",200,50);
+  text(AngoloLandmark[0],400,50);
+  text("AngoloLandmark[1]=",200,100);
+  text(AngoloLandmark[1],400,100);
+  text("AngoloLandmark[2]=",200,150);
+  text(AngoloLandmark[2],400,150);
   if (keyPressed)
   {
     if (keyCode == UP) // aumento di 1 il tempo tra una misura e la successiva
@@ -353,17 +359,24 @@ void draw()
     // matrice giacobiana H e l'innovazione corrispondente
     for (int indLandmark=0; indLandmark<nL; indLandmark++) 
     {
-      misureLandmark[indLandmark] = sqrt(pow(x-Landmark[indLandmark][0],2) + pow(y-Landmark[indLandmark][1],2))+Gaussian(0,sigmaLandmark);
-      misureAtteseLandmark[indLandmark] = sqrt(pow(xHatMeno-Landmark[indLandmark][0],2) + pow(yHatMeno-Landmark[indLandmark][1],2));
+      //misureLandmark[indLandmark] = sqrt(pow(x-Landmark[indLandmark][0],2) + pow(y-Landmark[indLandmark][1],2))+Gaussian(0,sigmaLandmark);
+      //misureAtteseLandmark[indLandmark] = sqrt(pow(xHatMeno-Landmark[indLandmark][0],2) + pow(yHatMeno-Landmark[indLandmark][1],2));
+      AngoloLandmark[indLandmark]= atan2(Landmark[indLandmark][1]-y,Landmark[indLandmark][0]-x)- theta;
+      AngoloLandmarkAtteso[indLandmark]=atan2(Landmark[indLandmark][1]-yHatMeno,Landmark[indLandmark][0]-xHatMeno) - thetaHat;
     //  DeltaX = xHatMeno-Landmark[indLandmark][0];
     //  DeltaY = yHatMeno-Landmark[indLandmark][1];
     //  DeltaXY = sqrt(pow(DeltaX,2)+pow(DeltaY,2));
-      betai = atan2(Landmark[indLandmark][1]-y,Landmark[indLandmark][0]-x)-theta;
-      H[indLandmark][0] = 0;
-      H[indLandmark][1] = 0;  
-      H[indLandmark][2] = betai;
-      innovazione[indLandmark][0] = misureLandmark[indLandmark]-misureAtteseLandmark[indLandmark];
+      DeltaX=Landmark[indLandmark][0]-xHatMeno;
+      DeltaY=Landmark[indLandmark][1]-yHatMeno;
+      DeltaXY=pow(DeltaY,2)+pow(xHatMeno-Landmark[indLandmark][0],2);
+      H[indLandmark][0] = DeltaX/DeltaXY;
+      H[indLandmark][1] = DeltaY/DeltaXY;
+      H[indLandmark][2] = -1;
+      //innovazione[indLandmark][0] = misureLandmark[indLandmark]-misureAtteseLandmark[indLandmark];
+      // innovazione = zk+1 - z=h(xhatmeno,0)
+        innovazione[indLandmark][0]=AngoloLandmark[indLandmark]-AngoloLandmarkAtteso[indLandmark];
     }
+    
     
     // Calcolo guadagno Kalman e aggiorno covarianza
     K = mProd(mProd(Pmeno,trasposta(H)),invMat(mSum(mProd(mProd(H,Pmeno),trasposta(H)),Rs)));
