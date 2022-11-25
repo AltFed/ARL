@@ -112,11 +112,11 @@ float[][] innovazione = new float[nL][1]; // innovazione EKF
 float[][] correzione = new float[3][1]; // termine correttivo stima
 float tStep = 0; // tempo (in ms) tra una misura e la successiva (impostabile da tastiera)
 float rMax=200,betaMax=PI/10;
-float [] num= new float [3];
+float [] num= new float [nL];
 float [] temp= new float [3];
-float [] premutoSU= new float [3];
+float [] premutoSU= new float [nL];
 int nGiriT = 0;
-boolean [] ans= new boolean [3];
+boolean [] ans= new boolean [nL];
 void setup() 
 {
   size(1250,950);
@@ -192,93 +192,60 @@ void draw()
     if(key == '3'){
         premutoSU[2]=1; 
     }
+    if(key == '4'){
+        premutoSU[3]=1;
+    }
     
 
   
   } else
   {
-    if (premutoSU[0] == 1)
+    for(int i = 0; i < nL; i++){
+    if (premutoSU[i] == 1)
     {
-      num[0]++;
-      premutoSU[0] = 0;
+      num[i]++;
+      premutoSU[i] = 0;
     }
-    if(premutoSU[1] == 1){
-      num[1]++;
-      premutoSU[1] = 0;
-    }
-    if(premutoSU[2] == 1){
-      num[2]++;
-      premutoSU[2] = 0;
-    }}
-    
-  if(num[0] % 2 == 0){
-    ans[0] = true;
-  }else{
-    ans[0] = false;
+    if(num[i] % 2 == 0){
+    ans[i] = true;
+    }else{
+    ans[i] = false;
   }
-  if(num[1] % 2 == 0){
-    ans[1] = true;
-  }else{
-    ans[1] = false;
+}
   }
-  if(num[2] % 2 == 0){
-    ans[2]=true;
-  }else{
-    ans[2]= false;
-  }
+
   
   // Disegno il robot vero e quello stimato
   robot1(x,y,theta,1); // l'argomento 1 fa un robot rosso (robot reale)
   robot(xHat,yHat,thetaHat,0); // l'argomento 0 un robot giallo (robot nella posa stimata)
   
-  for (int indLandmark=0; indLandmark<nL;indLandmark++)
+  for (int i=0; i<nL;i++)
   {
-    stroke(255,0,0);
-    strokeWeight(2);  
-    fill(255,255,255);
-    triangle(Landmark[indLandmark][0]-15,-Landmark[indLandmark][1]+15,Landmark[indLandmark][0]+15,-Landmark[indLandmark][1]+15,Landmark[indLandmark][0],-Landmark[indLandmark][1]-15);
-    textSize(10);
-    fill(0,0,0);
-    text("L",Landmark[indLandmark][0]-5,-Landmark[indLandmark][1]+8);
-    text(indLandmark+1,Landmark[indLandmark][0]+1,-Landmark[indLandmark][1]+8);
-    stroke(0,0,0);
-    strokeWeight(1);
-  }
-  if(ans[0]){
+  
+      if(ans[i]){
   stroke(255,0,0);
   strokeWeight(2);  
     fill(10,10,10);
-    triangle(Landmark[0][0]-15,-Landmark[0][1]+15,Landmark[0][0]+15,-Landmark[0][1]+15,Landmark[0][0],-Landmark[0][1]-15);
+    triangle(Landmark[i][0]-15,-Landmark[i][1]+15,Landmark[i][0]+15,-Landmark[i][1]+15,Landmark[i][0],-Landmark[i][1]-15);
     textSize(10);
     fill(0,0,0);
-    text("L",Landmark[0][0]-5,-Landmark[0][1]+8);
-    text(0+1,Landmark[0][0]+1,-Landmark[0][1]+8);
+    text("L",Landmark[i][0]-5,-Landmark[i][1]+8);
+    text(i+1,Landmark[i][0]+1,-Landmark[i][1]+8);
     noStroke();
     strokeWeight(1);
   }
-  if(ans[1]){
+  else{
     stroke(255,0,0);
-    strokeWeight(2);
-    fill(10,10,10);
-    triangle(Landmark[1][0]-15,-Landmark[1][1]+15,Landmark[1][0]+15,-Landmark[1][1]+15,Landmark[1][0],-Landmark[1][1]-15);
+    strokeWeight(2);  
+    fill(255,255,255);
+    triangle(Landmark[i][0]-15,-Landmark[i][1]+15,Landmark[i][0]+15,-Landmark[i][1]+15,Landmark[i][0],-Landmark[i][1]-15);
     textSize(10);
     fill(0,0,0);
-    text("L",Landmark[1][0]-5,-Landmark[1][1]+8);
-    text(1+1,Landmark[1][0]+1,-Landmark[1][1]+8);
-    noStroke();
+    text("L",Landmark[i][0]-5,-Landmark[i][1]+8);
+    text(i+1,Landmark[i][0]+1,-Landmark[i][1]+8);
+    stroke(0,0,0);
     strokeWeight(1);
   }
-  if(ans[2]){
-    stroke(255,0,0);
-    strokeWeight(2);
-    fill(10,10,10);
-    triangle(Landmark[2][0]-15,-Landmark[2][1]+15,Landmark[2][0]+15,-Landmark[2][1]+15,Landmark[2][0],-Landmark[2][1]-15);
-    textSize(10);
-    fill(0,0,0);
-    text("L",Landmark[2][0]-5,-Landmark[2][1]+8);
-    text(2+1,Landmark[2][0]+1,-Landmark[2][1]+8);
-    noStroke();
-    strokeWeight(1);
   }
   if (mousePressed) // assegno target
   {
