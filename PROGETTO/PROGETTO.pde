@@ -278,11 +278,11 @@ void robot(){
   //ASSE Y6
   stroke(0,255,0);
   line(0,0,0,200,0,0);
-  //ASSE X6
-  stroke(255,0,0);
-  line(0,0,0,0,200,0);
   //ASSE Z6
   stroke(0,0,255);
+  line(0,0,0,0,200,0);
+  //ASSE X6
+  stroke(255,0,0);
   line(0,0,0,0,0,120);
   stroke(0);
 }
@@ -290,10 +290,8 @@ void robot(){
 
 void muovi(){
  pwx=(zf-((d6)*Re[0][2]));//60
-   text(d6*Re[0][2],300,450);
  pwy=(xf-((d6)*Re[1][2]));//40
  pwz=(yf-((d6)*Re[2][2]))+185; //125
- text("val = ",300,400);
  q[0]=atan2(pwy,pwx);//26.57
  A1=pwx*cos(q[0])+pwy*sin(q[0])-T1;//52,08
  A2=(d1)-pwz;//-20
@@ -361,65 +359,40 @@ void muovi(){
 
 void graphic(){
   textSize(20);
-  fill(255);
+  fill(255,0,0);
+  //X
   text("xf = ",10,20);
-  text(xf,50,20);//coordinate rispetto alla base
-
+  text(xf,50,20);
+  
+  text("xd base = ",150,20);
+  text(T06[0][3],250,20);
+  //Y
+  fill(0,255,0);
   text("yf = ",10,40);
-  text(yf,50,40);//coordinate rispetto alla base
-
+  text(yf,50,40);
+  
+  text("yd base = ",150,40);
+  text(T06[1][3],250,40);
+  //Z
+  fill(0,0,255);
   text("zf = ",10,60);
   text(zf,50,60);
-
-
-  text("pwx = ",120,20);
-  text(pwx,200,20);
-
-  text("pwy = ",120,40);
-  text(pwy,400,40);
-
-  text("pwz = ",120,60);
-  text(pwz,400,60);
-  text("A1 = ",500,40);
-  text(A1,600,40);
-  text("A2 = ",500,60);
-  text(A2,600,60);
+  
+  text("zd base = ",150,60);
+  text(T06[2][3]-185,250,60);
+  
+  fill(255);
+  
   text("kp = ",120,80);
   text(kp,180,80);
-
+  
   if(segno==1){
     text("gomito alto ",10,80);
   }else if ( segno == -1){
     text("gomito basso",10,80);
   }
-  scriviMatrice("R36 = ",R36,10,400);
   scriviMatriceColor("Re = ",Re,10,100);
-  scriviMatrice("R03 =",R03,10,600);
-  text("theta 1 = ", 300, 120);
-  text(sin(q[0]), 400, 120);
-  text(q[0]*180/PI, 480, 120);
-  text("theta 2 = ", 300, 120+100);
-  text(sin(q[1]), 400, 120+100);
-  text(q[1]*180/PI, 480, 120+100);
-  text("theta 3 = ", 300, 120+200);
-  text(sin(q[2]), 400, 120+200);
-  text(q[2]*180/PI, 600, 120+200);
-  text("theta 4 = ", 300, 120+300);
-  text(sin(q[3]), 400, 120+300);
-  text(q[3]*180/PI, 600, 120+300);
-  text("theta 5 = ", 300, 120+400);
-  text(sin(q[4]), 400, 120+400);
-  text(q[4]*180/PI, 480, 120+400);
-  text("theta 6 = ", 300, 120+500);
-  text(sin(q[5]), 400, 120+500);
-  text(q[5]*180/PI, 480, 120+500);
-
-  text("xd base = ",700,120);
-  text(T06[0][3],850,120);
-  text("yd base = ",700,120+70);
-  text(T06[1][3],850,120+70);
-  text("zd base = ",700,120+120);
-  text(T06[2][3],850,120+120);
+  fill(255);
 }
 
 // ----- FUNZIONI PER MATRICI -----

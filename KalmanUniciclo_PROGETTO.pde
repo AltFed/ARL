@@ -151,6 +151,8 @@ void draw()
   text((AngoloLandmarkAtteso[0]*180)/PI,500,50);
   text((AngoloLandmarkAtteso[1]*180)/PI,500,100);
   text((AngoloLandmarkAtteso[2]*180)/PI,500,150);
+    text("xHatMeno = ",50,300);
+  text(xHatMeno,50,400);
   if (keyPressed)
   {
     if (keyCode == UP) // aumento di 1 il tempo tra una misura e la successiva
@@ -169,7 +171,7 @@ void draw()
     {
       tStep = tStep/2;
     }
-    if(key == 'b' && betaMax>=((10*PI)/180)){
+    if(key == 'b' && betaMax>=((20*PI)/180)){
       betaMax -=.1;
     }
     if(key == 'B' && betaMax<=((140*PI)/180)){
@@ -226,8 +228,8 @@ void draw()
   }
   
   // Disegno il robot vero e quello stimato
-  robot(x,y,theta,1); // l'argomento 1 fa un robot rosso (robot reale)
-  robot1(xHat,yHat,thetaHat,0); // l'argomento 0 un robot giallo (robot nella posa stimata)
+  robot1(x,y,theta,1); // l'argomento 1 fa un robot rosso (robot reale)
+  robot(xHat,yHat,thetaHat,0); // l'argomento 0 un robot giallo (robot nella posa stimata)
   
   for (int indLandmark=0; indLandmark<nL;indLandmark++)
   {
@@ -407,7 +409,11 @@ void draw()
     correzione = mProd(K,innovazione);
     xHat = xHatMeno + correzione[0][0];
     yHat = yHatMeno + correzione[1][0];
-    thetaHat = thetaHatMeno + correzione[2][0];    
+    thetaHat = thetaHatMeno + correzione[2][0];  
+    fill(255,0,0);
+    textSize(20);
+    text("Correzione[0][0] = ",100,200);
+    text(innovazione[0][0],100,250);
   }
   else  // se non ho misure non correggo nulla
   {
