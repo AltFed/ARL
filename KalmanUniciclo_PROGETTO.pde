@@ -107,7 +107,7 @@ float[][] H = new float[nL][3]; // matrice giacobiana H = dh/dx
 float[][] K = new float[3][nL]; // guadagno di Kalman
 float DeltaX,DeltaY,DeltaXY; // variabili di supporto
 float sigmaLandmark = 5; // deviazione standard errore di misura di distanza dai landmark (in pixel)
-float[][] Rs = idMat(nL,pow(sigmaLandmark,2)); // matrice di covarianza errore misura dai landmark
+float[][] Rs = idMat(nL,pow(sigmaTheta0,2)); // matrice di covarianza errore misura dai landmark
 float[][] innovazione = new float[nL][1]; // innovazione EKF
 float[][] correzione = new float[3][1]; // termine correttivo stima
 float tStep = 0; // tempo (in ms) tra una misura e la successiva (impostabile da tastiera)
@@ -369,33 +369,14 @@ void draw()
     // matrice giacobiana H e l'innovazione corrispondente
     for (int indLandmark=0; indLandmark<nL; indLandmark++) 
     {
-      //misureLandmark[indLandmark] = sqrt(pow(x-Landmark[indLandmark][0],2) + pow(y-Landmark[indLandmark][1],2))+Gaussian(0,sigmaLandmark);
-      //misureAtteseLandmark[indLandmark] = sqrt(pow(xHatMeno-Landmark[indLandmark][0],2) + pow(yHatMeno-Landmark[indLandmark][1],2));
-      AngoloLandmark[indLandmark]= atan2(Landmark[indLandmark][1]-y,Landmark[indLandmark][0]-x)- theta + Gaussian(0,sigmaTheta0);
-      AngoloLandmarkAtteso[indLandmark]=atan2(Landmark[indLandmark][1]-yHatMeno,Landmark[indLandmark][0]-xHatMeno) - thetaHat+nGiriT*2*PI;
-          if (abs(AngoloLandmarkAtteso[indLandmark]+2*PI-AngoloLandmark[indLandmark]) < abs(AngoloLandmarkAtteso[indLandmark]-AngoloLandmark[indLandmark]))
-    {
-      AngoloLandmarkAtteso[indLandmark] = AngoloLandmarkAtteso[indLandmark]+2*PI;
-      nGiriT += 1;
-    }
-    else
-    {
-      if (abs(AngoloLandmarkAtteso[indLandmark]-2*PI-AngoloLandmark[indLandmark]) < abs(AngoloLandmarkAtteso[indLandmark]-AngoloLandmark[indLandmark]))
-      {
-        AngoloLandmarkAtteso[indLandmark] = AngoloLandmarkAtteso[indLandmark]-2*PI;
-        nGiriT += -1;
-      }
-    }
-    //  DeltaX = xHatMeno-Landmark[indLandmark][0];
-    //  DeltaY = yHatMeno-Landmark[indLandmark][1];
-    //  DeltaXY = sqrt(pow(DeltaX,2)+pow(DeltaY,2));
+      AngoloLandmark[indLandmark]= atan2(Landmark[indLandmark][1]-y,Landmark[indLandmark][0]-x)- theta;
+      AngoloLandmarkAtteso[indLandmark]=atan2(Landmark[indLandmark][1]-yHatMeno,Landmark[indLandmark][0]-xHatMeno) - thetaHat;
       DeltaY=Landmark[indLandmark][0]-xHatMeno;
       DeltaX=Landmark[indLandmark][1]-yHatMeno;
       DeltaXY=pow(DeltaX,2)+pow(DeltaY,2);
       H[indLandmark][0] = DeltaX/DeltaXY;
       H[indLandmark][1] = (-DeltaY)/DeltaXY;
       H[indLandmark][2] = -1;
-      //innovazione[indLandmark][0] = misureLandmark[indLandmark]-misureAtteseLandmark[indLandmark];
       // innovazione = zk+1 - z=h(xhatmeno,0)
         innovazione[indLandmark][0]=AngoloLandmark[indLandmark]-AngoloLandmarkAtteso[indLandmark];
     }
@@ -409,11 +390,7 @@ void draw()
     correzione = mProd(K,innovazione);
     xHat = xHatMeno + correzione[0][0];
     yHat = yHatMeno + correzione[1][0];
-    thetaHat = thetaHatMeno + correzione[2][0];  
-    fill(255,0,0);
-    textSize(20);
-    text("Correzione[0][0] = ",100,200);
-    text(innovazione[0][0],100,250);
+    thetaHat = thetaHatMeno + correzione[2][0]; 
   }
   else  // se non ho misure non correggo nulla
   {
