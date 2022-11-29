@@ -153,6 +153,9 @@ void draw()
   text((AngoloLandmarkAtteso[2]*180)/PI,500,150);
     text("xHatMeno = ",50,300);
   text(xHatMeno,50,400);
+  text("uRe = ",-300,400);
+  text(uRe,-200,400);
+  text(uLe,-100,400);
   if (keyPressed)
   {
     if (keyCode == UP) // aumento di 1 il tempo tra una misura e la successiva
@@ -308,7 +311,7 @@ void draw()
   xHatMeno = xHat + ((uRe+uLe)/2)*cos(thetaHat);
   yHatMeno = yHat + ((uRe+uLe)/2)*sin(thetaHat);
   thetaHatMeno = thetaHat + (uRe-uLe)/d;
-
+  
   //Aggiorno la giacobiana F (solo gli elementi variabili)
   F[0][2] = -(uRe+uLe)*sin(thetaHat)/2;
   F[1][2] = (uRe+uLe)*cos(thetaHat)/2;
@@ -337,12 +340,12 @@ void draw()
     for (int indLandmark=0; indLandmark<nL; indLandmark++) 
     {
       AngoloLandmark[indLandmark]= atan2(Landmark[indLandmark][1]-y,Landmark[indLandmark][0]-x)- theta;
-      AngoloLandmarkAtteso[indLandmark]=atan2(Landmark[indLandmark][1]-yHatMeno,Landmark[indLandmark][0]-xHatMeno) - thetaHat;
-      DeltaY=Landmark[indLandmark][0]-xHatMeno;
+      AngoloLandmarkAtteso[indLandmark]=atan2(Landmark[indLandmark][1]-yHatMeno,Landmark[indLandmark][0]-xHatMeno)-thetaHat;
+      DeltaY=-Landmark[indLandmark][0]+xHatMeno;
       DeltaX=Landmark[indLandmark][1]-yHatMeno;
       DeltaXY=pow(DeltaX,2)+pow(DeltaY,2);
-      H[indLandmark][0] = DeltaX/DeltaXY;
-      H[indLandmark][1] = (-DeltaY)/DeltaXY;
+      H[indLandmark][0] = (DeltaX)/DeltaXY;
+      H[indLandmark][1] = (DeltaY)/DeltaXY;
       H[indLandmark][2] = -1;
       // innovazione = zk+1 - z=h(xhatmeno,0)
         innovazione[indLandmark][0]=AngoloLandmark[indLandmark]-AngoloLandmarkAtteso[indLandmark];
