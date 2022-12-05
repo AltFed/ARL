@@ -349,6 +349,7 @@ void draw()
       H[indLandmark][2] = -1;
       // innovazione = zk+1 - z=h(xhatmeno,0)
         innovazione[indLandmark][0]=AngoloLandmark[indLandmark]-AngoloLandmarkAtteso[indLandmark];
+        innovazione[indLandmark][0] = atan2(sin(innovazione[indLandmark][0]),cos(innovazione[indLandmark][0]));
     }
     
     
