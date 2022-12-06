@@ -120,7 +120,7 @@ float ip;
 float [] len= new float [3];
 boolean [] ans= new boolean [nL];
 boolean [] touched= new boolean [nL];
-
+float [] isOn= new float [3];
 void setup() 
 {
   size(1250,950);
@@ -137,29 +137,7 @@ void draw()
 
   pushMatrix();
   translate(sizeX/2,sizeY/2);
-  text("num[0] =",100,200);
-  text((betaMax*180)/PI,200,200);
-  text(str(touched[0]),300,200);
-  text("num[1]=",100,300);
-  text(len[0],200,300);
-  text(str(touched[1]),300,300);
-  text("num[2]=",100,400);
-  text(rMax,200,400);
-  text(str(touched[2]),300,400);
-  text("AngoloLandmark[0]=",200,50);
-  text((AngoloLandmark[0]*180)/PI,400,50);
-  text("AngoloLandmark[1]=",200,100);
-  text((AngoloLandmark[1]*180)/PI,400,100);
-  text("AngoloLandmark[2]=",200,150);
-  text((AngoloLandmark[2]*180)/PI,400,150);
-  text((AngoloLandmarkAtteso[0]*180)/PI,500,50);
-  text((AngoloLandmarkAtteso[1]*180)/PI,500,100);
-  text((AngoloLandmarkAtteso[2]*180)/PI,500,150);
-    text("xHatMeno = ",50,300);
-  text(xHatMeno,50,400);
-  text("uRe = ",-300,400);
-  text(uRe,-200,400);
-  text(uLe,-100,400);
+
   if (keyPressed)
   {
     if (keyCode == UP) // aumento di 1 il tempo tra una misura e la successiva
@@ -225,11 +203,13 @@ void draw()
     len[i]=sqrt(pow(x-Landmark[i][0],2) + pow(y-Landmark[i][1],2)); // len uniciclo -> i esimo landmark 
     if(len[i]<=rMax/2 && atan2(sin(AngoloLandmark[i]),cos(AngoloLandmark[i]))<=atan2(sin(betaMax),cos(betaMax)) && atan2(sin(AngoloLandmark[i]),cos(AngoloLandmark[i]))>=-atan2(sin(betaMax),cos(betaMax))){
      touched[i]=true;
+     if(!ans[i]) isOn[i] = 1;
+     else isOn[i] = 0;
     }else{
       touched[i]=false;
   }
   }
-
+  
   
   // Disegno il robot vero e quello stimato
   robot1(x,y,theta,1); // l'argomento 1 fa un robot rosso (robot reale)
@@ -350,9 +330,9 @@ void draw()
     
     // per ogni landmark calcolo misura vera, attesa, la riga della 
     // matrice giacobiana H e l'innovazione corrispondente
-   
     for (int indLandmark=0; indLandmark<nL; indLandmark++) 
     {
+      if(isOn[indLandmark] == 1){
       AngoloLandmark[indLandmark]= atan2(Landmark[indLandmark][1]-y,Landmark[indLandmark][0]-x)- theta;
       AngoloLandmarkAtteso[indLandmark]=atan2(Landmark[indLandmark][1]-yHatMeno,Landmark[indLandmark][0]-xHatMeno)-thetaHat;
       DeltaY=-Landmark[indLandmark][0]+xHatMeno;
@@ -364,6 +344,17 @@ void draw()
       // innovazione = zk+1 - z=h(xhatmeno,0)
         innovazione[indLandmark][0]=AngoloLandmark[indLandmark]-AngoloLandmarkAtteso[indLandmark];
         innovazione[indLandmark][0] = atan2(sin(innovazione[indLandmark][0]),cos(innovazione[indLandmark][0]));
+      }
+      else{
+        AngoloLandmark[indLandmark] = 0;
+        AngoloLandmarkAtteso[indLandmark] = 0;
+        H[indLandmark][0] = 0;
+        H[indLandmark][1] =0;
+        H[indLandmark][2] = 0;
+        innovazione[indLandmark][0]=0;
+        innovazione[indLandmark][0] = 0;
+      }
+      
     }
     
     
@@ -445,6 +436,33 @@ void draw()
   text(P[0][0],10,490); text(P[0][1],100,490); text(P[0][2],190,490);
   text(P[1][0],10,520); text(P[1][1],100,520); text(P[1][2],190,520); 
   text(P[2][0],10,550); text(P[2][1],100,550); text(P[2][2],190,550);  
+
+  text("num[0] =",100,200);
+  text((betaMax*180)/PI,200,200);
+  text(str(touched[0]),300,200);
+  text("num[1]=",100,300);
+  text(len[0],200,300);
+  text(str(touched[1]),300,300);
+  text("num[2]=",100,400);
+  text(rMax,200,400);
+  text(str(touched[2]),300,400);
+  text("AngoloLandmark[0]=",200,50);
+  text((AngoloLandmark[0]*180)/PI,400,50);
+  text("AngoloLandmark[1]=",200,100);
+  text((AngoloLandmark[1]*180)/PI,400,100);
+  text("AngoloLandmark[2]=",200,150);
+  text((AngoloLandmark[2]*180)/PI,400,150);
+  text((AngoloLandmarkAtteso[0]*180)/PI,500,50);
+  text((AngoloLandmarkAtteso[1]*180)/PI,500,100);
+  text((AngoloLandmarkAtteso[2]*180)/PI,500,150);
+  text(isOn[0],600,50);
+  text(isOn[1],600,100);
+  text(isOn[2],600,150);
+    text("xHatMeno = ",50,300);
+  text(xHatMeno,50,400);
+  text("uRe = ",-300,400);
+  text(uRe,-200,400);
+  text(uLe,-100,400);
   
 }
 
