@@ -333,7 +333,7 @@ void draw()
     for (int indLandmark=0; indLandmark<nL; indLandmark++) 
     {
       if(isOn[indLandmark] == 1){
-      AngoloLandmark[indLandmark]= atan2(Landmark[indLandmark][1]-y,Landmark[indLandmark][0]-x)- theta;
+      AngoloLandmark[indLandmark]= atan2(Landmark[indLandmark][1]-y,Landmark[indLandmark][0]-x)- theta+Gaussian(0,sigmaTheta0);
       AngoloLandmarkAtteso[indLandmark]=atan2(Landmark[indLandmark][1]-yHatMeno,Landmark[indLandmark][0]-xHatMeno)-thetaHat;
       DeltaY=-Landmark[indLandmark][0]+xHatMeno;
       DeltaX=Landmark[indLandmark][1]-yHatMeno;
