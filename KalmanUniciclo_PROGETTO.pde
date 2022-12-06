@@ -116,7 +116,11 @@ float [] num= new float [nL];
 float [] temp= new float [3];
 float [] premutoSU= new float [nL];
 int nGiriT = 0;
+float ip;
+float [] len= new float [3];
 boolean [] ans= new boolean [nL];
+boolean [] touched= new boolean [nL];
+
 void setup() 
 {
   size(1250,950);
@@ -134,14 +138,14 @@ void draw()
   pushMatrix();
   translate(sizeX/2,sizeY/2);
   text("num[0] =",100,200);
-  text(num[0],200,200);
-  text(str(ans[0]),300,200);
+  text((betaMax*180)/PI,200,200);
+  text(str(touched[0]),300,200);
   text("num[1]=",100,300);
-  text(num[1],200,300);
-  text(str(ans[1]),300,300);
+  text(len[0],200,300);
+  text(str(touched[1]),300,300);
   text("num[2]=",100,400);
-  text(num[2],200,400);
-  text(str(ans[2]),300,400);
+  text(rMax,200,400);
+  text(str(touched[2]),300,400);
   text("AngoloLandmark[0]=",200,50);
   text((AngoloLandmark[0]*180)/PI,400,50);
   text("AngoloLandmark[1]=",200,100);
@@ -215,6 +219,15 @@ void draw()
     ans[i] = false;
   }
 }
+  }
+
+  for(int i=0; i < nL; i++){
+    len[i]=sqrt(pow(x-Landmark[i][0],2) + pow(y-Landmark[i][1],2)); // len uniciclo -> i esimo landmark 
+    if(len[i]<=rMax/2 && atan2(sin(AngoloLandmark[i]),cos(AngoloLandmark[i]))<=atan2(sin(betaMax),cos(betaMax)) && atan2(sin(AngoloLandmark[i]),cos(AngoloLandmark[i]))>=-atan2(sin(betaMax),cos(betaMax))){
+     touched[i]=true;
+    }else{
+      touched[i]=false;
+  }
   }
 
   
@@ -337,6 +350,7 @@ void draw()
     
     // per ogni landmark calcolo misura vera, attesa, la riga della 
     // matrice giacobiana H e l'innovazione corrispondente
+   
     for (int indLandmark=0; indLandmark<nL; indLandmark++) 
     {
       AngoloLandmark[indLandmark]= atan2(Landmark[indLandmark][1]-y,Landmark[indLandmark][0]-x)- theta;
