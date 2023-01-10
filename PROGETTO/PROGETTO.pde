@@ -1,3 +1,11 @@
+// FEDERICO ROSI E DANIELE DI GIAMBERARDINO   
+// con x minuscolo si diminuisce la coordinata x in processing mentre diminuisce la yd , con X maiuscolo la si aumenta.
+// con y minuscolo si diminuisce la coordinata y in processing mentre diminuisce la zd , con Y maiuscolo la si aumenta.
+// con z minuscolo si diminuisce la coordinata z in processing mentre diminuisce la xd , con Z maiuscolo la si aumenta.
+// a minuscolo per diminuire α e A maiuscolo per aumentarlo. 
+// b minuscolo per diminuire β e B maiuscolo per aumentarlo. 
+// t minuscolo per diminuire θ e T maiuscolo per aumentarlo.
+// con i tasti + e - si passa dalla soluzione GOMITO ALTO a quella GOMITO BASSO.
 float lw=30,l1=50,l2=200,l3=100,l4=100,l5=50,l6=30;  //link
 float g = 50;
 float q[] = {0,0,0,0,0,0};
@@ -6,7 +14,7 @@ float xBase, yBase,zBase,xDes,yDes,zDes;
 float x6,y6,z6;
 float xd=0,yd=0,zd=0,a;
 float eyeY,segno = 1;
-float alfa=PI/2,beta=PI,theta=PI/2;//pinza orientata verso il basso
+float alfa=0,beta=0,theta=0;//pinza orientata verso il basso
 float[][] Re = new float[3][3]; // matrice 3x3 dichiarata ma non inizializzata
 float[][] R03 = new float[3][3]; // matrice 3x3 dichiarata ma non inizializzata
 float[][] R03T = new float[3][3]; // matrice 3x3 dichiarata ma non inizializzata
@@ -361,25 +369,47 @@ void graphic(){
   textSize(20);
   fill(255,0,0);
   //X
-  text("xf = ",10,20);
-  text(xf,50,20);
+  text("x0 = ",10,20);
+  text(xBase,50,20);
   
-  text("xd base = ",150,20);
-  text(T06[0][3],250,20);
+  text("x6 = ",150,20);
+  text(T06[0][3],200,20);
+  
+  text("xd = ",270,20);
+  text(zf,320,20);
   //Y
   fill(0,255,0);
-  text("yf = ",10,40);
-  text(yf,50,40);
+  text("y0 = ",10,40);
+  text(yBase,50,40);
   
-  text("yd base = ",150,40);
-  text(T06[1][3],250,40);
+  text("y6 = ",150,40);
+  text(T06[1][3],200,40);
+  
+  text("yd = ",270,40);
+  text(xf,320,40);
+  
   //Z
   fill(0,0,255);
-  text("zf = ",10,60);
-  text(zf,50,60);
+  text("z0 = ",10,60);
+  text(zBase,50,60);
   
-  text("zd base = ",150,60);
-  text(T06[2][3]-185,250,60);
+  text("z6 = ",150,60);
+  text(T06[2][3]-185,200,60);
+  
+  text("zd = ",270,60);
+  text(yf,320,60);
+  
+  
+  //ALFA
+  fill(255,255,255);
+  text("alfa = ",400,20);
+  text(alfa*180/PI,500,20);
+  //BETA
+  text("beta = ",400,40);
+  text(beta*180/PI,500,40);
+  //THETA
+  text("theta = ",400,60);
+  text(theta*180/PI,500,60);
   
   fill(255);
   
