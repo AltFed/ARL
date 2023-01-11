@@ -1,5 +1,9 @@
 // FEDERICO ROSI E DANIELE DI GIAMBERARDINO
 
+// premendo i tasti r e R è possibile diminuire e, rispettivamente, aumentare il range massimo rMax del settore circolare. 
+//premendo i tasti b e B, è possibile diminuire e, rispettivamente, aumentare l'angolo di bearing massimo betaMax.
+// premendo  le frecce giù e su, è possibile diminuire e, rispettivamente, aumentare il tempo tStep tra una misura e l'altra
+
 // Dimensioni finestra
 int sizeX = 1250;//1000;
 int sizeY =  950;//550;
