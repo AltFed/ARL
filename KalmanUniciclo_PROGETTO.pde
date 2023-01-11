@@ -1,46 +1,4 @@
-/*
-Questo sketch nasce come evoluzione di 
-
-  unicicloConControlloSuVel.pde
-
-ed effettua un controllo sulla base della stima della
-posa dell'uniciclo ottenuta mediante un filtro di Kalman
-esteso che fonde l'odometria (movimento ruote) con le 
-misure di distanza da un certo numero di landmark.
-
-Quindi, anche qui si disegna un robot mobile di tipo 'uniciclo'
-e lo si controlla in velocità (senza limiti di saturazione)
-verso il punto cliccato col mouse mediante la legge
-di controllo proporzionale, tuttavia il calcolo del controllo
-è fatto sulle variabili stimate anziché su quelle vere.
-Sulla schermata viene anche disegnato (in giallo) il robot
-nella posizione stimata (quello vero è disegnato in rosso).
-In più, dei triangoli in bianco con bordo rosso rappresentano 
-la posizione dei landmark presenti nell'ambiente. All'interno
-di ciascun triangolo viene anche riportato un identificatore del
-tipo Li per il landmark i-esimo.
-
-Con le frecce è possibile modificare la frequenza delle
-misure di distanza dai landmark o, più precisamente, il
-tempo tStep che intercorre tra una misura e la successiva
-(che comunque non può essere inferiore al ciclo di Processing,
-per default dt = 1/60 secondo): con le frecce SU e GIU si 
-incrementa e decrementa rispettivamente di 1 tale tempo mentre 
-con le frecce DESTRA e SINISTRA lo si moltiplica e divide 
-rispettivamente per 2 (per modificarlo più velocemente). Quando 
-tale tempo è molto grande la ricostruzione diviene puramente 
-odometrica.
-
-Sulla schermata vengono riportati: le coordinate
-(x,y,theta) dell'uniciclo, le coordinate (xDes,yDes)
-del punto da raggiungere e il tempo impiegato per la
-missione. Inoltre si riportano le velocità angolari 
-(omegaR, omegaL) delle due ruote, la velocità longitudinale 
-v1 e quella angolare v2.
-Infine si indicano anche le grandezze stimate (xHat,yHat,thetaHat)
-con la loro matrice di covarianza P e il tempo tStep (modificabile 
-da tastiera) che intercorre tra una lettura e la successiva.
-*/
+// FEDERICO ROSI E DANIELE DI GIAMBERARDINO
 
 // Dimensioni finestra
 int sizeX = 1250;//1000;
