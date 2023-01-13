@@ -180,7 +180,7 @@ void draw()
   for (int i=0; i<nL;i++)
   {
   
-      if(ans[i]){
+    if(ans[i]){
   stroke(255,0,0);
   strokeWeight(2);  
     fill(10,10,10);
@@ -190,6 +190,17 @@ void draw()
     text("L",Landmark[i][0]-5,-Landmark[i][1]+8);
     text(i+1,Landmark[i][0]+1,-Landmark[i][1]+8);
     noStroke();
+    strokeWeight(1);
+  }else if(!ans[i] && !touched[i]) {
+    stroke(255,0,0);
+    strokeWeight(2);  
+    fill(200,200,200);
+    triangle(Landmark[i][0]-15,-Landmark[i][1]+15,Landmark[i][0]+15,-Landmark[i][1]+15,Landmark[i][0],-Landmark[i][1]-15);
+    textSize(10);
+    fill(0,0,0);
+    text("L",Landmark[i][0]-5,-Landmark[i][1]+8);
+    text(i+1,Landmark[i][0]+1,-Landmark[i][1]+8);
+    stroke(0,0,0);
     strokeWeight(1);
   }
   else{
