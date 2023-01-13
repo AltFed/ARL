@@ -1,6 +1,6 @@
 #include<PID_v1.h>
 double Setpoint, Input, Output;
-double kp = 100, ki = 0.1, kd =20;
+double kp = 100, ki = 0, kd =20;
 PID myPID(&Input, &Output, &Setpoint, kp, ki, kd, 1);
 
 int PPot = A0;
