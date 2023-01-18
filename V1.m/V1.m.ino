@@ -1,11 +1,11 @@
 #include<PID_v1.h>
 double Input,Output,Setpoint;
-int minAngle = 8;
-double kp= 15,ki = 0,kd = 3;
-PID myPID(&Input, &Output, &Setpoint,kp,ki,kd,DIRECT);
+int minAngle = 0;
+double kp= 3,ki = 0.01,kd = 1;
+PID myPID(&Input, &Output, &Setpoint,kp,ki,kd,REVERSE);
 
 
-const int numReadings = 10;
+const int numReadings = 8;
 
 int readings[numReadings];  // the readings from the analog input
 int readIndex = 0;          // the index of the current reading
@@ -25,7 +25,7 @@ void setup() {
   Input=0;
   Setpoint=0;
   myPID.SetMode(AUTOMATIC);
-  myPID.SetOutputLimits(-100, 100);
+  myPID.SetOutputLimits(-120, 120);
   Serial.begin(9600);
 
   for (int thisReading = 0; thisReading < numReadings; thisReading++) {
@@ -58,7 +58,9 @@ void loop() {
   // send it to the computer as ASCII digit
 
   Input=map(average,0,1023,-145,145);  
+  myPID.SetSampleTime (60);
   myPID.Compute();
+
   if(Input>minAngle && Input<60){
     digitalWrite(5,LOW);
     digitalWrite(6,HIGH);
@@ -74,7 +76,7 @@ void loop() {
   
   Serial.print(map(analogRead(A0),0,1023,-145,145));
   Serial.print("\t");
-  Serial.print(Input);
+  Serial.print(Output);
   Serial.print("\t");
   
   Serial.println();
