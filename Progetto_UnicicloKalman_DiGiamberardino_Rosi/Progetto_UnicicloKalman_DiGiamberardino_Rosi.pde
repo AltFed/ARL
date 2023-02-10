@@ -57,18 +57,18 @@ int nL = Landmark.length; // numero totale di landmark
 float[] AngoloVero = new float[nL];
 //float[] AngoloLandmarkAtteso = new float[nL]; 
 //float[][] H = new float[nL][3]; // matrice giacobiana H = dh/dx
-//float[][] K = new float[3][nL]; // guadagno di Kalman
+float[][] K = new float[3][nL]; // guadagno di Kalman
 //float[][] innovazione = new float[nL][1]; // innovazione EKF
 float[][] correzione = new float[3][1]; // termine correttivo stima
 float[][] Pmeno = new float[3][3]; // matrice di covarianza a priori P-
-//float[][] Rs = idMat(nL,pow(sigmaLandmark,2)); // matrice di covarianza errore misura dai landmark
+float sigmaLandmark = 5; // deviazione standard errore di misura di distanza dai landmark (in pixel)
+float[][] Rs = idMat(nL,pow(sigmaLandmark,2)); // matrice di covarianza errore misura dai landmark
 // Seguono le matrici utilizzate dal filtro di Kalman esteso (EKF)
 float[][] F = {{1, 0, 0},{0, 1, 0},{0, 0, 1}}; // matrice giacobiana F=df/dx (alcuni elementi delle prime due righe vanno aggiustati durante l'esecuzione)
 float[][] P = {{pow(sigmaX0,2), 0, 0},{0, pow(sigmaY0,2), 0},{0, 0, pow(sigmaTheta0,2)}}; // matrice di covarianza P inizializzata in base all'incertezza iniziale
 float[][] W = {{1, 0},{0,1},{1/d,-1/d}}; //  matrice giacobiana W = df/dw (gli elementi delle prime due righe vanno aggiustati durante l'esecuzione) 
 float[][] Q = {{1, 0},{0,1}}; // matrice di covarianza del rumore di misura odometrico w (gli elementi sulla diagonale vanno aggiustati durante l'esecuzione)
 float DeltaX,DeltaY,DeltaXY; // variabili di supporto
-float sigmaLandmark = 5; // deviazione standard errore di misura di distanza dai landmark (in pixel)
 float tStep = 0; // tempo (in ms) tra una misura e la successiva (impostabile da tastiera)
 float rMax=200,betaMax=PI/10;
 float [] num= new float [nL];
@@ -177,9 +177,7 @@ void draw()
 float[] AngoloLandmark = new float[counter];
 float[] AngoloLandmarkAtteso = new float[counter]; 
 float[][] H = new float[counter][3]; // matrice giacobiana H = dh/dx
-float[][] K = new float[3][counter]; // guadagno di Kalman
 float[][] innovazione = new float[counter][1]; // innovazione EKF
-float[][] Rs = idMat(counter,pow(sigmaLandmark,2)); // matrice di covarianza errore misura dai landmark
   //
   // Disegno il robot vero e quello stimato
   robot1(x,y,theta,1); // l'argomento 1 fa un robot rosso (robot reale)
@@ -339,33 +337,42 @@ float[][] Rs = idMat(counter,pow(sigmaLandmark,2)); // matrice di covarianza err
     thetaHat = thetaHatMeno + correzione[2][0]; 
     
     
-          fill(255,255,255);
+    fill(255,255,255);
       if(counter == 1){
-      text(NumLand[0]+1,50,300);
-               text("AngoloLandmark[0]=",200,50);
+      text(Landmark[NumLand[0]][0],50,300);
+      text(Landmark[NumLand[1]][0],50,350);
+      text(Landmark[NumLand[2]][0],50,400);
+      text("AngoloLandmark[0]=",200,50);
   text((AngoloLandmarkAtteso[0]*180)/PI,400,50);}
        if(counter == 2){
-      text(NumLand[0]+1,150,300);
-      text(NumLand[1]+1,150,400);
+      text(NumLand[0],150,300);
+      text(NumLand[1],150,400);
            text("AngoloLandmark[0]=",200,50);
   text((AngoloLandmarkAtteso[0]*180)/PI,400,50);
   text("AngoloLandmark[1]=",200,100);
   text((AngoloLandmarkAtteso[1]*180)/PI,400,100);}
        if(counter == 3){
-      text(NumLand[0]+1,250,300);
-      text(NumLand[1]+1,250,350);
-      text(NumLand[2]+1,250,400);
+      text(NumLand[0],250,300);
+      text(NumLand[1],250,350);
+      text(NumLand[2],250,400);
        text("AngoloLandmark[0]=",200,50);
   text((AngoloLandmarkAtteso[0]*180)/PI,400,50);
   text("AngoloLandmark[1]=",200,100);
   text((AngoloLandmarkAtteso[1]*180)/PI,400,100);
   text("AngoloLandmark[2]=",200,150);
   text((AngoloLandmarkAtteso[2]*180)/PI,400,150);
+   text((AngoloLandmark[0]*180)/PI,500,50);
+  text("AngoloLandmark[1]=",200,100);
+  text((AngoloLandmark[1]*180)/PI,500,100);
+  text("AngoloLandmark[2]=",200,150);
+  text((AngoloLandmark[2]*180)/PI,500,150);
        }   
   
   }
   else  // se non ho misure non correggo nulla
   {
+    fill(255,255,255);
+    text("ciao",200,400);
     xHat = xHatMeno;
     yHat = yHatMeno;
     thetaHat = thetaHatMeno;
