@@ -1,7 +1,7 @@
 // FEDERICO ROSI - 0292417 E DANIELE DI GIAMBERARDINO - 0291944
 
 // premendo i tasti r e R è possibile diminuire e, rispettivamente, aumentare il range massimo rMax del settore circolare. 
-/ /premendo i tasti b e B, è possibile diminuire e, rispettivamente, aumentare l'angolo di bearing massimo betaMax.
+//premendo i tasti b e B, è possibile diminuire e, rispettivamente, aumentare l'angolo di bearing massimo betaMax.
 // premendo  le frecce giù e su, è possibile diminuire e, rispettivamente, aumentare il tempo tStep tra una misura e l'altra
 
 // Dimensioni finestra
@@ -59,8 +59,8 @@ float[] AngoloVero = new float[nL];
 //float[][] H = new float[nL][3]; // matrice giacobiana H = dh/dx
 //float[][] K = new float[3][nL]; // guadagno di Kalman
 //float[][] innovazione = new float[nL][1]; // innovazione EKF
-//float[][] correzione = new float[3][1]; // termine correttivo stima
-//float[][] Pmeno = new float[3][3]; // matrice di covarianza a priori P-
+float[][] correzione = new float[3][1]; // termine correttivo stima
+float[][] Pmeno = new float[3][3]; // matrice di covarianza a priori P-
 //float[][] Rs = idMat(nL,pow(sigmaLandmark,2)); // matrice di covarianza errore misura dai landmark
 // Seguono le matrici utilizzate dal filtro di Kalman esteso (EKF)
 float[][] F = {{1, 0, 0},{0, 1, 0},{0, 0, 1}}; // matrice giacobiana F=df/dx (alcuni elementi delle prime due righe vanno aggiustati durante l'esecuzione)
@@ -138,9 +138,7 @@ void draw()
     if(key == '3'){
         premutoSU[2]=1; 
     }
-    if(key == '4'){
-        premutoSU[3]=1;
-    }
+
     
 
   
@@ -169,20 +167,18 @@ void draw()
   }
   if(!ans[i]){
     isOn[i] = 1;
-  }else if(isOn[i]==1 && touched[i]){
-     NumLand[counter]=i;
-     counter ++;
   }else isOn[i] = 0;
+  if(isOn[i]==1 && touched[i]){
+     counter ++;
+     NumLand[counter-1]=i;
+  }
   }
    // 
 float[] AngoloLandmark = new float[counter];
-float[] AngoloVero = new float[counter];
 float[] AngoloLandmarkAtteso = new float[counter]; 
-float[][] H = new float[counter][counter]; // matrice giacobiana H = dh/dx
+float[][] H = new float[counter][3]; // matrice giacobiana H = dh/dx
 float[][] K = new float[3][counter]; // guadagno di Kalman
 float[][] innovazione = new float[counter][1]; // innovazione EKF
-float[][] correzione = new float[3][1]; // termine correttivo stima
-float[][] Pmeno = new float[3][3]; // matrice di covarianza a priori P-
 float[][] Rs = idMat(counter,pow(sigmaLandmark,2)); // matrice di covarianza errore misura dai landmark
   //
   // Disegno il robot vero e quello stimato
@@ -308,7 +304,7 @@ float[][] Rs = idMat(counter,pow(sigmaLandmark,2)); // matrice di covarianza err
   Pmeno = mSum(mProd(mProd(F,P),trasposta(F)),mProd(mProd(W,Q),trasposta(W))); // Pmeno = F*P*F' + W*Q*W'
   
  // STIMA FILTRO DI KALMAN ESTESO: PASSO di CORREZIONE
-  if (millis()-tempoUltimaMisura >= tStep) // attuo la correzione solo se ho le misure (che arrivano ogni tStep ms)
+  if (millis()-tempoUltimaMisura >= tStep && counter > 0) // attuo la correzione solo se ho le misure (che arrivano ogni tStep ms)
   {
     tempoUltimaMisura = millis(); // memorizzo il tempo in cui ho fatto l'ultima misura
     nStime++; // incremento il contatore delle stime fatte
@@ -317,6 +313,7 @@ float[][] Rs = idMat(counter,pow(sigmaLandmark,2)); // matrice di covarianza err
     // matrice giacobiana H e l'innovazione corrispondente
     for (int indLandmark=0; indLandmark<counter; indLandmark++) 
     {
+   
       AngoloLandmark[indLandmark]= atan2(Landmark[NumLand[indLandmark]][1]-y,Landmark[NumLand[indLandmark]][0]-x)- theta+Gaussian(0,sigmaLandmark);
       AngoloLandmarkAtteso[indLandmark]=atan2(Landmark[NumLand[indLandmark]][1]-yHatMeno,Landmark[NumLand[indLandmark]][0]-xHatMeno)-thetaHat;
       DeltaY=-Landmark[NumLand[indLandmark]][0]+xHatMeno;
@@ -332,15 +329,40 @@ float[][] Rs = idMat(counter,pow(sigmaLandmark,2)); // matrice di covarianza err
     
     
     // Calcolo guadagno Kalman e aggiorno covarianza
-    if(counter>0){
+    
     K = mProd(mProd(Pmeno,trasposta(H)),invMat(mSum(mProd(mProd(H,Pmeno),trasposta(H)),Rs)));
     P = mProd(mSum(idMat(3,1),mProd(idMat(3,-1),mProd(K,H))),Pmeno);
     // Correggo la stima    
     correzione = mProd(K,innovazione);
     xHat = xHatMeno + correzione[0][0];
-    yHat = yHatMeno + correzione[1][0];
+    yHat = yHatMeno + correzione[1][0]; 
     thetaHat = thetaHatMeno + correzione[2][0]; 
-  }
+    
+    
+          fill(255,255,255);
+      if(counter == 1){
+      text(NumLand[0]+1,50,300);
+               text("AngoloLandmark[0]=",200,50);
+  text((AngoloLandmarkAtteso[0]*180)/PI,400,50);}
+       if(counter == 2){
+      text(NumLand[0]+1,150,300);
+      text(NumLand[1]+1,150,400);
+           text("AngoloLandmark[0]=",200,50);
+  text((AngoloLandmarkAtteso[0]*180)/PI,400,50);
+  text("AngoloLandmark[1]=",200,100);
+  text((AngoloLandmarkAtteso[1]*180)/PI,400,100);}
+       if(counter == 3){
+      text(NumLand[0]+1,250,300);
+      text(NumLand[1]+1,250,350);
+      text(NumLand[2]+1,250,400);
+       text("AngoloLandmark[0]=",200,50);
+  text((AngoloLandmarkAtteso[0]*180)/PI,400,50);
+  text("AngoloLandmark[1]=",200,100);
+  text((AngoloLandmarkAtteso[1]*180)/PI,400,100);
+  text("AngoloLandmark[2]=",200,150);
+  text((AngoloLandmarkAtteso[2]*180)/PI,400,150);
+       }   
+  
   }
   else  // se non ho misure non correggo nulla
   {
@@ -406,40 +428,40 @@ float[][] Rs = idMat(counter,pow(sigmaLandmark,2)); // matrice di covarianza err
   text(tStep,150,420);  
 
   fill(255,255,0);  
-  text("P = ",10,460); 
-  text(P[0][0],10,490); text(P[0][1],100,490); text(P[0][2],190,490);
-  text(P[1][0],10,520); text(P[1][1],100,520); text(P[1][2],190,520); 
-  text(P[2][0],10,550); text(P[2][1],100,550); text(P[2][2],190,550);  
+  //text("P = ",10,460); 
+  //text(P[0][0],10,490); text(P[0][1],100,490); text(P[0][2],190,490);
+  //text(P[1][0],10,520); text(P[1][1],100,520); text(P[1][2],190,520); 
+  //text(P[2][0],10,550); text(P[2][1],100,550); text(P[2][2],190,550);  
 
-  text("num[0] =",100,200);
-  text((betaMax*180)/PI,200,200);
-  text(str(touched[0]),300,200);
-  text("num[1]=",100,300);
-  text(len[0],200,300);
-  text(str(touched[1]),300,300);
-  text("num[2]=",100,400);
-  text(rMax,200,400);
-  text(str(touched[2]),300,400);
-  text("AngoloLandmark[0]=",200,50);
-  text((AngoloLandmark[0]*180)/PI,400,50);
-  text("AngoloLandmark[1]=",200,100);
-  text((AngoloLandmark[1]*180)/PI,400,100);
-  text("AngoloLandmark[2]=",200,150);
-  text((AngoloLandmark[2]*180)/PI,400,150);
-  text((AngoloVero[0]*180)/PI,500,50);
-  text((AngoloVero[1]*180)/PI,500,100);
-  text((AngoloVero[2]*180)/PI,500,150);
+  text(counter,100,200);
+  //text((betaMax*180)/PI,200,200);
+  //text(str(touched[0]),300,200);
+  text(correzione[0][0],100,300);
+  text(correzione[1][0],200,300);
+  //text(str(touched[1]),300,300);
+  //text("num[2]=",100,400);
+  //text(rMax,200,400);
+  //text(str(touched[2]),300,400);
+  //text("AngoloLandmark[0]=",200,50);
+  //text((AngoloLandmark[0]*180)/PI,400,50);
+  //text("AngoloLandmark[1]=",200,100);
+  //text((AngoloLandmark[1]*180)/PI,400,100);
+  //text("AngoloLandmark[2]=",200,150);
+  //text((AngoloLandmark[2]*180)/PI,400,150);
+  //text((AngoloVero[0]*180)/PI,500,50);
+  //text((AngoloVero[1]*180)/PI,500,100);
+  //text((AngoloVero[2]*180)/PI,500,150);
   text(isOn[0],600,50);
   text(isOn[1],600,100);
   text(isOn[2],600,150);
   text(int(touched[0]),700,50);
   text(int(touched[1]),700,100);
   text(int(touched[2]),700,150);
-    text("xHatMeno = ",50,300);
-  text(xHatMeno,50,400);
-  text("uRe = ",-300,400);
-  text(uRe,-200,400);
-  text(uLe,-100,400);
+  //  text("xHatMeno = ",50,300);
+  //text(xHatMeno,50,400);
+  //text("uRe = ",-300,400);
+  //text(uRe,-200,400);
+  //text(uLe,-100,400);
   
 }
 
