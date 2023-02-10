@@ -51,27 +51,24 @@ float xHatMeno,yHatMeno,thetaHatMeno; // stime a priori di x,y,theta
 float KR = 0.01; // coefficiente varianza errore odometrico ruota destra
 float KL = KR; // coefficiente varianza errore odometrico ruota sinistra
 float stDevR,stDevL; // deviazione standard errore odometrico ruota destra e sinistra
-//float [][] Landmark = {{0,sizeY/2-20}};  // Coordinate landmark (un solo landmark)
-//float [][] Landmark = {{0,-sizeY/2+20},{0,sizeY/2-20}}; // Coordinate landmark (due landmark)
 float [][] Landmark = {{-sizeX/2+20,-sizeY/2+20},{sizeX/2-20,-sizeY/2+20},{0,sizeY/2-20}};  // Coordinate landmark (3 landmark)
 int nL = Landmark.length; // numero totale di landmark
-float[] misureLandmark = new float[nL]; // vettore con le misure vere di distanza dagli nL landmark
-float[] misureAtteseLandmark = new float[nL]; // vettore con le misure attese di distanza dagli nL landmark
-float[] AngoloLandmark = new float[nL];
-float[] AngoloLandmarkAtteso = new float[nL]; 
+//float[] AngoloLandmark = new float[nL];
+float[] AngoloVero = new float[nL];
+//float[] AngoloLandmarkAtteso = new float[nL]; 
+//float[][] H = new float[nL][3]; // matrice giacobiana H = dh/dx
+//float[][] K = new float[3][nL]; // guadagno di Kalman
+//float[][] innovazione = new float[nL][1]; // innovazione EKF
+//float[][] correzione = new float[3][1]; // termine correttivo stima
+//float[][] Pmeno = new float[3][3]; // matrice di covarianza a priori P-
+//float[][] Rs = idMat(nL,pow(sigmaLandmark,2)); // matrice di covarianza errore misura dai landmark
 // Seguono le matrici utilizzate dal filtro di Kalman esteso (EKF)
 float[][] F = {{1, 0, 0},{0, 1, 0},{0, 0, 1}}; // matrice giacobiana F=df/dx (alcuni elementi delle prime due righe vanno aggiustati durante l'esecuzione)
 float[][] P = {{pow(sigmaX0,2), 0, 0},{0, pow(sigmaY0,2), 0},{0, 0, pow(sigmaTheta0,2)}}; // matrice di covarianza P inizializzata in base all'incertezza iniziale
-float[][] Pmeno = new float[3][3]; // matrice di covarianza a priori P-
 float[][] W = {{1, 0},{0,1},{1/d,-1/d}}; //  matrice giacobiana W = df/dw (gli elementi delle prime due righe vanno aggiustati durante l'esecuzione) 
 float[][] Q = {{1, 0},{0,1}}; // matrice di covarianza del rumore di misura odometrico w (gli elementi sulla diagonale vanno aggiustati durante l'esecuzione)
-float[][] H = new float[nL][3]; // matrice giacobiana H = dh/dx
-float[][] K = new float[3][nL]; // guadagno di Kalman
 float DeltaX,DeltaY,DeltaXY; // variabili di supporto
 float sigmaLandmark = 5; // deviazione standard errore di misura di distanza dai landmark (in pixel)
-float[][] Rs = idMat(nL,pow(sigmaTheta0,2)); // matrice di covarianza errore misura dai landmark
-float[][] innovazione = new float[nL][1]; // innovazione EKF
-float[][] correzione = new float[3][1]; // termine correttivo stima
 float tStep = 0; // tempo (in ms) tra una misura e la successiva (impostabile da tastiera)
 float rMax=200,betaMax=PI/10;
 float [] num= new float [nL];
@@ -94,6 +91,8 @@ void setup()
 
 void draw() 
 {
+  int counter=0;
+  int [] NumLand= new int [3];// dichiaro localmente tali variabili perchè da resettare ad ogni loop
   
   background(0);
 
@@ -160,19 +159,32 @@ void draw()
   }
 }
   }
-
   for(int i=0; i < nL; i++){
+    AngoloVero[i]= atan2(Landmark[i][1]-y,Landmark[i][0]-x)- theta; // mi calcolo l'angolo vero per tutti i landmark 
     len[i]=sqrt(pow(x-Landmark[i][0],2) + pow(y-Landmark[i][1],2)); // len uniciclo -> i esimo landmark 
-    if(len[i]<=rMax/2 && atan2(sin(AngoloLandmark[i]),cos(AngoloLandmark[i]))<=atan2(sin(betaMax),cos(betaMax)) && atan2(sin(AngoloLandmark[i]),cos(AngoloLandmark[i]))>=-atan2(sin(betaMax),cos(betaMax))){
+    if(len[i]<=rMax/2 && atan2(sin(AngoloVero[i]),cos(AngoloVero[i]))<=atan2(sin(betaMax),cos(betaMax)) && atan2(sin(AngoloVero[i]),cos(AngoloVero[i]))>=-atan2(sin(betaMax),cos(betaMax))){
      touched[i]=true;
-     if(!ans[i]) isOn[i] = 1;
-     else isOn[i] = 0;
     }else{
       touched[i]=false;
   }
+  if(!ans[i]){
+    isOn[i] = 1;
+  }else if(isOn[i]==1 && touched[i]){
+     NumLand[counter]=i;
+     counter ++;
+  }else isOn[i] = 0;
   }
-  
-  
+   // 
+float[] AngoloLandmark = new float[counter];
+float[] AngoloVero = new float[counter];
+float[] AngoloLandmarkAtteso = new float[counter]; 
+float[][] H = new float[counter][counter]; // matrice giacobiana H = dh/dx
+float[][] K = new float[3][counter]; // guadagno di Kalman
+float[][] innovazione = new float[counter][1]; // innovazione EKF
+float[][] correzione = new float[3][1]; // termine correttivo stima
+float[][] Pmeno = new float[3][3]; // matrice di covarianza a priori P-
+float[][] Rs = idMat(counter,pow(sigmaLandmark,2)); // matrice di covarianza errore misura dai landmark
+  //
   // Disegno il robot vero e quello stimato
   robot1(x,y,theta,1); // l'argomento 1 fa un robot rosso (robot reale)
   robot(xHat,yHat,thetaHat,0); // l'argomento 0 un robot giallo (robot nella posa stimata)
@@ -294,7 +306,7 @@ void draw()
   
   // Calcolo matrice covarianza a priori
   Pmeno = mSum(mProd(mProd(F,P),trasposta(F)),mProd(mProd(W,Q),trasposta(W))); // Pmeno = F*P*F' + W*Q*W'
-
+  
  // STIMA FILTRO DI KALMAN ESTESO: PASSO di CORREZIONE
   if (millis()-tempoUltimaMisura >= tStep) // attuo la correzione solo se ho le misure (che arrivano ogni tStep ms)
   {
@@ -303,13 +315,12 @@ void draw()
     
     // per ogni landmark calcolo misura vera, attesa, la riga della 
     // matrice giacobiana H e l'innovazione corrispondente
-    for (int indLandmark=0; indLandmark<nL; indLandmark++) 
+    for (int indLandmark=0; indLandmark<counter; indLandmark++) 
     {
-      if(isOn[indLandmark] == 1){
-      AngoloLandmark[indLandmark]= atan2(Landmark[indLandmark][1]-y,Landmark[indLandmark][0]-x)- theta+Gaussian(0,sigmaTheta0);
-      AngoloLandmarkAtteso[indLandmark]=atan2(Landmark[indLandmark][1]-yHatMeno,Landmark[indLandmark][0]-xHatMeno)-thetaHat;
-      DeltaY=-Landmark[indLandmark][0]+xHatMeno;
-      DeltaX=Landmark[indLandmark][1]-yHatMeno;
+      AngoloLandmark[indLandmark]= atan2(Landmark[NumLand[indLandmark]][1]-y,Landmark[NumLand[indLandmark]][0]-x)- theta+Gaussian(0,sigmaLandmark);
+      AngoloLandmarkAtteso[indLandmark]=atan2(Landmark[NumLand[indLandmark]][1]-yHatMeno,Landmark[NumLand[indLandmark]][0]-xHatMeno)-thetaHat;
+      DeltaY=-Landmark[NumLand[indLandmark]][0]+xHatMeno;
+      DeltaX=Landmark[NumLand[indLandmark]][1]-yHatMeno;
       DeltaXY=pow(DeltaX,2)+pow(DeltaY,2);
       H[indLandmark][0] = (DeltaX)/DeltaXY;
       H[indLandmark][1] = (DeltaY)/DeltaXY;
@@ -318,28 +329,18 @@ void draw()
         innovazione[indLandmark][0]=AngoloLandmark[indLandmark]-AngoloLandmarkAtteso[indLandmark];
         innovazione[indLandmark][0] = atan2(sin(innovazione[indLandmark][0]),cos(innovazione[indLandmark][0]));
       }
-      else{
-        AngoloLandmark[indLandmark] = 0;
-        AngoloLandmarkAtteso[indLandmark] = 0;
-        H[indLandmark][0] = 0;
-        H[indLandmark][1] =0;
-        H[indLandmark][2] = 0;
-        innovazione[indLandmark][0]=0;
-        innovazione[indLandmark][0] = 0;
-      }
-      
-    }
     
     
     // Calcolo guadagno Kalman e aggiorno covarianza
+    if(counter>0){
     K = mProd(mProd(Pmeno,trasposta(H)),invMat(mSum(mProd(mProd(H,Pmeno),trasposta(H)),Rs)));
     P = mProd(mSum(idMat(3,1),mProd(idMat(3,-1),mProd(K,H))),Pmeno);
-
     // Correggo la stima    
     correzione = mProd(K,innovazione);
     xHat = xHatMeno + correzione[0][0];
     yHat = yHatMeno + correzione[1][0];
     thetaHat = thetaHatMeno + correzione[2][0]; 
+  }
   }
   else  // se non ho misure non correggo nulla
   {
@@ -425,12 +426,15 @@ void draw()
   text((AngoloLandmark[1]*180)/PI,400,100);
   text("AngoloLandmark[2]=",200,150);
   text((AngoloLandmark[2]*180)/PI,400,150);
-  text((AngoloLandmarkAtteso[0]*180)/PI,500,50);
-  text((AngoloLandmarkAtteso[1]*180)/PI,500,100);
-  text((AngoloLandmarkAtteso[2]*180)/PI,500,150);
+  text((AngoloVero[0]*180)/PI,500,50);
+  text((AngoloVero[1]*180)/PI,500,100);
+  text((AngoloVero[2]*180)/PI,500,150);
   text(isOn[0],600,50);
   text(isOn[1],600,100);
   text(isOn[2],600,150);
+  text(int(touched[0]),700,50);
+  text(int(touched[1]),700,100);
+  text(int(touched[2]),700,150);
     text("xHatMeno = ",50,300);
   text(xHatMeno,50,400);
   text("uRe = ",-300,400);
@@ -672,42 +676,3 @@ float[][] idMat(int nA, float sigma) // Assegna una matrice identità di ordine 
   }
   return I;
 }
-
-
-
-
-
-//switch(ans){
-//  //
-//  case 0: 
-//  stroke(255,0,0);
-//  strokeWeight(2);  
-//    fill(10,10,10);
-//    triangle(Landmark[indLandmark][0]-15,-Landmark[indLandmark][1]+15,Landmark[indLandmark][0]+15,-Landmark[indLandmark][1]+15,Landmark[indLandmark][0],-Landmark[indLandmark][1]-15);
-//    textSize(10);
-//    fill(0,0,0);
-//    text("L",Landmark[indLandmark][0]-5,-Landmark[indLandmark][1]+8);
-//    text(indLandmark+1,Landmark[indLandmark][0]+1,-Landmark[indLandmark][1]+8);
-//    noStroke();
-//    break;
-//    //
-//    case 1:  
-//    fill(10,10,10);
-//    triangle(Landmark[indLandmark][0]-15,-Landmark[indLandmark][1]+15,Landmark[indLandmark][0]+15,-Landmark[indLandmark][1]+15,Landmark[indLandmark][0],-Landmark[indLandmark][1]-15);
-//    textSize(10);
-//    fill(0,0,0);
-//    text("L",Landmark[indLandmark][0]-5,-Landmark[indLandmark][1]+8);
-//    text(indLandmark+1,Landmark[indLandmark][0]+1,-Landmark[indLandmark][1]+8);
-//    noStroke();
-//    break;
-//    //
-//    case 2:  
-//    fill(10,10,10);
-//    triangle(Landmark[indLandmark][0]-15,-Landmark[indLandmark][1]+15,Landmark[indLandmark][0]+15,-Landmark[indLandmark][1]+15,Landmark[indLandmark][0],-Landmark[indLandmark][1]-15);
-//    textSize(10);
-//    fill(0,0,0);
-//    text("L",Landmark[indLandmark][0]-5,-Landmark[indLandmark][1]+8);
-//    text(indLandmark+1,Landmark[indLandmark][0]+1,-Landmark[indLandmark][1]+8);
-//    noStroke();
-//    break;
-//}
