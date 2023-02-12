@@ -93,8 +93,8 @@ void setup()
 
 void draw() 
 {
-  int counter=0;
-  int [] NumLand= new int [3];// dichiaro localmente tali variabili perchè da resettare ad ogni loop
+  int counter=0; // Numero di landmark on e touched
+  int [] NumLand= new int [3];// vettore che ha per componenti il numero relativo al landmark acceso
 
   background(0);
 
@@ -172,8 +172,8 @@ void draw()
   }else isOn[i] = 0;
   
   if(isOn[i]==1 && touched[i]){
-     counter ++;
-     NumLand[counter-1]=i;
+     counter ++;    // quando un landmark viene acceso e toccato, incremento counter
+     NumLand[counter-1]=i; // e metto il valore del i-esimo landmark in posizione counter-1
   }
   }
    // 
@@ -314,7 +314,7 @@ float[][] Rs = idMat(counter,pow(sigmaLandmark,2)); // matrice di covarianza err
     // matrice giacobiana H e l'innovazione corrispondente
     for (int k=0; k<counter; k++) 
     {
-      AngoloLandmark[k]= atan2(Landmark[NumLand[k]][1]-y,Landmark[NumLand[k]][0]-x) -theta+Gaussian(0,E);
+      AngoloLandmark[k]= atan2(Landmark[NumLand[k]][1]-y,Landmark[NumLand[k]][0]-x) -theta+Gaussian(0,E); // E = sigmaLandmark in radianti 
       AngoloLandmarkAtteso[k]=atan2(Landmark[NumLand[k]][1]-yHatMeno,Landmark[NumLand[k]][0]-xHatMeno)-thetaHat;
       DeltaY=-Landmark[NumLand[k]][0]+xHatMeno;
       DeltaX=Landmark[NumLand[k]][1]-yHatMeno;
@@ -337,37 +337,7 @@ float[][] Rs = idMat(counter,pow(sigmaLandmark,2)); // matrice di covarianza err
     xHat = xHatMeno + correzione[0][0];
     yHat = yHatMeno + correzione[1][0]; 
     thetaHat = thetaHatMeno + correzione[2][0]; 
-    fill(255,255,255);
-      if(counter == 1){
-      text(Landmark[NumLand[0]][0],50,300);
-      text(Landmark[NumLand[1]][0],50,350);
-      text(Landmark[NumLand[2]][0],50,400);
-      text("AngoloLandmark[0]=",200,50);
-  text((AngoloLandmarkAtteso[0]*180)/PI,400,50);}
-       if(counter == 2){
-      text(Landmark[NumLand[0]][0],50,300);
-      text(Landmark[NumLand[1]][0],50,350);
-      text(Landmark[NumLand[2]][0],50,400);
-           text("AngoloLandmark[0]=",200,50);
-  text((AngoloLandmarkAtteso[0]*180)/PI,400,50);
-  text("AngoloLandmark[1]=",200,100);
-  text((AngoloLandmarkAtteso[1]*180)/PI,400,100);}
-       if(counter == 3){
-      text(NumLand[0],250,300);
-      text(NumLand[1],250,350);
-      text(NumLand[2],250,400);
-       text("AngoloLandmark[0]=",200,50);
-  text((AngoloLandmarkAtteso[0]*180)/PI,400,50);
-  text("AngoloLandmark[1]=",200,100);
-  text((AngoloLandmarkAtteso[1]*180)/PI,400,100);
-  text("AngoloLandmark[2]=",200,150);
-  text((AngoloLandmarkAtteso[2]*180)/PI,400,150);
-   text((AngoloLandmark[0]*180)/PI,500,50);
-  text("AngoloLandmark[1]=",200,100);
-  text((AngoloLandmark[1]*180)/PI,500,100);
-  text("AngoloLandmark[2]=",200,150);
-  text((AngoloLandmark[2]*180)/PI,500,150);}
-  
+
   }
   else  // se non ho misure non correggo nulla
   {
@@ -436,41 +406,41 @@ float[][] Rs = idMat(counter,pow(sigmaLandmark,2)); // matrice di covarianza err
   text(tStep,150,420);  
 
   fill(255,255,0);  
-  //text("P = ",10,460); 
-  //text(P[0][0],10,490); text(P[0][1],100,490); text(P[0][2],190,490);
-  //text(P[1][0],10,520); text(P[1][1],100,520); text(P[1][2],190,520); 
-  //text(P[2][0],10,550); text(P[2][1],100,550); text(P[2][2],190,550);  
+  text("P = ",10,460); 
+  text(P[0][0],10,490); text(P[0][1],100,490); text(P[0][2],190,490);
+  text(P[1][0],10,520); text(P[1][1],100,520); text(P[1][2],190,520); 
+  text(P[2][0],10,550); text(P[2][1],100,550); text(P[2][2],190,550);  
 
-  text(counter,100,200);
-  //text((betaMax*180)/PI,200,200);
-  //text(str(touched[0]),300,200);
-  text(correzione[0][0],100,300);
-  text(correzione[1][0],200,300);
-  text(correzione[2][0],300,300);
-  //text(str(touched[1]),300,300);
-  //text("num[2]=",100,400);
-  //text(rMax,200,400);
-  //text(str(touched[2]),300,400);
-  //text("AngoloLandmark[0]=",200,50);
-  //text((AngoloLandmark[0]*180)/PI,400,50);
-  //text("AngoloLandmark[1]=",200,100);
-  //text((AngoloLandmark[1]*180)/PI,400,100);
-  //text("AngoloLandmark[2]=",200,150);
-  //text((AngoloLandmark[2]*180)/PI,400,150);
-  //text((AngoloVero[0]*180)/PI,500,50);
-  //text((AngoloVero[1]*180)/PI,500,100);
-  //text((AngoloVero[2]*180)/PI,500,150);
-  text(isOn[0],600,50);
-  text(isOn[1],600,100);
-  text(isOn[2],600,150);
-  text(int(touched[0]),700,50);
-  text(int(touched[1]),700,100);
-  text(int(touched[2]),700,150);
-  //  text("xHatMeno = ",50,300);
-  //text(xHatMeno,50,400);
-  //text("uRe = ",-300,400);
-  //text(uRe,-200,400);
-  //text(uLe,-100,400);
+//  text(counter,100,200);
+//  //text((betaMax*180)/PI,200,200);
+//  //text(str(touched[0]),300,200);
+//  text(correzione[0][0],100,300);
+//  text(correzione[1][0],200,300);
+//  text(correzione[2][0],300,300);
+//  //text(str(touched[1]),300,300);
+//  //text("num[2]=",100,400);
+//  //text(rMax,200,400);
+//  //text(str(touched[2]),300,400);
+//  //text("AngoloLandmark[0]=",200,50);
+//  //text((AngoloLandmark[0]*180)/PI,400,50);
+//  //text("AngoloLandmark[1]=",200,100);
+//  //text((AngoloLandmark[1]*180)/PI,400,100);
+//  //text("AngoloLandmark[2]=",200,150);
+//  //text((AngoloLandmark[2]*180)/PI,400,150);
+//  //text((AngoloVero[0]*180)/PI,500,50);
+//  //text((AngoloVero[1]*180)/PI,500,100);
+//  //text((AngoloVero[2]*180)/PI,500,150);
+//  text(isOn[0],600,50);
+//  text(isOn[1],600,100);
+//  text(isOn[2],600,150);
+//  text(int(touched[0]),700,50);
+//  text(int(touched[1]),700,100);
+//  text(int(touched[2]),700,150);
+//  //  text("xHatMeno = ",50,300);
+//  //text(xHatMeno,50,400);
+//  //text("uRe = ",-300,400);
+//  //text(uRe,-200,400);
+//  //text(uLe,-100,400);
   
 }
 
@@ -707,3 +677,40 @@ float[][] idMat(int nA, float sigma) // Assegna una matrice identità di ordine 
   }
   return I;
 }
+
+
+
+// Text per debug
+
+
+//    fill(255,255,255);
+//      if(counter == 1){
+//      text(Landmark[NumLand[0]][0],50,300);
+//      text(Landmark[NumLand[1]][0],50,350);
+//      text(Landmark[NumLand[2]][0],50,400);
+//      text("AngoloLandmark[0]=",200,50);
+//  text((AngoloLandmarkAtteso[0]*180)/PI,400,50);}
+//       if(counter == 2){
+//      text(Landmark[NumLand[0]][0],50,300);
+//      text(Landmark[NumLand[1]][0],50,350);
+//      text(Landmark[NumLand[2]][0],50,400);
+//           text("AngoloLandmark[0]=",200,50);
+//  text((AngoloLandmarkAtteso[0]*180)/PI,400,50);
+//  text("AngoloLandmark[1]=",200,100);
+//  text((AngoloLandmarkAtteso[1]*180)/PI,400,100);}
+//       if(counter == 3){
+//      text(NumLand[0],250,300);
+//      text(NumLand[1],250,350);
+//      text(NumLand[2],250,400);
+//       text("AngoloLandmark[0]=",200,50);
+//  text((AngoloLandmarkAtteso[0]*180)/PI,400,50);
+//  text("AngoloLandmark[1]=",200,100);
+//  text((AngoloLandmarkAtteso[1]*180)/PI,400,100);
+//  text("AngoloLandmark[2]=",200,150);
+//  text((AngoloLandmarkAtteso[2]*180)/PI,400,150);
+//   text((AngoloLandmark[0]*180)/PI,500,50);
+//  text("AngoloLandmark[1]=",200,100);
+//  text((AngoloLandmark[1]*180)/PI,500,100);
+//  text("AngoloLandmark[2]=",200,150);
+//  text((AngoloLandmark[2]*180)/PI,500,150);}
+  
