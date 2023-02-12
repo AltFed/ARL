@@ -77,9 +77,10 @@ float [] premutoSU= new float [nL];
 int nGiriT = 0;
 float ip;
 float [] len= new float [3];
-//boolean [] ans= new boolean [nL];
-//boolean [] touched= new boolean [nL];
-//float [] isOn= new float [3];
+boolean [] ans= new boolean [nL];
+boolean [] touched= new boolean [nL];
+float [] isOn= new float [3];
+
 void setup() 
 {
   size(1250,950);
@@ -93,9 +94,7 @@ void draw()
 {
   int counter=0;
   int [] NumLand= new int [3];// dichiaro localmente tali variabili perchè da resettare ad ogni loop
-  boolean [] ans= new boolean [nL];
-  boolean [] touched= new boolean [nL];
-  float [] isOn= new float [3];
+
   background(0);
 
   pushMatrix();
@@ -166,16 +165,20 @@ void draw()
      touched[i]=true;
     }else{
       touched[i]=false;
-  }
+    }
   if(!ans[i]){
     isOn[i] = 1;
   }else isOn[i] = 0;
+  
   if(isOn[i]==1 && touched[i]){
      counter ++;
      NumLand[counter-1]=i;
   }
   }
    // 
+    // Disegno il robot vero e quello stimato
+  robot1(x,y,theta,1); // l'argomento 1 fa un robot rosso (robot reale)
+  robot(xHat,yHat,thetaHat,0); // l'argomento 0 un robot giallo (robot nella posa stimata)
 float[] AngoloLandmark = new float[counter];
 float[] AngoloLandmarkAtteso = new float[counter]; 
 float[][] H = new float[counter][3]; // matrice giacobiana H = dh/dx
@@ -221,6 +224,7 @@ float[][] Rs = idMat(counter,pow(sigmaLandmark,2)); // matrice di covarianza err
     strokeWeight(1);
   }
   }
+  
   if (mousePressed) // assegno target
   {
     xDes = mouseX - sizeX/2;
@@ -301,27 +305,25 @@ float[][] Rs = idMat(counter,pow(sigmaLandmark,2)); // matrice di covarianza err
   Pmeno = mSum(mProd(mProd(F,P),trasposta(F)),mProd(mProd(W,Q),trasposta(W))); // Pmeno = F*P*F' + W*Q*W'
   
  // STIMA FILTRO DI KALMAN ESTESO: PASSO di CORREZIONE
-  if (millis()-tempoUltimaMisura >= tStep && counter > 0) // attuo la correzione solo se ho le misure (che arrivano ogni tStep ms)
+  if ((millis()-tempoUltimaMisura >= tStep) && counter >0) // attuo la correzione solo se ho le misure (che arrivano ogni tStep ms)
   {
     tempoUltimaMisura = millis(); // memorizzo il tempo in cui ho fatto l'ultima misura
     nStime++; // incremento il contatore delle stime fatte
-    
     // per ogni landmark calcolo misura vera, attesa, la riga della 
     // matrice giacobiana H e l'innovazione corrispondente
-    for (int indLandmark=0; indLandmark<counter; indLandmark++) 
+    for (int k=0; k<counter; k++) 
     {
-   
-      AngoloLandmark[indLandmark]= atan2(Landmark[NumLand[indLandmark]][1]-y,Landmark[NumLand[indLandmark]][0]-x)- theta+Gaussian(0,sigmaLandmark);
-      AngoloLandmarkAtteso[indLandmark]=atan2(Landmark[NumLand[indLandmark]][1]-yHatMeno,Landmark[NumLand[indLandmark]][0]-xHatMeno)-thetaHat;
-      DeltaY=-Landmark[NumLand[indLandmark]][0]+xHatMeno;
-      DeltaX=Landmark[NumLand[indLandmark]][1]-yHatMeno;
+      AngoloLandmark[k]= atan2(Landmark[NumLand[k]][1]-y,Landmark[NumLand[k]][0]-x) -theta+Gaussian(0,sigmaLandmark);
+      AngoloLandmarkAtteso[k]=atan2(Landmark[NumLand[k]][1]-yHatMeno,Landmark[NumLand[k]][0]-xHatMeno)-thetaHat;
+      DeltaY=-Landmark[NumLand[k]][0]+xHatMeno;
+      DeltaX=Landmark[NumLand[k]][1]-yHatMeno;
       DeltaXY=pow(DeltaX,2)+pow(DeltaY,2);
-      H[indLandmark][0] = (DeltaX)/DeltaXY;
-      H[indLandmark][1] = (DeltaY)/DeltaXY;
-      H[indLandmark][2] = -1;
+      H[k][0] = (DeltaX)/DeltaXY;
+      H[k][1] = (DeltaY)/DeltaXY;
+      H[k][2] = -1;
       // innovazione = zk+1 - z=h(xhatmeno,0)
-        innovazione[indLandmark][0]=AngoloLandmark[indLandmark]-AngoloLandmarkAtteso[indLandmark];
-        innovazione[indLandmark][0] = atan2(sin(innovazione[indLandmark][0]),cos(innovazione[indLandmark][0]));
+        innovazione[k][0]=AngoloLandmark[k]-AngoloLandmarkAtteso[k];
+        innovazione[k][0] = atan2(sin(innovazione[k][0]),cos(innovazione[k][0]));
       }
     
     
@@ -334,8 +336,6 @@ float[][] Rs = idMat(counter,pow(sigmaLandmark,2)); // matrice di covarianza err
     xHat = xHatMeno + correzione[0][0];
     yHat = yHatMeno + correzione[1][0]; 
     thetaHat = thetaHatMeno + correzione[2][0]; 
-    
-    
     fill(255,255,255);
       if(counter == 1){
       text(Landmark[NumLand[0]][0],50,300);
@@ -365,24 +365,20 @@ float[][] Rs = idMat(counter,pow(sigmaLandmark,2)); // matrice di covarianza err
   text("AngoloLandmark[1]=",200,100);
   text((AngoloLandmark[1]*180)/PI,500,100);
   text("AngoloLandmark[2]=",200,150);
-  text((AngoloLandmark[2]*180)/PI,500,150);
-       }   
+  text((AngoloLandmark[2]*180)/PI,500,150);}
   
   }
   else  // se non ho misure non correggo nulla
   {
-    fill(255,255,255);
-    text(counter,200,400);
     xHat = xHatMeno;
     yHat = yHatMeno;
     thetaHat = thetaHatMeno;
     P = Pmeno;
   }
+
 // FINE EKF
        //
-  // Disegno il robot vero e quello stimato
-  robot1(x,y,theta,1); // l'argomento 1 fa un robot rosso (robot reale)
-  robot(xHat,yHat,thetaHat,0); // l'argomento 0 un robot giallo (robot nella posa stimata)
+ 
 // Disegno i landmark con dei triangoli bianchi col contorno rosso e l'identificativo del landmark all'interno
   stroke(255,0,0);
   strokeWeight(2);  
