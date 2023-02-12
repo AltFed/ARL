@@ -57,12 +57,12 @@ int nL = Landmark.length; // numero totale di landmark
 float[] AngoloVero = new float[nL];
 //float[] AngoloLandmarkAtteso = new float[nL]; 
 //float[][] H = new float[nL][3]; // matrice giacobiana H = dh/dx
-float[][] K = new float[3][nL]; // guadagno di Kalman
+//float[][] K = new float[3][nL]; // guadagno di Kalman
+//float[][] Rs = idMat(nL,pow(sigmaLandmark,2)); // matrice di covarianza errore misura dai landmark
 //float[][] innovazione = new float[nL][1]; // innovazione EKF
 float[][] correzione = new float[3][1]; // termine correttivo stima
 float[][] Pmeno = new float[3][3]; // matrice di covarianza a priori P-
 float sigmaLandmark = 5; // deviazione standard errore di misura di distanza dai landmark (in pixel)
-float[][] Rs = idMat(nL,pow(sigmaLandmark,2)); // matrice di covarianza errore misura dai landmark
 // Seguono le matrici utilizzate dal filtro di Kalman esteso (EKF)
 float[][] F = {{1, 0, 0},{0, 1, 0},{0, 0, 1}}; // matrice giacobiana F=df/dx (alcuni elementi delle prime due righe vanno aggiustati durante l'esecuzione)
 float[][] P = {{pow(sigmaX0,2), 0, 0},{0, pow(sigmaY0,2), 0},{0, 0, pow(sigmaTheta0,2)}}; // matrice di covarianza P inizializzata in base all'incertezza iniziale
@@ -77,9 +77,9 @@ float [] premutoSU= new float [nL];
 int nGiriT = 0;
 float ip;
 float [] len= new float [3];
-boolean [] ans= new boolean [nL];
-boolean [] touched= new boolean [nL];
-float [] isOn= new float [3];
+//boolean [] ans= new boolean [nL];
+//boolean [] touched= new boolean [nL];
+//float [] isOn= new float [3];
 void setup() 
 {
   size(1250,950);
@@ -93,7 +93,9 @@ void draw()
 {
   int counter=0;
   int [] NumLand= new int [3];// dichiaro localmente tali variabili perchè da resettare ad ogni loop
-  
+  boolean [] ans= new boolean [nL];
+  boolean [] touched= new boolean [nL];
+  float [] isOn= new float [3];
   background(0);
 
   pushMatrix();
@@ -178,11 +180,8 @@ float[] AngoloLandmark = new float[counter];
 float[] AngoloLandmarkAtteso = new float[counter]; 
 float[][] H = new float[counter][3]; // matrice giacobiana H = dh/dx
 float[][] innovazione = new float[counter][1]; // innovazione EKF
-  //
-  // Disegno il robot vero e quello stimato
-  robot1(x,y,theta,1); // l'argomento 1 fa un robot rosso (robot reale)
-  robot(xHat,yHat,thetaHat,0); // l'argomento 0 un robot giallo (robot nella posa stimata)
-  
+float[][] K = new float[3][counter]; // guadagno di Kalman
+float[][] Rs = idMat(counter,pow(sigmaLandmark,2)); // matrice di covarianza errore misura dai landmark
   for (int i=0; i<nL;i++)
   {
   
@@ -345,8 +344,9 @@ float[][] innovazione = new float[counter][1]; // innovazione EKF
       text("AngoloLandmark[0]=",200,50);
   text((AngoloLandmarkAtteso[0]*180)/PI,400,50);}
        if(counter == 2){
-      text(NumLand[0],150,300);
-      text(NumLand[1],150,400);
+      text(Landmark[NumLand[0]][0],50,300);
+      text(Landmark[NumLand[1]][0],50,350);
+      text(Landmark[NumLand[2]][0],50,400);
            text("AngoloLandmark[0]=",200,50);
   text((AngoloLandmarkAtteso[0]*180)/PI,400,50);
   text("AngoloLandmark[1]=",200,100);
@@ -372,13 +372,17 @@ float[][] innovazione = new float[counter][1]; // innovazione EKF
   else  // se non ho misure non correggo nulla
   {
     fill(255,255,255);
-    text("ciao",200,400);
+    text(counter,200,400);
     xHat = xHatMeno;
     yHat = yHatMeno;
     thetaHat = thetaHatMeno;
     P = Pmeno;
   }
 // FINE EKF
+       //
+  // Disegno il robot vero e quello stimato
+  robot1(x,y,theta,1); // l'argomento 1 fa un robot rosso (robot reale)
+  robot(xHat,yHat,thetaHat,0); // l'argomento 0 un robot giallo (robot nella posa stimata)
 // Disegno i landmark con dei triangoli bianchi col contorno rosso e l'identificativo del landmark all'interno
   stroke(255,0,0);
   strokeWeight(2);  
@@ -445,6 +449,7 @@ float[][] innovazione = new float[counter][1]; // innovazione EKF
   //text(str(touched[0]),300,200);
   text(correzione[0][0],100,300);
   text(correzione[1][0],200,300);
+  text(correzione[2][0],300,300);
   //text(str(touched[1]),300,300);
   //text("num[2]=",100,400);
   //text(rMax,200,400);
