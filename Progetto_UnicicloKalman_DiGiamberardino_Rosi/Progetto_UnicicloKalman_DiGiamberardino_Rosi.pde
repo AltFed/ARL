@@ -63,6 +63,7 @@ float[] AngoloVero = new float[nL];
 float[][] correzione = new float[3][1]; // termine correttivo stima
 float[][] Pmeno = new float[3][3]; // matrice di covarianza a priori P-
 float sigmaLandmark = 5; // deviazione standard errore di misura di distanza dai landmark (in pixel)
+float E=sigmaLandmark*PI/180;
 // Seguono le matrici utilizzate dal filtro di Kalman esteso (EKF)
 float[][] F = {{1, 0, 0},{0, 1, 0},{0, 0, 1}}; // matrice giacobiana F=df/dx (alcuni elementi delle prime due righe vanno aggiustati durante l'esecuzione)
 float[][] P = {{pow(sigmaX0,2), 0, 0},{0, pow(sigmaY0,2), 0},{0, 0, pow(sigmaTheta0,2)}}; // matrice di covarianza P inizializzata in base all'incertezza iniziale
@@ -313,7 +314,7 @@ float[][] Rs = idMat(counter,pow(sigmaLandmark,2)); // matrice di covarianza err
     // matrice giacobiana H e l'innovazione corrispondente
     for (int k=0; k<counter; k++) 
     {
-      AngoloLandmark[k]= atan2(Landmark[NumLand[k]][1]-y,Landmark[NumLand[k]][0]-x) -theta+Gaussian(0,sigmaLandmark);
+      AngoloLandmark[k]= atan2(Landmark[NumLand[k]][1]-y,Landmark[NumLand[k]][0]-x) -theta+Gaussian(0,E);
       AngoloLandmarkAtteso[k]=atan2(Landmark[NumLand[k]][1]-yHatMeno,Landmark[NumLand[k]][0]-xHatMeno)-thetaHat;
       DeltaY=-Landmark[NumLand[k]][0]+xHatMeno;
       DeltaX=Landmark[NumLand[k]][1]-yHatMeno;
