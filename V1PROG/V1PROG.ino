@@ -54,7 +54,7 @@ void loop() {
               }
              }
     Xc = R; //dim 3x1
-    Input=map(analogRead(A0),0,1023,-145,145)
+    Input=map(analogRead(A0),0,1023,45,315)
     e=180-Input;  //calcolo errore di approssimazione 
                   for (int i = 0; i<1; ++i){  //rig C
                for (int j = 0; j<1; ++j){ //col Xc
