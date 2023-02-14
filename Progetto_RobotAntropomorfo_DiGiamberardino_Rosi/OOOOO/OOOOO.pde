@@ -116,9 +116,9 @@ void draw()
       kp += 0.001;
   }
   }
-  xf=-yBase+yd+height/2;
-  yf=zBase+zd;
-  zf=-xBase+xd+width/2;
+  xf=yd;
+  yf=zd;
+  zf=xd;
   pushMatrix();
   //inizializzo matrici
    initRe();
@@ -190,9 +190,6 @@ void robot(){
     {
       q_eff[5] += kp*(q[5]-q_eff[5]);
     }
-  translate(width/2+yd,height/2-zd,+xd);
-  ellipse(0,0,20,20);
-  translate(-width/2-yd,-height/2+zd,-xd);
  // ASSE Y0
   stroke(0,255,0);
   line(xBase,yBase,zBase, xBase+ 120, yBase,zBase);
@@ -205,7 +202,9 @@ void robot(){
   stroke(0);
 
   translate(xBase, yBase, zBase);
-  
+  translate(yd,-zd,+xd);
+  ellipse(0,0,20,20);
+  translate(-yd,+zd,-xd);
 //LINK 0 -----------------
 
   box(lw,lw,lw);
@@ -268,7 +267,7 @@ void robot(){
 //LINK 6 ----- PINZA -----
 
   translate(0,lw/2+l5/2,0);
-  rotateY(q_eff[5]);
+  rotateY(-q_eff[5]);
   box(lw,lw,lw);
 
 
