@@ -116,9 +116,6 @@ void draw()
       kp += 0.001;
   }
   }
-  xf=yd;
-  yf=zd;
-  zf=xd;
   pushMatrix();
   //inizializzo matrici
    initRe();
@@ -135,7 +132,7 @@ void draw()
 
 
 void initRe(){
-
+// ovvero R06
   Re[0][0]=(cos(alfa)*sin(beta)*cos(theta)-sin(alfa)*sin(theta));
   Re[0][1]=(-cos(alfa)*sin(beta)*sin(theta)-sin(alfa)*cos(theta));
   Re[0][2]=(cos(alfa)*cos(beta));
@@ -200,7 +197,6 @@ void robot(){
   stroke(255,0,0);
   line(xBase,yBase,zBase, xBase, yBase,zBase+120);
   stroke(0);
-
   translate(xBase, yBase, zBase);
   translate(yd,-zd,+xd);
   ellipse(0,0,20,20);
@@ -214,7 +210,7 @@ void robot(){
 //LINK 1 -----------------
 
   translate(0,-lw,0);
-  rotateY(-PI/2+q_eff[0]);
+  rotateY(-PI/2+q_eff[0]);//-PI/2
   box(l1,l1,l1);
 //------------------------
 
@@ -234,8 +230,18 @@ void robot(){
 //GIUNTO 3 --------------
 
   translate(l2/2+lw/2,0,0);
-  rotateZ(PI+q_eff[2]);
+  rotateZ(PI+q_eff[2]);//PI
   box(lw,lw,lw);
+   //ASSE X3
+  stroke(255,0,0);
+  line(0,0,0,-200,0,0);
+  //ASSE Z3
+  stroke(0,0,255);
+  line(0,0,0,0,-200,0);
+  //ASSE Y3
+  stroke(0,255,0);
+  line(0,0,0,0,0,120);
+  stroke(0);
 //-----------------------
 
 //LINK 3 ----------------
@@ -290,11 +296,10 @@ void robot(){
   stroke(0);
 }
 
-
 void muovi(){
- pwx=(zf-((d6)*Re[0][2]));//60
- pwy=(xf-((d6)*Re[1][2]));//40
- pwz=(-yf-((d6)*Re[2][2]))+185; //125
+ pwx=(xd-((d6)*Re[0][2]));//60
+ pwy=(yd-((d6)*Re[1][2]));//40
+ pwz=(-zd-((d6)*Re[2][2])+185); //125
  q[0]=atan2(pwy,pwx);//26.57
  A1=pwx*cos(q[0])+pwy*sin(q[0])-T1;//52,08
  A2=(d1)-pwz;//-20
@@ -311,9 +316,9 @@ void muovi(){
  q[3]=atan2(R36[1][2],R36[0][2]);
  q[5]=atan2(R36[2][1],-R36[2][0]);
  //calcolo x6 y6 z6
-  x6=T1*cos(q[0])+(T2)*cos(q[0])*cos(q[1]) + (d4)*cos(q[0])*sin(q[1]+q[2]) + (d6)*(cos(q[0])*(cos(q[1]+q[2])*cos(q[3])*sin(q[4])+ sin(q[1]+q[2])*cos(q[4])) + sin(q[0])*sin(q[3])*sin(q[4]));
-  y6=T1*sin(q[0])+(T2)*sin(q[0])*cos(q[1]) + (d4)*sin(q[0])*sin(q[1]+q[2]) + (d6)*(sin(q[0])*(cos(q[1]+q[2])*cos(q[3])*sin(q[4])+ sin(q[1]+q[2])*cos(q[4])) - cos(q[0])*sin(q[3])*sin(q[4]));
-  z6=(d1)+(T2)*sin(q[1])-(d4)*cos(q[1]+q[2])+(d6)*(sin(q[1]+q[2])*cos(q[3])*sin(q[4])-cos(q[1]+q[2])*cos(q[4]));
+  //x6=T1*cos(q[0])+(T2)*cos(q[0])*cos(q[1]) + (d4)*cos(q[0])*sin(q[1]+q[2]) + (d6)*(cos(q[0])*(cos(q[1]+q[2])*cos(q[3])*sin(q[4])+ sin(q[1]+q[2])*cos(q[4])) + sin(q[0])*sin(q[3])*sin(q[4]));
+  //y6=T1*sin(q[0])+(T2)*sin(q[0])*cos(q[1]) + (d4)*sin(q[0])*sin(q[1]+q[2]) + (d6)*(sin(q[0])*(cos(q[1]+q[2])*cos(q[3])*sin(q[4])+ sin(q[1]+q[2])*cos(q[4])) - cos(q[0])*sin(q[3])*sin(q[4]));
+  //z6=(d1)+(T2)*sin(q[1])-(d4)*cos(q[1]+q[2])+(d6)*(sin(q[1]+q[2])*cos(q[3])*sin(q[4])-cos(q[1]+q[2])*cos(q[4]));
 
 
 //  //cinematica diretta per debug e controllo dei valori delle soluzioni. 
@@ -354,46 +359,26 @@ void muovi(){
 //  T36[3][3]=1;
 //  //voglio calcolare T06 e poi ottenere xd yd zd (cinematica diretta)
 //  T06=mProd(T03,T36);
-
-
-
-
-
 }
 
 void graphic(){
   textSize(20);
   fill(255,0,0);
   //X
-  text("x0 = ",10,20);
-  text(xBase,50,20);
-  
-  text("x6 = ",150,20);
-  text(T06[0][3],200,20);
-  
   text("xd = ",270,20);
-  text(zf,320,20);
+  text(xd,320,20);
   //Y
   fill(0,255,0);
-  text("y0 = ",10,40);
-  text(yBase,50,40);
-  
-  text("y6 = ",150,40);
-  text(T06[1][3],200,40);
+
   
   text("yd = ",270,40);
-  text(xf,320,40);
+  text(yd,320,40);
   
   //Z
   fill(0,0,255);
-  text("z0 = ",10,60);
-  text(zBase,50,60);
-  
-  text("z6 = ",150,60);
-  text(T06[2][3]-185,200,60);
   
   text("zd = ",270,60);
-  text(yf,320,60);
+  text(zd,320,60);
   
   
   //ALFA
@@ -418,7 +403,7 @@ void graphic(){
     text("gomito basso",10,80);
   }
   scriviMatriceColor("Re = ",Re,10,100);
-  fill(255);
+    fill(255);
 }
 
 // ----- FUNZIONI PER MATRICI -----
