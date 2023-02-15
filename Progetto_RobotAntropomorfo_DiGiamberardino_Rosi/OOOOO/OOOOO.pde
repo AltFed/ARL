@@ -322,7 +322,7 @@ void robot(){
 
   translate(0,lw/2+l4/2,0);
   rotateZ(q_eff[4]);
-  box(lw,lw,lw+15);
+  box(lw,lw,lw);
 //-----------------------
 
 //LINK 5 ----------------
@@ -334,7 +334,7 @@ void robot(){
 //LINK 6 ----- PINZA -----
 
   translate(0,lw/2+l5/2,0);
-  rotateY(-q_eff[5]);
+  rotateY(q_eff[5]);
   box(lw,lw,lw);
 
 
