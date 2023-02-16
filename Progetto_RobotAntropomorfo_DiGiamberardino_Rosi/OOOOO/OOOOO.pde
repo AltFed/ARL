@@ -271,14 +271,15 @@ void robot(){
 //LINK 1 -----------------
 
   translate(0,-lw,0);
-  rotateY(PI+PI/2+q_eff[0]);//-PI/2
+  //rotateY(PI+PI/2+q_eff[0]);//-PI/2
   box(l1,l1,l1);
 //------------------------
 
 //GIUNTO 2 --------------
 
   translate(l1/2-lw/2,-l1/2-lw/2,0);
-  rotateZ(q_eff[1]);
+  //rotateZ(q_eff[1]);
+  //rotateZ(-PI/2);
   box(lw,lw,l1);
 //-----------------------
 
@@ -291,18 +292,18 @@ void robot(){
 //GIUNTO 3 --------------
 
   translate(l2/2+lw/2,0,0);
-  rotateZ(-PI+q_eff[2]);//PI
+  //rotateZ(-PI+q_eff[2]);//PI
   box(lw,lw,lw);
    //ASSE X3
-  stroke(255,0,0);
-  line(0,0,0,200,0,0);
-  //ASSE Z3
-  stroke(0,0,255);
-  line(0,0,0,0,-200,0);
-  //ASSE Y3
-  stroke(0,255,0);
-  line(0,0,0,0,0,120);
-  stroke(0);
+  //stroke(255,0,0);
+  //line(0,0,0,200,0,0);
+  ////ASSE Z3
+  //stroke(0,0,255);
+  //line(0,0,0,0,-200,0);
+  ////ASSE Y3
+  //stroke(0,255,0);
+  //line(0,0,0,0,0,120);
+  //stroke(0);
 //-----------------------
 
 //LINK 3 ----------------
@@ -314,14 +315,14 @@ void robot(){
 //LINK 4 ----------------
 
   translate(0,l4,0);
-  rotateY(q_eff[3]);
+  //rotateY(q_eff[3]);
   box(lw,l4,lw);
 //-----------------------
 
 //GIUNTO 5 --------------
 
   translate(0,lw/2+l4/2,0);
-  rotateZ(q_eff[4]);
+  //rotateZ(q_eff[4]);
   box(lw,lw,lw);
 //-----------------------
 
@@ -334,7 +335,7 @@ void robot(){
 //LINK 6 ----- PINZA -----
 
   translate(0,+lw/2+l5/2,0);
-  rotateY(q_eff[5]);
+  //rotateY(q_eff[5]);
   box(lw,lw,lw);
 
 
@@ -344,22 +345,22 @@ void robot(){
 
 
   //Sistema pinza rispetto la base
- //ASSE X6
-  stroke(255,0,0);
-  line(0,0,0,-200,0,0);
-  //ASSE Z6
-  stroke(0,0,255);
-  line(0,0,0,0,-200,0);
-  //ASSE Y6
-  stroke(0,255,0);
-  line(0,0,0,0,0,200);
-  stroke(0);
+ ////ASSE X6
+ // stroke(255,0,0);
+ // line(0,0,0,200,0,0);
+ // //ASSE Z6
+ // stroke(0,0,255);
+ // line(0,0,0,0,200,0);
+ // //ASSE Y6
+ // stroke(0,255,0);
+ // line(0,0,0,0,0,200);
+ // stroke(0);
 }
 
 void muovi(){
  pwx=(xd-((d6)*Re[0][2]));//60
  pwy=(yd-((d6)*Re[1][2]));//40
- pwz=(-zd-((d6)*Re[2][2]))+185; //125
+ pwz=(-zd-((d6)*Re[2][2])); //125
  q[0]=atan2(pwy,pwx)+nGiri[0]*2*PI;//26.57
  A1=pwx*cos(q[0])+pwy*sin(q[0])-T1;//52,08
  A2=(d1)-pwz;//-20
