@@ -15,7 +15,7 @@ float xBase, yBase,zBase,xDes,yDes,zDes;
 float x6,y6,z6;
 float xd=0,yd=0,zd=0,a;
 float eyeY,segno = 1;
-float alfa=0,beta=-90,theta=0;//pinza orientata verso il basso
+float alfa=0,beta=0,theta=0;//pinza orientata verso il basso
 float[][] Re = new float[3][3]; // matrice 3x3 dichiarata ma non inizializzata
 float[][] R03 = new float[3][3]; // matrice 3x3 dichiarata ma non inizializzata
 float[][] R03T = new float[3][3]; // matrice 3x3 dichiarata ma non inizializzata
