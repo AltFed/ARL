@@ -1,7 +1,7 @@
 // FEDERICO ROSI - 0292417 E DANIELE DI GIAMBERARDINO -0291944   
 // con x minuscolo si diminuisce la coordinata x in processing mentre diminuisce la yd , con X maiuscolo la si aumenta.
 // con y minuscolo si diminuisce la coordinata y in processing mentre diminuisce la zd , con Y maiuscolo la si aumenta.
-// con z minuscolo si diminuisce la coordinata z in processing mentre diminuisce la xd , con Z maiuscolo la si aumenta.
+// con z minuscolo si diminuisce la coordinata z in processing mentre diminuisce la xd , con Z maiuscolo la si aumenta
 // a minuscolo per diminuire α e A maiuscolo per aumentarlo. 
 // b minuscolo per diminuire β e B maiuscolo per aumentarlo. 
 // t minuscolo per diminuire θ e T maiuscolo per aumentarlo.
