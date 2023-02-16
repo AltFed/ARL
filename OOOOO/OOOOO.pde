@@ -1,10 +1,10 @@
 // FEDERICO ROSI - 0292417 E DANIELE DI GIAMBERARDINO -0291944   
 // con x minuscolo si diminuisce la coordinata x in processing mentre diminuisce la yd , con X maiuscolo la si aumenta.
 // con y minuscolo si diminuisce la coordinata y in processing mentre diminuisce la zd , con Y maiuscolo la si aumenta.
-// con z minuscolo si diminuisce la coordinata z in processing mentre diminuisce la xd , con Z maiuscolo la si aumenta
+// con z minuscolo si diminuisce la coordinata z in processing mentre diminuisce la xd , con Z maiuscolo la si aumenta.
 // a minuscolo per diminuire α e A maiuscolo per aumentarlo. 
 // b minuscolo per diminuire β e B maiuscolo per aumentarlo. 
-// t minuscolo per diminuire θ e T maiuscolo per aumentarlo
+// t minuscolo per diminuire θ e T maiuscolo per aumentarlo.
 // con i tasti + e - si passa dalla soluzione GOMITO ALTO a quella GOMITO BASSO.
 
 float lw=30,l1=50,l2=200,l3=100,l4=100,l5=50,l6=30;  //link
@@ -134,15 +134,15 @@ void draw()
 
 void initRe(){
 // ovvero R06
-  Re[0][0]=(cos(alfa)*cos(PI/2 - beta)*cos(theta)-sin(alfa)*sin(theta));
-  Re[0][1]=(-cos(alfa)*cos(PI/2 - beta)*sin(theta)-sin(alfa)*cos(theta));
-  Re[0][2]=(cos(alfa)*sin(PI/2 - beta));
-  Re[1][0]=(sin(alfa)*cos(PI/2 - beta)*cos(theta)+cos(alfa)*sin(theta));
-  Re[1][1]=(-sin(alfa)*cos(PI/2 - beta)*sin(theta)+cos(alfa)*cos(theta));
-  Re[1][2]=(sin(alfa)*sin(PI/2 - beta));
-  Re[2][0]=(-cos(theta)*sin(PI/2 - beta));
-  Re[2][1]=(sin(PI/2 - beta)*sin(theta));
-  Re[2][2]=(cos(PI/2 - beta));
+  Re[0][0]=(cos(alfa)*sin(beta)*cos(theta)-sin(alfa)*sin(theta));
+  Re[0][1]=(-cos(alfa)*sin(beta)*sin(theta)-sin(alfa)*cos(theta));
+  Re[0][2]=(cos(alfa)*cos(beta));
+  Re[1][0]=(sin(alfa)*sin(beta)*cos(theta)+cos(alfa)*sin(theta));
+  Re[1][1]=(-sin(alfa)*sin(beta)*sin(theta)+cos(alfa)*cos(theta));
+  Re[1][2]=(sin(alfa)*cos(beta));
+  Re[2][0]=(-cos(theta)*cos(beta));
+  Re[2][1]=(cos(beta)*sin(theta));
+  Re[2][2]=(sin(beta));
 
 }
 
@@ -271,19 +271,14 @@ void robot(){
 //LINK 1 -----------------
 
   translate(0,-lw,0);
-<<<<<<< HEAD
-  //rotateY(PI+PI/2+q_eff[0]);//-PI/2
-=======
-  rotateY(-PI/2+q_eff[0]);//-PI/2
->>>>>>> 238f00aee758d171ef90a435b1b32b9ca405a140
+  rotateY(-PI+q_eff[0]);//-PI/2
   box(l1,l1,l1);
 //------------------------
 
 //GIUNTO 2 --------------
 
   translate(l1/2-lw/2,-l1/2-lw/2,0);
-  //rotateZ(q_eff[1]);
-  //rotateZ(-PI/2);
+  //rotateZ(-0.619*180/PI+q_eff[1]);
   box(lw,lw,l1);
 //-----------------------
 
@@ -296,22 +291,18 @@ void robot(){
 //GIUNTO 3 --------------
 
   translate(l2/2+lw/2,0,0);
-<<<<<<< HEAD
-  //rotateZ(-PI+q_eff[2]);//PI
-=======
-  rotateZ(PI+q_eff[2]);//PI
->>>>>>> 238f00aee758d171ef90a435b1b32b9ca405a140
+  //rotateZ(-2.037*180/PI+q_eff[2]);//PI
   box(lw,lw,lw);
    //ASSE X3
-  //stroke(255,0,0);
-  //line(0,0,0,200,0,0);
-  ////ASSE Z3
-  //stroke(0,0,255);
-  //line(0,0,0,0,-200,0);
-  ////ASSE Y3
-  //stroke(0,255,0);
-  //line(0,0,0,0,0,120);
-  //stroke(0);
+  stroke(255,0,0);
+  line(0,0,0,-200,0,0);
+  //ASSE Z3
+  stroke(0,0,255);
+  line(0,0,0,0,-200,0);
+  //ASSE Y3
+  stroke(0,255,0);
+  line(0,0,0,0,0,120);
+  stroke(0);
 //-----------------------
 
 //LINK 3 ----------------
@@ -330,29 +321,20 @@ void robot(){
 //GIUNTO 5 --------------
 
   translate(0,lw/2+l4/2,0);
-<<<<<<< HEAD
-  //rotateZ(q_eff[4]);
-=======
-  rotateZ(PI+ q_eff[4]);
->>>>>>> 238f00aee758d171ef90a435b1b32b9ca405a140
+  //rotateZ(1.085*180/PI+q_eff[4]);
   box(lw,lw,lw);
 //-----------------------
 
 //LINK 5 ----------------
 
-  translate(0,-lw/2-l5/2,0);
+  translate(0,lw/2+l5/2,0);
   box(lw,l5,lw);
 //------------------------
 
 //LINK 6 ----- PINZA -----
 
-<<<<<<< HEAD
-  translate(0,+lw/2+l5/2,0);
+  translate(0,lw/2+l5/2,0);
   //rotateY(q_eff[5]);
-=======
-  translate(0,-lw/2-l5/2,0);
-  rotateY(q_eff[5]);
->>>>>>> 238f00aee758d171ef90a435b1b32b9ca405a140
   box(lw,lw,lw);
 
 
@@ -362,21 +344,9 @@ void robot(){
 
 
   //Sistema pinza rispetto la base
-<<<<<<< HEAD
- ////ASSE X6
- // stroke(255,0,0);
- // line(0,0,0,200,0,0);
- // //ASSE Z6
- // stroke(0,0,255);
- // line(0,0,0,0,200,0);
- // //ASSE Y6
- // stroke(0,255,0);
- // line(0,0,0,0,0,200);
- // stroke(0);
-=======
  //ASSE X6
   stroke(255,0,0);
-  line(0,0,0,-200,0,0);
+  line(0,0,0,200,0,0);
   //ASSE Z6
   stroke(0,0,255);
   line(0,0,0,0,200,0);
@@ -384,13 +354,12 @@ void robot(){
   stroke(0,255,0);
   line(0,0,0,0,0,200);
   stroke(0);
->>>>>>> 238f00aee758d171ef90a435b1b32b9ca405a140
 }
 
 void muovi(){
  pwx=(xd-((d6)*Re[0][2]));//60
  pwy=(yd-((d6)*Re[1][2]));//40
- pwz=(-zd-((d6)*Re[2][2])); //125
+ pwz=(-zd-((d6)*Re[2][2])+185); //125
  q[0]=atan2(pwy,pwx)+nGiri[0]*2*PI;//26.57
  A1=pwx*cos(q[0])+pwy*sin(q[0])-T1;//52,08
  A2=(d1)-pwz;//-20
@@ -402,14 +371,14 @@ void muovi(){
  q[1]=atan2((d4)*cos(q[2])*A1-(T2+(d4)*sin(q[2]))*A2,(T2+(d4)*sin(q[2]))*A1+(d4)*cos(q[2])*A2)+nGiri[1]*2*PI;
  R03T=trasposta(R03);
  R36=mProd(R03T,Re);
- q[4]=atan2(sqrt(pow(abs(R36[0][2]),2)+pow(abs(R36[1][2]),2)),R36[2][2])+nGiri[4]*2*PI;
+ q[4]=atan2(sqrt(pow(R36[0][2],2)+pow(R36[1][2],2)),R36[2][2])+nGiri[4]*2*PI;
  // ho preso il segno positivo scelta arbitraria
  q[3]=atan2(R36[1][2],R36[0][2])+nGiri[3]*2*PI;
- q[5]=atan2(R36[2][1],-R36[2][0])+nGiri[5]*2*PI;
+ q[5]=atan2(R36[2][1],-R36[2][0])+nGiri[3]*2*PI;
  //calcolo x6 y6 z6
-  x6=T1*cos(q[0])+(T2)*cos(q[0])*cos(q[1]) + (d4)*cos(q[0])*sin(q[1]+q[2]) + (d6)*(cos(q[0])*(cos(q[1]+q[2])*cos(q[3])*sin(q[4])+ sin(q[1]+q[2])*cos(q[4])) + sin(q[0])*sin(q[3])*sin(q[4]));
-  y6=T1*sin(q[0])+(T2)*sin(q[0])*cos(q[1]) + (d4)*sin(q[0])*sin(q[1]+q[2]) + (d6)*(sin(q[0])*(cos(q[1]+q[2])*cos(q[3])*sin(q[4])+ sin(q[1]+q[2])*cos(q[4])) - cos(q[0])*sin(q[3])*sin(q[4]));
-  z6=(d1)+(T2)*sin(q[1])-(d4)*cos(q[1]+q[2])+(d6)*(sin(q[1]+q[2])*cos(q[3])*sin(q[4])-cos(q[1]+q[2])*cos(q[4]));
+  //x6=T1*cos(q[0])+(T2)*cos(q[0])*cos(q[1]) + (d4)*cos(q[0])*sin(q[1]+q[2]) + (d6)*(cos(q[0])*(cos(q[1]+q[2])*cos(q[3])*sin(q[4])+ sin(q[1]+q[2])*cos(q[4])) + sin(q[0])*sin(q[3])*sin(q[4]));
+  //y6=T1*sin(q[0])+(T2)*sin(q[0])*cos(q[1]) + (d4)*sin(q[0])*sin(q[1]+q[2]) + (d6)*(sin(q[0])*(cos(q[1]+q[2])*cos(q[3])*sin(q[4])+ sin(q[1]+q[2])*cos(q[4])) - cos(q[0])*sin(q[3])*sin(q[4]));
+  //z6=(d1)+(T2)*sin(q[1])-(d4)*cos(q[1]+q[2])+(d6)*(sin(q[1]+q[2])*cos(q[3])*sin(q[4])-cos(q[1]+q[2])*cos(q[4]));
 
 
 //  //cinematica diretta per debug e controllo dei valori delle soluzioni. 
@@ -475,24 +444,36 @@ void graphic(){
   //ALFA
   fill(255,255,255);
   text("alfa = ",400,20);
-  text(alfa,500,20);
+  text(alfa*180/PI,500,20);
   //BETA
   text("beta = ",400,40);
-  text(beta,500,40);
+  text(beta*180/PI,500,40);
   //THETA
   text("theta = ",400,60);
-  text(theta,500,60);
+  text(theta*180/PI,500,60);
   
     //ALFA
   fill(255,255,255);
-  text("X6",600,20);
-  text(x6,700,20);
+   text("theta 0 = ",600,20);
+  text(q[0]*180/PI,700,20);
+  text(180,800,20);
+   text("theta 1 = ",600,40);
+  text(q[1]*180/PI,700,40);
+   text(-0.619*180/PI,800,40);
+   text("theta 2 = ",600,60);
+  text(q[2]*180/PI,700,60);
+   text(-2.037*180/PI,800,60);
+  text("theta 3 = ",600,80);
+  text(q[3]*180/PI,700,80);
+   text(0,800,80);
   //BETA
-  text("Y6",600,40);
-  text(y6,700,40);
+  text("theta 4 = ",600,100);
+  text(q[4]*180/PI,700,100);
+   text(1.085*180/PI,800,100);
   //THETA
-  text("Z6",600,60);
-  text(z6,700,60);
+  text("theta 5 =",600,120);
+  text(q[5]*180/PI,700,120);
+   text(0,800,120);
   
   fill(255);
   
