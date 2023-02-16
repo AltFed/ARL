@@ -271,7 +271,7 @@ void robot(){
 //LINK 1 -----------------
 
   translate(0,-lw,0);
-  rotateY(PI+PI/2+q_eff[0]);//-PI/2
+  rotateY(-PI/2+q_eff[0]);//-PI/2
   box(l1,l1,l1);
 //------------------------
 
@@ -291,7 +291,7 @@ void robot(){
 //GIUNTO 3 --------------
 
   translate(l2/2+lw/2,0,0);
-  rotateZ(-PI+q_eff[2]);//PI
+  rotateZ(PI+q_eff[2]);//PI
   box(lw,lw,lw);
    //ASSE X3
   stroke(255,0,0);
@@ -321,19 +321,19 @@ void robot(){
 //GIUNTO 5 --------------
 
   translate(0,lw/2+l4/2,0);
-  rotateZ(q_eff[4]);
+  rotateZ(PI+ q_eff[4]);
   box(lw,lw,lw);
 //-----------------------
 
 //LINK 5 ----------------
 
-  translate(0,lw/2+l5/2,0);
+  translate(0,-lw/2-l5/2,0);
   box(lw,l5,lw);
 //------------------------
 
 //LINK 6 ----- PINZA -----
 
-  translate(0,+lw/2+l5/2,0);
+  translate(0,-lw/2-l5/2,0);
   rotateY(q_eff[5]);
   box(lw,lw,lw);
 
@@ -349,7 +349,7 @@ void robot(){
   line(0,0,0,-200,0,0);
   //ASSE Z6
   stroke(0,0,255);
-  line(0,0,0,0,-200,0);
+  line(0,0,0,0,200,0);
   //ASSE Y6
   stroke(0,255,0);
   line(0,0,0,0,0,200);
@@ -376,9 +376,9 @@ void muovi(){
  q[3]=atan2(R36[1][2],R36[0][2])+nGiri[3]*2*PI;
  q[5]=atan2(R36[2][1],-R36[2][0])+nGiri[5]*2*PI;
  //calcolo x6 y6 z6
-  //x6=T1*cos(q[0])+(T2)*cos(q[0])*cos(q[1]) + (d4)*cos(q[0])*sin(q[1]+q[2]) + (d6)*(cos(q[0])*(cos(q[1]+q[2])*cos(q[3])*sin(q[4])+ sin(q[1]+q[2])*cos(q[4])) + sin(q[0])*sin(q[3])*sin(q[4]));
-  //y6=T1*sin(q[0])+(T2)*sin(q[0])*cos(q[1]) + (d4)*sin(q[0])*sin(q[1]+q[2]) + (d6)*(sin(q[0])*(cos(q[1]+q[2])*cos(q[3])*sin(q[4])+ sin(q[1]+q[2])*cos(q[4])) - cos(q[0])*sin(q[3])*sin(q[4]));
-  //z6=(d1)+(T2)*sin(q[1])-(d4)*cos(q[1]+q[2])+(d6)*(sin(q[1]+q[2])*cos(q[3])*sin(q[4])-cos(q[1]+q[2])*cos(q[4]));
+  x6=T1*cos(q[0])+(T2)*cos(q[0])*cos(q[1]) + (d4)*cos(q[0])*sin(q[1]+q[2]) + (d6)*(cos(q[0])*(cos(q[1]+q[2])*cos(q[3])*sin(q[4])+ sin(q[1]+q[2])*cos(q[4])) + sin(q[0])*sin(q[3])*sin(q[4]));
+  y6=T1*sin(q[0])+(T2)*sin(q[0])*cos(q[1]) + (d4)*sin(q[0])*sin(q[1]+q[2]) + (d6)*(sin(q[0])*(cos(q[1]+q[2])*cos(q[3])*sin(q[4])+ sin(q[1]+q[2])*cos(q[4])) - cos(q[0])*sin(q[3])*sin(q[4]));
+  z6=(d1)+(T2)*sin(q[1])-(d4)*cos(q[1]+q[2])+(d6)*(sin(q[1]+q[2])*cos(q[3])*sin(q[4])-cos(q[1]+q[2])*cos(q[4]));
 
 
 //  //cinematica diretta per debug e controllo dei valori delle soluzioni. 
@@ -454,14 +454,14 @@ void graphic(){
   
     //ALFA
   fill(255,255,255);
-  text("Q4 -Q5",600,20);
-  text(q[4] - q[5],700,20);
+  text("X6",600,20);
+  text(x6,700,20);
   //BETA
-  text("theta 5 = ",600,40);
-  text(q[4],700,40);
+  text("Y6",600,40);
+  text(y6,700,40);
   //THETA
-  text("theta 6 =",600,60);
-  text(q[5],700,60);
+  text("Z6",600,60);
+  text(z6,700,60);
   
   fill(255);
   
