@@ -334,7 +334,7 @@ void robot(){
 //LINK 6 ----- PINZA -----
 
   translate(0,lw/2+l5/2,0);
-  rotateY(q_eff[5]);
+  rotateY(-q_eff[5]);
   box(lw,lw,lw);
 
 
@@ -352,7 +352,7 @@ void robot(){
   line(0,0,0,0,200,0);
   //ASSE Y6
   stroke(0,255,0);
-  line(0,0,0,0,0,120);
+  line(0,0,0,0,0,200);
   stroke(0);
 }
 
@@ -451,6 +451,17 @@ void graphic(){
   //THETA
   text("theta = ",400,60);
   text(theta*180/PI,500,60);
+  
+    //ALFA
+  fill(255,255,255);
+  text("theta 4 = ",600,20);
+  text(q[3],700,20);
+  //BETA
+  text("theta 5 = ",600,40);
+  text(q[4],700,40);
+  //THETA
+  text("theta 6 =",600,60);
+  text(q[5],700,60);
   
   fill(255);
   
