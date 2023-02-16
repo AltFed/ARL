@@ -19,14 +19,16 @@ P2=d2c(P1,'tustin');
 figure(1)
 nyquist(P2)
 grid on 
+title("Diagramma di Nyquist del processo nel dominio di Tustin")
 
 figure(2)
 bode(P2)
 grid on 
-
+title("Diagramma di Bode del processo nel dominio di Tustin")
 figure(3)
 rlocus(P2)
 grid on 
+title("Luogo delle radici del processo nel dominio di Tustin")
 %% errore nullo a regime riferimento 
 K=30;
 C0=1/s;
@@ -54,7 +56,9 @@ figure(2)
 rlocus(L1)
 grid on
 
-%%
+%% analisi delle prestazioni
+T=0.02;
+R=pade(exp(-T*s/2),10);
 L2=minreal(L1*R);
 Wyr=minreal(L2/(1+L2));
 figure(5)
@@ -65,19 +69,20 @@ figure(1)
 step(Wyr,t)
 figure(2)
 impulse(Wyr,t)
-Wur=minreal((C2)/(1+L2));
-figure(3)
-impulse(Wur,t)
-grid on 
-figure(4)
-step(Wur,t)
-grid on
-figure(5)
-bode(Wur)
+
 %% discretizzo controllore
 [Acs,Bcs,Ccs,Dcs] = ssdata(C2);
 C2z=c2d(C2,T,'tustin');
 [Ac,Bc,Cc,Dc]=ssdata(C2z)
+
+
+
+
+
+
+
+
+%%
 % N = 1000;
 % Xc = zeros(1,N);
 % R = ones(1,N);
@@ -89,3 +94,15 @@ C2z=c2d(C2,T,'tustin');
 %     Xc(k) = Acd*Xc(k-1) + Bcd*e(k-1);
 %     u(k) = Ccs*Xc(k) + Dcs*e(k);
 % end
+
+
+
+% Wur=minreal((C2)/(1+L2));
+% figure(3)
+% impulse(Wur,t)
+% grid on 
+% figure(4)
+% step(Wur,t)
+% grid on
+% figure(5)
+% bode(Wur)
