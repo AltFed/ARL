@@ -42,8 +42,8 @@ figure(2)
 rlocus(L)
 grid on
 %% rete ancitipatrice 
-w=80;
-alfa=0.3;
+w=75;
+alfa=0.2;
 tau=1/(w*sqrt(alfa));
 A=(1+tau*s)/(1+tau*alfa*s);
 C2=C1*A
@@ -74,13 +74,6 @@ impulse(Wyr,t)
 [Acs,Bcs,Ccs,Dcs] = ssdata(C2);
 C2z=c2d(C2,T,'tustin');
 [Ac,Bc,Cc,Dc]=ssdata(C2z)
-
-
-
-
-
-
-
 
 %%
 % N = 1000;
