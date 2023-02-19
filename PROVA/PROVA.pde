@@ -134,15 +134,15 @@ void draw()
 
 void initRe(){
 // ovvero R06
-  Re[0][0]=(cos(alfa)*sin(beta)*cos(theta)-sin(alfa)*sin(theta));
-  Re[0][1]=(-cos(alfa)*sin(beta)*sin(theta)-sin(alfa)*cos(theta));
-  Re[0][2]=(cos(alfa)*cos(beta));
-  Re[1][0]=(sin(alfa)*sin(beta)*cos(theta)+cos(alfa)*sin(theta));
-  Re[1][1]=(-sin(alfa)*sin(beta)*sin(theta)+cos(alfa)*cos(theta));
-  Re[1][2]=(sin(alfa)*cos(beta));
-  Re[2][0]=(-cos(theta)*cos(beta));
-  Re[2][1]=(cos(beta)*sin(theta));
-  Re[2][2]=(sin(beta));
+  Re[0][0]=(cos(-alfa)*sin(-beta)*cos(-theta)-sin(-alfa)*sin(-theta));
+  Re[0][1]=(-cos(-alfa)*sin(-beta)*sin(-theta)-sin(-alfa)*cos(-theta));
+  Re[0][2]=(cos(-alfa)*cos(-beta));
+  Re[1][0]=(sin(-alfa)*sin(-beta)*cos(-theta)+cos(-alfa)*sin(-theta));
+  Re[1][1]=(-sin(-alfa)*sin(-beta)*sin(-theta)+cos(-alfa)*cos(-theta));
+  Re[1][2]=(sin(-alfa)*cos(-beta));
+  Re[2][0]=(-cos(-theta)*cos(-beta));
+  Re[2][1]=(cos(-beta)*sin(-theta));
+  Re[2][2]=(sin(-beta));
 
 }
 
@@ -150,14 +150,14 @@ void initRe(){
 void initR03(){
 
   R03[0][0]=(cos(q[0])*cos(q[1]+q[2]));
-  R03[0][2]=(cos(q[0])*sin(q[1]+q[2]));
   R03[0][1]=(sin(q[0]));
+  R03[0][2]=(cos(q[0])*sin(q[1]+q[2]));
   R03[1][0]=(sin(q[0])*cos(q[1]+q[2]));
-  R03[1][2]=(sin(q[0])*sin(q[1]+q[2]));
   R03[1][1]=(-cos(q[0]));
+  R03[1][2]=(sin(q[0])*sin(q[1]+q[2]));
   R03[2][0]=(sin(q[1]+q[2]));
-  R03[2][2]=(-cos(q[1]+q[2]));
   R03[2][1]=0;
+  R03[2][2]=(-cos(q[1]+q[2]));
 
 }
 
@@ -291,7 +291,7 @@ void robot(){
 //GIUNTO 3 --------------
 
   translate(l2/2+lw/2,0,0);
-  rotateZ(PI+q_eff[2]);//PI
+  rotateZ(+PI+q_eff[2]);//PI
   box(lw,lw,lw);
    //ASSE X3
   stroke(255,0,0);
@@ -357,9 +357,9 @@ void robot(){
 }
 
 void muovi(){
- pwx=(xd-((d6)*Re[0][2]));//60
- pwy=(yd-((d6)*Re[1][2]));//40
- pwz=(-zd-((d6)*Re[2][2])+185); //125
+ pwx=(xd+((-d6)*Re[0][2]));//60
+ pwy=(yd+((-d6)*Re[1][2]));//40
+ pwz=(-zd+((-d6)*Re[2][2])+185); //125
  q[0]=atan2(pwy,pwx)+nGiri[0]*2*PI;//26.57
  A1=pwx*cos(q[0])+pwy*sin(q[0])-T1;//52,08
  A2=(d1)-pwz;//-20
@@ -376,9 +376,9 @@ void muovi(){
  q[3]=atan2(R36[1][2],R36[0][2])+nGiri[3]*2*PI;
  q[5]=atan2(R36[2][1],-R36[2][0])+nGiri[5]*2*PI;
  //calcolo x6 y6 z6
-  x6=T1*cos(q[0])+(T2)*cos(q[0])*cos(q[1]) + (d4)*cos(q[0])*sin(q[1]+q[2]) + (d6)*(cos(q[0])*(cos(q[1]+q[2])*cos(q[3])*sin(q[4])+ sin(q[1]+q[2])*cos(q[4])) + sin(q[0])*sin(q[3])*sin(q[4]));
-  y6=T1*sin(q[0])+(T2)*sin(q[0])*cos(q[1]) + (d4)*sin(q[0])*sin(q[1]+q[2]) + (d6)*(sin(q[0])*(cos(q[1]+q[2])*cos(q[3])*sin(q[4])+ sin(q[1]+q[2])*cos(q[4])) - cos(q[0])*sin(q[3])*sin(q[4]));
-  z6=(d1)+(T2)*sin(q[1])-(d4)*cos(q[1]+q[2])+(d6)*(sin(q[1]+q[2])*cos(q[3])*sin(q[4])-cos(q[1]+q[2])*cos(q[4]));
+  //x6=T1*cos(q[0])+(T2)*cos(q[0])*cos(q[1]) + (d4)*cos(q[0])*sin(q[1]+q[2]) + (d6)*(cos(q[0])*(cos(q[1]+q[2])*cos(q[3])*sin(q[4])+ sin(q[1]+q[2])*cos(q[4])) + sin(q[0])*sin(q[3])*sin(q[4]));
+  //y6=T1*sin(q[0])+(T2)*sin(q[0])*cos(q[1]) + (d4)*sin(q[0])*sin(q[1]+q[2]) + (d6)*(sin(q[0])*(cos(q[1]+q[2])*cos(q[3])*sin(q[4])+ sin(q[1]+q[2])*cos(q[4])) - cos(q[0])*sin(q[3])*sin(q[4]));
+  //z6=(d1)+(T2)*sin(q[1])-(d4)*cos(q[1]+q[2])+(d6)*(sin(q[1]+q[2])*cos(q[3])*sin(q[4])-cos(q[1]+q[2])*cos(q[4]));
   
 
 //  //cinematica diretta per debug e controllo dei valori delle soluzioni. 
