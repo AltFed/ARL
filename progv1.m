@@ -64,13 +64,22 @@ R=pade(exp(-T*s/2),10);
 L2=minreal(L1*R);
 Wyr=minreal(L2/(1+L2));
 figure(5)
+<<<<<<< HEAD
 bode(minreal(L2))
+=======
+bode(L2)
+figure(6)
+rlocus(L2)
+>>>>>>> 3199b6053fe72d85a7334b84c9fb710c2d12ed1b
 grid on
 t=0:20;
 figure(1)
 step(Wyr,t)
 figure(2)
 impulse(Wyr,t)
+Wur=C2/(1+L2)
+figure(3)
+impulse(Wur)
 %% discretizzo controllore
 [Acs,Bcs,Ccs,Dcs] = ssdata(C2);
 C2z=c2d(C2,T,'tustin');
