@@ -3,26 +3,26 @@
 using namespace BLA;
 
 
-BLA::Matrix<3, 3> Ac = { 1.6263, -0.6421, 0.1264, 1.0000, 0, 0, 0, 0.1250, 0 };
-BLA::Matrix<3, 1> Bc = { 32, 0, 0 };
-BLA::Matrix<1, 3> Cc = { -2.3459, 3.8848, -12.2823 };
-BLA::Matrix<1> Dc = { 74.3328 };
+BLA::Matrix<4, 4> Ac = {  1.1894, -0.2820, -0.3839, 0, 0.5000, 0, 0, 0, 0, 0.2500, 0, 0, 0, 0, 0.2500, 0};
+BLA::Matrix<4, 1> Bc = { 256, 0, 0, 0 };
+BLA::Matrix<1, 4> Cc = { -12.0883, 45.7545, -108.6854, 89.5101 };
+BLA::Matrix<1> Dc = { 0.0014 };
 
-BLA::Matrix<3, 3> Ah = { 1.6263, -0.6421, 0.1264, 1.0000, 0, 0, 0, 0.1250, 0 };
-BLA::Matrix<3, 1> Bh = { 32, 0, 0 };
-BLA::Matrix<1, 3> Ch = { -2.3459, 3.8848, -12.2823 };
-BLA::Matrix<1> Dh = { 74.3328 };
+BLA::Matrix<1> Ah = {1};
+BLA::Matrix<1> Bh = {0.1250};
+BLA::Matrix<1> Ch = {0.1600};
+BLA::Matrix<1> Dh = {0.0100};
 
 
-BLA::Matrix<3, 1> X_prec = { 0, 0, 0 };  //condizioni iniziali
+BLA::Matrix<4, 1> X_prec = { 1, 1, 1, 1 };  //condizioni iniziali
 BLA::Matrix<1> e_prec = { 0 };
-BLA::Matrix<3, 1> Xc;
+BLA::Matrix<4, 1> Xc;
 BLA::Matrix<1> e;
 BLA::Matrix<1> u;
 
-BLA::Matrix<3, 1> Xh_prec = { 0, 0, 0 };  //condizioni iniziali
-BLA::Matrix<1> eh_prec = { 0 };
-BLA::Matrix<3, 1> Xh;
+BLA::Matrix<1> Xh_prec = {0};  //condizioni iniziali
+BLA::Matrix<1> yh_prec = {0};
+BLA::Matrix<1> Xh;
 BLA::Matrix<1> eh;
 BLA::Matrix<1> uh;
 
@@ -30,7 +30,7 @@ BLA::Matrix<1> uh;
 double Input = 0;
 double misura = 0;
 float oldtime = 0;
-double k = 0.18;
+double k = 0.0008;
 void setup() {
   // put your setup code here, to run once:
   pinMode(5, OUTPUT);
@@ -43,17 +43,20 @@ void setup() {
 }
 
 void loop() {
+  Serial.print("Loop time: ");
+  Serial.println(millis()-oldtime);
   oldtime = millis();
 
   Xc = Ac * X_prec + Bc * e_prec;
   misura = map(analogRead(A0), 0, 1023, -135, 135);
-  Xh = Ah * Xh_prec + Bh * eh_prec;
-  uh = Ch * Xh + Dh *misura;
-  e = uh;  //calcolo errore di approssimazione
+  if(misura >-8 && misura <4){ misura =0;}
+  e = misura;  //calcolo errore di approssimazione
   u = Cc * Xc + Dc * e;
+  X_prec  = Xc;
+  e_prec = e;
 
 
-  if (Input > -45 && Input < -8) {
+  if (misura > -45 && misura < -8) {
     digitalWrite(5, HIGH);
     digitalWrite(6, LOW);
     if (u(0) * k < 200) {
@@ -61,7 +64,7 @@ void loop() {
     } else {
         analogWrite(11, abs(200));
     }
-  } else if (Input > 4 && Input < 45) {
+  } else if (misura > 4 && misura < 45) {
     digitalWrite(6, HIGH);
     digitalWrite(5, LOW);
     if (u(0) * k < 200) {
@@ -74,12 +77,13 @@ void loop() {
     digitalWrite(5, LOW);
   }
 
-  Serial.print("Input : ");
-  Serial.print(Input);
+  Serial.print("misura : ");
+  Serial.print(misura);
   Serial.print("\t");
   Serial.print("Output : ");
-  Serial.print(u(0) * k);
-  Serial.print("\t");
-  Serial.print("Loop time: ");
-  Serial.println((millis() - oldtime));
+  Serial.print(u(0)*k);
+  Serial.println("\t");
+  
+  delayMicroseconds(5000);
+  
 }
