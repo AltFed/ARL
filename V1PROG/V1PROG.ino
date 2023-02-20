@@ -3,16 +3,32 @@
 using namespace BLA;
 
 
-BLA::Matrix<3, 3> A = { 1.6263, -0.6421, 0.1264, 1.0000, 0, 0, 0, 0.1250, 0 };
-BLA::Matrix<3, 1> B = { 32, 0, 0 };
-BLA::Matrix<1, 3> C = { -2.3459, 3.8848, -12.2823 };
-BLA::Matrix<1> D = { 74.3328 };
+BLA::Matrix<3, 3> Ac = { 1.6263, -0.6421, 0.1264, 1.0000, 0, 0, 0, 0.1250, 0 };
+BLA::Matrix<3, 1> Bc = { 32, 0, 0 };
+BLA::Matrix<1, 3> Cc = { -2.3459, 3.8848, -12.2823 };
+BLA::Matrix<1> Dc = { 74.3328 };
+
+BLA::Matrix<3, 3> Ah = { 1.6263, -0.6421, 0.1264, 1.0000, 0, 0, 0, 0.1250, 0 };
+BLA::Matrix<3, 1> Bh = { 32, 0, 0 };
+BLA::Matrix<1, 3> Ch = { -2.3459, 3.8848, -12.2823 };
+BLA::Matrix<1> Dh = { 74.3328 };
+
+
 BLA::Matrix<3, 1> X_prec = { 0, 0, 0 };  //condizioni iniziali
 BLA::Matrix<1> e_prec = { 0 };
 BLA::Matrix<3, 1> Xc;
 BLA::Matrix<1> e;
 BLA::Matrix<1> u;
+
+BLA::Matrix<3, 1> Xh_prec = { 0, 0, 0 };  //condizioni iniziali
+BLA::Matrix<1> eh_prec = { 0 };
+BLA::Matrix<3, 1> Xh;
+BLA::Matrix<1> eh;
+BLA::Matrix<1> uh;
+
+
 double Input = 0;
+double misura = 0;
 float oldtime = 0;
 double k = 0.18;
 void setup() {
@@ -29,13 +45,15 @@ void setup() {
 void loop() {
   oldtime = millis();
 
-  Xc = A * X_prec + B * e_prec;
-  Input = map(analogRead(A0), 0, 1023, 45, 315);
-  e = 180 - Input;  //calcolo errore di approssimazione
-  u = C * Xc + D * e;
+  Xc = Ac * X_prec + Bc * e_prec;
+  misura = map(analogRead(A0), 0, 1023, -135, 135);
+  Xh = Ah * Xh_prec + Bh * eh_prec;
+  uh = Ch * Xh + Dh *misura;
+  e = uh;  //calcolo errore di approssimazione
+  u = Cc * Xc + Dc * e;
 
 
-  if (Input > 140 && Input < 172) {
+  if (Input > -45 && Input < -8) {
     digitalWrite(5, HIGH);
     digitalWrite(6, LOW);
     if (u(0) * k < 200) {
@@ -43,7 +61,7 @@ void loop() {
     } else {
         analogWrite(11, abs(200));
     }
-  } else if (Input > 184 && Input < 220) {
+  } else if (Input > 4 && Input < 45) {
     digitalWrite(6, HIGH);
     digitalWrite(5, LOW);
     if (u(0) * k < 200) {
