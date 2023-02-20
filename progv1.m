@@ -37,8 +37,8 @@ figure(1)
 bode(L)
 grid on 
 
-figure(2)
-rlocus(L)
+figure(3)
+nyquist(L)
 grid on
 %% rete ancitipatrice 
 w=60;
@@ -55,14 +55,16 @@ grid on
 figure(2)
 rlocus(L1)
 grid on
-
+figure(3)
+nyquist(L)
+grid on
 %% analisi delle prestazioni
 T=0.01;
 R=pade(exp(-T*s/2),10);
 L2=minreal(L1*R);
 Wyr=minreal(L2/(1+L2));
 figure(5)
-bode(L2)
+bode(minreal(L2))
 grid on
 t=0:20;
 figure(1)
