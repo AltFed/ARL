@@ -8,12 +8,11 @@
 // con i tasti + e - si passa dalla soluzione GOMITO ALTO a quella GOMITO BASSO.
 
 float lw=30,l1=50,l2=200,l3=100,l4=100,l5=50,l6=30;  //link
-float g = 50;
 float q[] = {0,0,0,0,0,0};
 float q_eff[]={0,0,0,0,0,0};
-float xBase, yBase,zBase,xDes,yDes,zDes;
+float xBase, yBase,zBase;
 float x6,y6,z6;
-float xd=0,yd=0,zd=0,a;
+float xd=0,yd=0,zd=0;
 float eyeY,segno = 1;
 float alfa=0,beta=0,theta=0;//pinza orientata verso il basso
 float[][] Re = new float[3][3]; // matrice 3x3 dichiarata ma non inizializzata
@@ -23,6 +22,7 @@ float[][] R36 = new float[3][3]; // matrice 3x3 dichiarata ma non inizializzata
 float[][] T03 = new float[4][4]; // matrice 3x3 dichiarata ma non inizializzata
 float[][] T36 = new float[4][4]; // matrice 3x3 dichiarata ma non inizializzata
 float[][] T06 = new float[4][4]; // matrice 3x3 dichiarata ma non inizializzata
+float[][] R_eff = new float[3][3]; // matrice 3x3 dichiarata ma non inizializzata
 float pwx,pwy,pwz;
 float A1,A2;
 float kp=.1,dis=.000001;
@@ -248,6 +248,15 @@ void robot(){
     {
       q_eff[5] += kp*(q[5]-q_eff[5]);
     }
+    R_eff[0][2]=(cos(q[0])*(cos(q[1]+q[2])*cos(q[3])*sin(q[4])+sin(q[1]+q[2])*cos(q[4]))+sin(q[0])*sin(q[3])*sin(q[4]));
+    R_eff[1][2]=(sin(q[0])*(cos(q[1]+q[2])*cos(q[3])*sin(q[4])+sin(q[1]+q[2])*cos(q[4]))-cos(q[0])*sin(q[3])*sin(q[4]));
+    R_eff[2][2]=sin(q[1]+q[2])*cos(q[3])*sin(q[4])-cos(q[1]+q[2])*cos(q[4]);
+    R_eff[1][0]=0;
+    R_eff[0][1]=0;
+    R_eff[1][1]=0;
+    R_eff[2][0]=0;
+    R_eff[2][1]=0;
+    R_eff[0][0]=0;
  // ASSE Y0
   stroke(0,255,0);
   line(xBase,yBase,zBase, xBase+ 120, yBase,zBase);
@@ -271,13 +280,14 @@ void robot(){
   
 // LINK 1
   translate(0,-lw,0);
-  //rotateY(+q_eff[0]);
+  //rotateY(-q_eff[0]);
   box(l1,l1,l1);
   
 // GIUNTO 2
 
   translate(0,-l1/2-lw/2,l1/2-lw/2);
- // rotateX(-q_eff[1]);
+    //rotateX(PI-q_eff[1]);
+rotateX(PI);
   box(l1,lw,lw);
 
 // LINK 2
@@ -288,7 +298,7 @@ void robot(){
 // GIUNTO 3
 
   translate(0,0,lw/2+l2/2);
- // rotateX(-q_eff[2]);
+  //rotateX(-q_eff[2]);
   box(lw,lw,lw);
 
 // LINK 3
@@ -299,13 +309,14 @@ void robot(){
 // LINK 4 = GIUNTO 4
 
   translate(0,-l3/2-l4/2,0);
-  // rotateY(-PI/2-q_eff[3]);
+   //rotateY(-q_eff[3]);
   box(lw,l4,lw);
 
 // GIUNTO 5
 
   translate(0,-l4/2-lw/2,0);
- // rotateX(-q_eff[4]);
+  //rotateX(PI/2-q_eff[4]);//PI/2
+    rotateX(PI/2);
   box(lw,lw,lw);
   
 // LINK 5 
@@ -316,7 +327,7 @@ void robot(){
 // LINK 6 = GIUNTO 6
   
   translate(0,0,lw/2+l5/2);
- // rotateZ(-q_eff[5]);
+  //rotateZ(q_eff[5]);
   box(lw,lw,lw);
 
  // Sistema pinza rispetto la base
@@ -328,14 +339,14 @@ void robot(){
   line(0,0,0,0,0,200);
   //ASSE Y6
   stroke(0,255,0);
-  line(0,0,0,-200,0,0);
+  line(0,0,0,200,0,0);
   stroke(0);
 }
 
 void muovi(){
- pwx=(xd-((d6)*Re[0][2]));//60
+ pwx=(-xd-((d6)*Re[0][2]));//60
  pwy=(yd-((d6)*Re[1][2]));//40
- pwz=(-zd-((d6)*Re[2][2])+185); //125
+ pwz=(zd-((d6)*Re[2][2])+d6/2); //125
  q[0]=atan2(pwy,pwx)+nGiri[0]*2*PI;//26.57
  A1=pwx*cos(q[0])+pwy*sin(q[0])-T1;//52,08
  A2=(d1)-pwz;//-20
@@ -435,22 +446,19 @@ void graphic(){
   text(180,800,20);
    text("theta 1 = ",600,40);
   text(q[1]*180/PI,700,40);
-   text(-0.619*180/PI,800,40);
    text("theta 2 = ",600,60);
   text(q[2]*180/PI,700,60);
-   text(-2.037*180/PI,800,60);
+   
   text("theta 3 = ",600,80);
   text(q[3]*180/PI,700,80);
    text(0,800,80);
   //BETA
   text("theta 4 = ",600,100);
   text(q[4]*180/PI,700,100);
-   text(1.085*180/PI,800,100);
   //THETA
   text("theta 5 =",600,120);
   text(q[5]*180/PI,700,120);
    text(0,800,120);
-  
   fill(255);
   
   text("kp = ",120,80);
@@ -462,6 +470,7 @@ void graphic(){
     text("gomito basso",10,80);
   }
   scriviMatriceColor("Re = ",Re,10,100);
+  scriviMatriceColor("R_eff = ",R_eff,300,100);
     fill(255);
 }
 
