@@ -12,7 +12,7 @@ float q[] = {0,0,0,0,0,0};
 float q_eff[]={0,0,0,0,0,0};
 float xBase, yBase,zBase;
 float x6,y6,z6;
-float xd=0,yd=0,zd=0;
+float xd=335,yd=0,zd=300;
 float eyeY,segno = 1;
 float alfa=0,beta=0,theta=0;//pinza orientata verso il basso
 float[][] Re = new float[3][3]; // matrice 3x3 dichiarata ma non inizializzata
@@ -280,14 +280,14 @@ void robot(){
   
 // LINK 1
   translate(0,-lw,0);
-  //rotateY(-q_eff[0]);
+  rotateY(-PI+q_eff[0]);
   box(l1,l1,l1);
   
 // GIUNTO 2
 
   translate(0,-l1/2-lw/2,l1/2-lw/2);
-    //rotateX(PI-q_eff[1]);
-rotateX(PI);
+    rotateX(-0.490328444-q_eff[1]);
+//rotateX(PI);
   box(l1,lw,lw);
 
 // LINK 2
@@ -298,7 +298,7 @@ rotateX(PI);
 // GIUNTO 3
 
   translate(0,0,lw/2+l2/2);
-  //rotateX(-q_eff[2]);
+  rotateX(-3.0955864+q_eff[2]);
   box(lw,lw,lw);
 
 // LINK 3
@@ -309,14 +309,14 @@ rotateX(PI);
 // LINK 4 = GIUNTO 4
 
   translate(0,-l3/2-l4/2,0);
-   //rotateY(-q_eff[3]);
+   rotateY(+q_eff[3]);
   box(lw,l4,lw);
 
 // GIUNTO 5
 
   translate(0,-l4/2-lw/2,0);
-  //rotateX(PI/2-q_eff[4]);//PI/2
-    rotateX(PI/2);
+  rotateX(-0.533172+q_eff[4]);//PI/2
+    //rotateX(PI/2);
   box(lw,lw,lw);
   
 // LINK 5 
@@ -327,7 +327,7 @@ rotateX(PI);
 // LINK 6 = GIUNTO 6
   
   translate(0,0,lw/2+l5/2);
-  //rotateZ(q_eff[5]);
+  rotateZ(q_eff[5]);
   box(lw,lw,lw);
 
  // Sistema pinza rispetto la base
@@ -346,7 +346,7 @@ rotateX(PI);
 void muovi(){
  pwx=(-xd-((d6)*Re[0][2]));//60
  pwy=(yd-((d6)*Re[1][2]));//40
- pwz=(zd-((d6)*Re[2][2])+d6/2); //125
+ pwz=(zd-((d6)*Re[2][2])); //125
  q[0]=atan2(pwy,pwx)+nGiri[0]*2*PI;//26.57
  A1=pwx*cos(q[0])+pwy*sin(q[0])-T1;//52,08
  A2=(d1)-pwz;//-20
@@ -363,9 +363,9 @@ void muovi(){
  q[3]=atan2(R36[1][2],R36[0][2])+nGiri[3]*2*PI;
  q[5]=atan2(R36[2][1],-R36[2][0])+nGiri[5]*2*PI;
  //calcolo x6 y6 z6
-  //x6=T1*cos(q[0])+(T2)*cos(q[0])*cos(q[1]) + (d4)*cos(q[0])*sin(q[1]+q[2]) + (d6)*(cos(q[0])*(cos(q[1]+q[2])*cos(q[3])*sin(q[4])+ sin(q[1]+q[2])*cos(q[4])) + sin(q[0])*sin(q[3])*sin(q[4]));
-  //y6=T1*sin(q[0])+(T2)*sin(q[0])*cos(q[1]) + (d4)*sin(q[0])*sin(q[1]+q[2]) + (d6)*(sin(q[0])*(cos(q[1]+q[2])*cos(q[3])*sin(q[4])+ sin(q[1]+q[2])*cos(q[4])) - cos(q[0])*sin(q[3])*sin(q[4]));
-  //z6=(d1)+(T2)*sin(q[1])-(d4)*cos(q[1]+q[2])+(d6)*(sin(q[1]+q[2])*cos(q[3])*sin(q[4])-cos(q[1]+q[2])*cos(q[4]));
+  x6=T1*cos(0)+(T2)*cos(0)*cos(0) + (d4)*cos(0)*sin(0+PI) + (d6)*(cos(q[0])*(cos(0+PI)*cos(0)*sin(-PI/2)+ sin(0+PI)*cos(-PI/2)) + sin(0)*sin(0)*sin(-PI/2));
+  y6=T1*sin(0)+(T2)*sin(0)*cos(0) + (d4)*sin(0)*sin(0+PI) + (d6)*(sin(0)*(cos(0+PI)*cos(0)*sin(-PI/2)+ sin(0+PI)*cos(-PI/2)) - cos(0)*sin(0)*sin(-PI/2));
+  z6=(d1)+(T2)*sin(0)-(d4)*cos(0+PI)+(d6)*(sin(0+PI)*cos(0)*sin(-PI/2)-cos(0+PI)*cos(-PI/2));
 
 
 //  //cinematica diretta per debug e controllo dei valori delle soluzioni. 
@@ -430,14 +430,14 @@ void graphic(){
   
   //ALFA
   fill(255,255,255);
-  text("alfa = ",400,20);
-  text(alfa*180/PI,500,20);
+  text("x6 = ",400,20);
+  text(x6,500,20);
   //BETA
-  text("beta = ",400,40);
-  text(beta*180/PI,500,40);
+  text("y6 = ",400,40);
+  text(y6,500,40);
   //THETA
-  text("theta = ",400,60);
-  text(theta*180/PI,500,60);
+  text("z6 = ",400,60);
+  text(z6,500,60);
   
     //ALFA
   fill(255,255,255);
