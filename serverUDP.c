@@ -12,7 +12,7 @@
 
 #define MAXLINE     4096
 
-static int nchildren;
+static int	nchildren;
 static pid_t *pids;
 static struct flock	lock_it, unlock_it;
 static int		lock_fd = -1;
@@ -91,14 +91,16 @@ void web_child(int sockfd)
 	}
 }
 */
-  printf("sono il child %d \n",getpid());
+  printf(" child  child %d \n",getpid());
 }
 
 void child_main(int i, int listenfd, int addrlen){
 	int connfd;
 	socklen_t clilen;
+	void	web_child(int);
 	struct sockaddr *cliaddr;
 	if ( (cliaddr = (struct sockaddr *)malloc(addrlen)) == NULL) {
+
    		fprintf(stderr, "errore in malloc");
     		exit(1);
 	}
@@ -106,26 +108,18 @@ void child_main(int i, int listenfd, int addrlen){
     	for ( ; ; ) {
 		clilen = addrlen;
 		my_lock_wait(); /* my_lock_wait() usa fcntl() */
-		if ( (connfd = accept(listenfd, cliaddr, &clilen)) == -1) {
-      			perror("errore in accept \n ");
-      			exit(1);
-		}
-
 		my_lock_release();
 		web_child(connfd); /* processa la richiesta */
-		if (close(connfd) == -1) {
-			perror("errore in close");
-     			exit(1);
-		}
 	}
 }
 
 // creo i processi figli 
 pid_t child_make(int i, int listenfd, int addrlen){
 	pid_t pid;
-	if((pid=fork()>0))
+	if((pid=fork()) >0 )
 		return(pid);// processo padre
-	child_main(i,listenfd,addrlen);// non ritorna mai
+			    //
+	child_main(i, listenfd, addrlen);// non ritorna mai
 }
 // blocco i segnali esterni tranne alcuni che decido ctrl
 Sigfunc *signal(int signum, Sigfunc *func)
@@ -175,30 +169,26 @@ int SERV_PORT=atoi(argv[3]);
 	}
 // variabili per il prefork	
 int listenfd, i;
-socklen_t addrlen;
 //queste due nemmeno servono
 void sig_int(int);
-pid_t child_make(int, int, int);
-
 
 // variabili normali
-  int nchildren=10; // numeri di figli qui possiamo rendere le cose dinamiche
-  int sockfd;
-  socklen_t len=sizeof(struct sockaddr_in);
-  struct sockaddr_in addr;
+   nchildren=5; // numeri di figli qui possiamo rendere le cose dinamiche
+  struct sockaddr_in servaddr;
+  socklen_t addrlen=sizeof(servaddr);
 
   if ((listenfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) { /* crea il socket */
     perror("errore in socket");
     exit(1);
   }
 
-  memset((void *)&addr, 0, sizeof(addr));
-  addr.sin_family = AF_INET;
-  addr.sin_addr.s_addr = htonl(INADDR_ANY); /* il server accetta pacchetti su una qualunque delle sue interfacce di rete */
-  addr.sin_port = htons(SERV_PORT); /* numero di porta del server */
+  memset((void *)&servaddr, 0, sizeof(servaddr));
+  servaddr.sin_family = AF_INET;
+  servaddr.sin_addr.s_addr = htonl(INADDR_ANY); /* il server accetta pacchetti su una qualunque delle sue interfacce di rete */
+  servaddr.sin_port = htons(SERV_PORT); /* numero di porta del server */
 
   /* assegna l'indirizzo al socket */
-  if (bind(listenfd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+  if (bind(listenfd, (struct sockaddr *) &servaddr, sizeof(servaddr)) < 0) {
     perror("errore in bind");
     exit(1);
   }
