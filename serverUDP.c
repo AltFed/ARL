@@ -74,8 +74,9 @@ void my_lock_release()
 void web_child(int sockfd)
 {
   char buff[MAXLINE];
+  socklen_t len=sizeof(struct sockaddr_in);
+  struct sockaddr_in addr;
   //ascolto il msg del client
-  /*
   while (1) {
 	  len = sizeof(addr);
 	  if ( (recvfrom(sockfd, buff, MAXLINE, 0, (struct sockaddr *)&addr, &len)) < 0) {
@@ -83,6 +84,8 @@ void web_child(int sockfd)
 		exit(-1);
 	  }
 // 	qui devo implementare la logica di risposta del server 
+	
+
 
 // server per rispondere alla richiesta del client
 	if (sendto(sockfd, buff, strlen(buff), 0, (struct sockaddr *)&addr, sizeof(addr)) < 0){
@@ -90,8 +93,6 @@ void web_child(int sockfd)
 		exit(-1);
 	}
 }
-*/
-  printf(" child  child %d \n",getpid());
 }
 
 void child_main(int i, int listenfd, int addrlen){
@@ -109,6 +110,7 @@ void child_main(int i, int listenfd, int addrlen){
 		clilen = addrlen;
 		my_lock_wait(); /* my_lock_wait() usa fcntl() */
 		my_lock_release();
+		// va bene cosi perchè sennò lavora solo una per volta invece cosi solo uno per volta legge il comando 
 		web_child(connfd); /* processa la richiesta */
 	}
 }
