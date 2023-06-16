@@ -12,6 +12,10 @@
 
 #define SERV_PORT   5193 
 #define MAXLINE	1024
+#define GET 0
+#define PUT 1
+#define LIST 2
+
 int len=10;	// len per dimensione buffer send
 int sockfd;	// descrittore alla socket creata per comunicare con il server 
 struct    sockaddr_in   servaddr;
@@ -27,30 +31,48 @@ void congest(){
 }
 
 // funzione che implementare la send to server
-void csend(char *buff,int i){
-	if(i==1){
-		// apro il file che voglio mandare lo leggo e poi invio al server
-	}
+void csend(char *pkt,int mode){
+
+    switch(mode){
+        case GET :
+                // invio nome del file dal prendere, invoco funzione per ricevere ( congest ?? )
+                
+            break;
+        case PUT:
+                // apro file, bufferizzo e invio, mando in volo max N pacchetti, finche non ho ack. Come faccio a leggere se sono in write? 
+                
+            break;
+        case LIST:
+                // invio semplicemente comando list a server, il server crea un file con un elenco, mi faccio spedire il file e lo printo riga per riga.
+                
+            break;
+    }
+
+/*
 // Invia al server il pacchetto di richiesta
-  if (sendto(sockfd, buff, strlen(buff), 0, (struct sockaddr *) &servaddr, sizeof(servaddr)) < 0) {
+  if (sendto(sockfd, pkt, strlen(pkt), 0, (struct sockaddr *) &servaddr, sizeof(servaddr)) < 0) {
     perror("errore in sendto");
     exit(1);
   }
 // per implementare il timeout uso SIGALRM
 
-alarm(2);  // Scheduled alarm after 2 seconds
+alarm(0.5);  // Scheduled alarm after 500ms
 		 
 
 // Legge dal socket il pacchetto di risposta 
- if(recvfrom(sockfd, buff, len , 0, (struct sockaddr *) &servaddr, sizeof(servaddr) < 0)){
+ if(recvfrom(sockfd, pkt, len , 0, (struct sockaddr *) &servaddr, sizeof(servaddr) < 0)){
     perror("errore in recvfrom");
     exit(1);
   }
 
 // invoco la funzione congest per gestire l'arrivo di un ack aumento len 
   congest();
-
+*/
 }
+
+
+
+
 
 // concateno la stringa e creo il comando get da inviare al server
 void cget(){
@@ -61,7 +83,7 @@ void cget(){
 
 	fscanf(stdin,"%s",b);
 	snprintf(buff,MAXLINE,"get %s",b);
-	csend(buff,0);
+	csend(buff,GET);
 
  }
 
@@ -69,7 +91,7 @@ void cget(){
 void clist(){
 	char * buff=malloc(MAXLINE);
 	buff="list";
-	csend(buff,0);
+	csend(buff,LIST);
 
 }
 
@@ -84,7 +106,7 @@ void cput(){
 	snprintf(buff,MAXLINE,"put %s",b);
 
 	// metto un numero perchè cosi gestisco i casi in cui richiedo solo dal caso in cui devo inviare il file e aprire quindi un file leggerlo ecc 
-	csend(buff,1);
+	csend(buff,PUT);
 
 }
 
