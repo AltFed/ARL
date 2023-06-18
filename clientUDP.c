@@ -9,14 +9,13 @@
 #include <errno.h>
 #include <signal.h>
 
-
 #define SERV_PORT   5193 
 #define MAXLINE	1024
 #define GET 0
 #define PUT 1
 #define LIST 2
 
-int len=10;	// len per dimensione buffer send
+int len=100;	// len per dimensione buffer send
 int sockfd;	// descrittore alla socket creata per comunicare con il server 
 struct    sockaddr_in   servaddr;
 
@@ -32,7 +31,11 @@ void congest(){
 
 // funzione che implementare la send to server
 void csend(char *pkt,int mode){
-
+char * buff=malloc(MAXLINE);
+char seq[2];
+int k=8;
+sprintf(seq,"%d",k);
+/*
     switch(mode){
         case GET :
                 // invio nome del file dal prendere, invoco funzione per ricevere ( congest ?? )
@@ -48,15 +51,19 @@ void csend(char *pkt,int mode){
             break;
     }
 
-/*
+*/
+strcat(buff,seq);
+strcat(buff,pkt);
+buff[strlen(buff)+1]='\0';
+printf("ecco il buff che passo al server %s\n",buff);
 // Invia al server il pacchetto di richiesta
-  if (sendto(sockfd, pkt, strlen(pkt), 0, (struct sockaddr *) &servaddr, sizeof(servaddr)) < 0) {
+  if (sendto(sockfd, buff, len, 0, (struct sockaddr *) &servaddr, sizeof(servaddr)) < 0) {
     perror("errore in sendto");
     exit(1);
   }
 // per implementare il timeout uso SIGALRM
 
-alarm(0.5);  // Scheduled alarm after 500ms
+//alarm(0.5);  // Scheduled alarm after 500ms
 		 
 
 // Legge dal socket il pacchetto di risposta 
@@ -64,10 +71,10 @@ alarm(0.5);  // Scheduled alarm after 500ms
     perror("errore in recvfrom");
     exit(1);
   }
+	printf("ho ricevuto dal server %s\n",pkt);
 
 // invoco la funzione congest per gestire l'arrivo di un ack aumento len 
-  congest();
-*/
+  //congest();
 }
 
 

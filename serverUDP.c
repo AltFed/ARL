@@ -10,13 +10,22 @@
 #include <errno.h>
 #include <wait.h>
 
-#define MAXLINE     4096
+#define L 4
+#define MAXLINE 4096
 
+// vedere gli indirizzi da usare per recvform sendto 
+int TO=0;
+static int rcvlen=100;
 static int	nchildren;
 static pid_t *pids;
 static struct flock	lock_it, unlock_it;
 static int		lock_fd = -1;
 		/* fcntl() will fail if my_lock_init() not called */
+
+// globali cosi posso usare più funzioni per rcvform e sendto
+//
+struct sockaddr_in addr;
+socklen_t addrlen=sizeof(struct sockaddr_in);
 
 // implementa il controllo di segnali per gestire poi i figli
 typedef void Sigfunc(int);
@@ -71,47 +80,93 @@ void my_lock_release()
     }
 }
 
-void web_child(int sockfd)
+// gestice nello specifico il comando get
+void send_get(){
+
+}
+
+// gestice nello specifico il comando put
+void send_put(){
+
+}
+
+// gestice nello specifico il comando list
+void send_list(){
+
+}
+
+// gestisce il comando che il client richiede 
+void send_control(int sockfd)
 {
-  char buff[MAXLINE];
-  socklen_t len=sizeof(struct sockaddr_in);
-  struct sockaddr_in addr;
-  //ascolto il msg del client
-  while (1) {
-	  len = sizeof(addr);
-	  if ( (recvfrom(sockfd, buff, MAXLINE, 0, (struct sockaddr *)&addr, &len)) < 0) {
+  char *buff=malloc(MAXLINE);
+  char * temp_buff=malloc(L);
+  int lenbuff=0;
+  int i=0;
+  int k=0;
+  char ack[2];
+  temp_buff="ciaociaociao";
+   while(1){
+	//ho capito se leggiamo e poi implementiamo la gestione delle cose su altre funzione allora dobbiamo passare anche il buffer sennò quello che leggo cancello dalla socket vedere anche il client in tale caso !!!!!!!
+	  if ( (recvfrom(sockfd,buff, rcvlen, 0, (struct sockaddr *)&addr, &addrlen)) < 0) {
 		perror("errore in recvfrom");
 		exit(-1);
 	  }
-// 	qui devo implementare la logica di risposta del server 
-	
+	  strncpy(ack,buff,1);
+	  ack[1]='\0';
+	  printf("ack ricevuto %s\n",ack);
+	  printf("msg ricevuto %s\n",buff);
+	  char *str=malloc(MAXLINE);
+	  strcat(str,ack);
+	  strcat(str,temp_buff);
 
+	  printf(" invio il msg %s \n",str);
 
-// server per rispondere alla richiesta del client
-	if (sendto(sockfd, buff, strlen(buff), 0, (struct sockaddr *)&addr, sizeof(addr)) < 0){
+	if (sendto(sockfd, str, strlen(str), 0, (struct sockaddr *)&addr, &addrlen) < 0){
 		perror("errore in sendto");
 		exit(-1);
 	}
-}
+
+  }
+
+// 	qui devo implementare la logica di risposta del server 
+// 	faccio un while cosi da individuare l'indice che mi serve per poi ottenere il comando scelto dal client
+/*
+	while(buff[i] != " "){
+		i++;
+	}
+	strncpy(temp_buff,buff,i+1);
+
+	//forse serve 
+	
+	temp_buff [i+1]='\0';
+
+	// implemento logica  per gestire i vari casi
+ 
+	if (strcmp(temp_buff, "get") == 0) {
+		send_get();
+	} 
+	else if (strcmp(temp_buff, "put") == 0){
+		send_put();
+	}
+	else if(strcmp(temp_buff,"list") == 0){
+		send_list();
+	}
+
+
+	
+
+*/
 }
 
 void child_main(int i, int listenfd, int addrlen){
-	int connfd;
-	socklen_t clilen;
-	void	web_child(int);
-	struct sockaddr *cliaddr;
-	if ( (cliaddr = (struct sockaddr *)malloc(addrlen)) == NULL) {
 
-   		fprintf(stderr, "errore in malloc");
-    		exit(1);
-	}
 	printf("child %ld starting\n", (long) getpid());
+
     	for ( ; ; ) {
-		clilen = addrlen;
 		my_lock_wait(); /* my_lock_wait() usa fcntl() */
 		my_lock_release();
 		// va bene cosi perchè sennò lavora solo una per volta invece cosi solo uno per volta legge il comando 
-		web_child(connfd); /* processa la richiesta */
+		send_control(listenfd); /* processa la richiesta */
 	}
 }
 
@@ -123,6 +178,7 @@ pid_t child_make(int i, int listenfd, int addrlen){
 			    //
 	child_main(i, listenfd, addrlen);// non ritorna mai
 }
+
 // blocco i segnali esterni tranne alcuni che decido ctrl
 Sigfunc *signal(int signum, Sigfunc *func)
 {
@@ -139,6 +195,12 @@ Sigfunc *signal(int signum, Sigfunc *func)
     return(SIG_ERR);
   return(oact.sa_handler);
 }
+
+//funzione che gestisce il timeout  
+void sig_time(int signo){
+
+}
+
 // termina i figli non ho stato di zombie 
 void sig_int(int signo)
 {
@@ -162,7 +224,7 @@ int main(int argc, char **argv) {
 	}
 // variabili richieste dalla traccia
 int p=atoi(argv[1]);
-int TO=atoi(argv[2]);
+TO=atoi(argv[2]);
 int SERV_PORT=atoi(argv[3]);
 
 	if(SERV_PORT<255){
@@ -176,21 +238,19 @@ void sig_int(int);
 
 // variabili normali
    nchildren=5; // numeri di figli qui possiamo rendere le cose dinamiche
-  struct sockaddr_in servaddr;
-  socklen_t addrlen=sizeof(servaddr);
-
+		//
   if ((listenfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) { /* crea il socket */
     perror("errore in socket");
     exit(1);
   }
 
-  memset((void *)&servaddr, 0, sizeof(servaddr));
-  servaddr.sin_family = AF_INET;
-  servaddr.sin_addr.s_addr = htonl(INADDR_ANY); /* il server accetta pacchetti su una qualunque delle sue interfacce di rete */
-  servaddr.sin_port = htons(SERV_PORT); /* numero di porta del server */
+  memset((void *)&addr, 0, sizeof(addr));
+  addr.sin_family = AF_INET;
+  addr.sin_addr.s_addr = htonl(INADDR_ANY); /* il server accetta pacchetti su una qualunque delle sue interfacce di rete */
+  addr.sin_port = htons(SERV_PORT); /* numero di porta del server */
 
   /* assegna l'indirizzo al socket */
-  if (bind(listenfd, (struct sockaddr *) &servaddr, sizeof(servaddr)) < 0) {
+  if (bind(listenfd, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
     perror("errore in bind");
     exit(1);
   }
@@ -210,14 +270,16 @@ pids = (pid_t *)calloc(nchildren, sizeof(pid_t));
     pids[i] = child_make(i, listenfd, addrlen);	/* parent returns */
   }
   if (signal(SIGINT, sig_int) == SIG_ERR) {
-    fprintf(stderr, "errore in signal");
+    fprintf(stderr, "errore in signal INT ");
     exit(1);
   }
-
+  if(signal(SIGALRM, sig_time) == SIG_ERR){
+	  fprintf(stderr,"errore in signal TO");
+	  exit(1);
+  }
   for ( ; ; )
     pause();	/* everything done by children */
 }
-
 
 
 
