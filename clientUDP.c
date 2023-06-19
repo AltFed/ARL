@@ -9,72 +9,81 @@
 #include <errno.h>
 #include <signal.h>
 
+#define DIM_MAX 5 
 #define SERV_PORT   5193 
 #define MAXLINE	1024
-#define GET 0
-#define PUT 1
-#define LIST 2
 
-int len=100;	// len per dimensione buffer send
+int dim_send=5;
+
 int sockfd;	// descrittore alla socket creata per comunicare con il server 
 struct    sockaddr_in   servaddr;
 
 // gestisce il segnale di alarm (TIMEOUT)
 void sig_handler(int signum){
-	// qui devo ridurre il len di quanto mi pare 
+// qui devo ridurre il len di quanto mi pare
+	congest();
 }
 
 // implementa il controllo della congestione
 void congest(){
-
+	if(dim_send>2){
+		dim_send--;
+	}	
 }
 
 // funzione che implementare la send to server
-void csend(char *pkt,int mode){
-char * buff=malloc(MAXLINE);
-char seq[2];
-int k=8;
-sprintf(seq,"%d",k);
-/*
-    switch(mode){
-        case GET :
-                // invio nome del file dal prendere, invoco funzione per ricevere ( congest ?? )
-                
-            break;
-        case PUT:
-                // apro file, bufferizzo e invio, mando in volo max N pacchetti, finche non ho ack. Come faccio a leggere se sono in write? 
-                
-            break;
-        case LIST:
-                // invio semplicemente comando list a server, il server crea un file con un elenco, mi faccio spedire il file e lo printo riga per riga.
-                
-            break;
-    }
+void csend(char *pkt){
+bool stay=true;
+char * snd_buff=malloc(MAXLINE);
+char * rcv_buff=malloc(MAXLINE);
+char * ack=malloc(100);
+char seq[100];
+int k=0,i=0;
+while(stay){
+	if(i<dim_send){
+		i++;
+		sprintf(seq,"%d ",k);
+		k++;
+		strcat(snd_buff,seq);
 
-*/
-strcat(buff,seq);
-strcat(buff,pkt);
-buff[strlen(buff)+1]='\0';
-printf("ecco il buff che passo al server %s\n",buff);
+		strcat(snd_buff,pkt);
+
+		buff[strlen(buff)+1]='\0';
+		//temp=read_file();
+		//strcat(buff+strlen(buff),temp);
+		printf("ecco il buff che passo al server %s\n",buff);
+
 // Invia al server il pacchetto di richiesta
-  if (sendto(sockfd, buff, len, 0, (struct sockaddr *) &servaddr, sizeof(servaddr)) < 0) {
-    perror("errore in sendto");
-    exit(1);
-  }
-// per implementare il timeout uso SIGALRM
 
-//alarm(0.5);  // Scheduled alarm after 500ms
-		 
+  		if (sendto(sockfd, snd_buff, sizeof(snd_buff) , MSG_DONTWAIT, (struct sockaddr *) &servaddr, sizeof(servaddr)) < 0) {
+    			perror("errore in sendto");
+    			exit(1);
+ 			 }
 
+	// per implementare il timeout uso SIGALRM
+
+		//alarm(0.5);  // Scheduled alarm after 500ms		
 // Legge dal socket il pacchetto di risposta 
- if(recvfrom(sockfd, pkt, len , 0, (struct sockaddr *) &servaddr, sizeof(servaddr) < 0)){
+
+ if(recvfrom(sockfd, rcv_buff, MAXLINE, MSG_DONTWAIT, (struct sockaddr *) &servaddr, sizeof(servaddr) < 0)){
     perror("errore in recvfrom");
     exit(1);
   }
-	printf("ho ricevuto dal server %s\n",pkt);
+ while(rcv_buff[i] != ' '){
+	 i++;
+ }
+
+ strncpy(rcv_seq,rcv_buff,i);
+
+ if(strcmp(seq,rcv_seq)){
+	 alarm(0);
+ }
+ printf("ho ricevuto dal server %s\n",pkt);
 
 // invoco la funzione congest per gestire l'arrivo di un ack aumento len 
   //congest();
+	}
+}
 }
 
 
@@ -90,7 +99,7 @@ void cget(){
 
 	fscanf(stdin,"%s",b);
 	snprintf(buff,MAXLINE,"get %s",b);
-	csend(buff,GET);
+	csend(buff);
 
  }
 
@@ -98,7 +107,7 @@ void cget(){
 void clist(){
 	char * buff=malloc(MAXLINE);
 	buff="list";
-	csend(buff,LIST);
+	csend(buff);
 
 }
 
@@ -113,7 +122,7 @@ void cput(){
 	snprintf(buff,MAXLINE,"put %s",b);
 
 	// metto un numero perchè cosi gestisco i casi in cui richiedo solo dal caso in cui devo inviare il file e aprire quindi un file leggerlo ecc 
-	csend(buff,PUT);
+	csend(buff);
 
 }
 
@@ -121,7 +130,7 @@ void cput(){
 void req(){
 	int a;
    	while(1){
-	printf("Inserire numero: -1 exit \n");
+	printf("Inserire numero 0=get 1=list 2=put : -1 exit \n");
 	fscanf(stdin,"%d",&a);
 	switch (a){
 		case 0:

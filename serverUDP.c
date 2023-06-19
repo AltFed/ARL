@@ -101,9 +101,9 @@ void send_control(int sockfd)
   char *buff=malloc(MAXLINE);
   char * temp_buff=malloc(L);
   int lenbuff=0;
-  int i=0;
-  int k=0;
-  char ack[2];
+  int i=0,k=0,n=0;
+  char ack[100];
+  char seq[100];
   temp_buff="ciaociaociao";
    while(1){
 	//ho capito se leggiamo e poi implementiamo la gestione delle cose su altre funzione allora dobbiamo passare anche il buffer sennò quello che leggo cancello dalla socket vedere anche il client in tale caso !!!!!!!
@@ -111,10 +111,22 @@ void send_control(int sockfd)
 		perror("errore in recvfrom");
 		exit(-1);
 	  }
-	  strncpy(ack,buff,1);
-	  ack[1]='\0';
+
+	  while(buff[i] != ' '){
+		  i++;
+	  }
+
+	  while(buff[i+n] != ' '){
+		  n++;
+	  }
+
+	  strncpy(ack,buff,i);
+	  ack[i+1]=' ';
+	  ack[i+2]='\0';
+	  strncpy(seq,buff+i,k);
 	  printf("ack ricevuto %s\n",ack);
 	  printf("msg ricevuto %s\n",buff);
+	  printf("seq mio che si aspetta %s\n",seq);
 	  char *str=malloc(MAXLINE);
 	  strcat(str,ack);
 	  strcat(str,temp_buff);
