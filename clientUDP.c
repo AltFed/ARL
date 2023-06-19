@@ -18,12 +18,6 @@ int dim_send = 5;
 int sockfd;  // descrittore alla socket creata per comunicare con il server
 struct sockaddr_in servaddr;
 
-// gestisce il segnale di alarm (TIMEOUT)
-void sig_handler(int signum) {
-  // qui devo ridurre il len di quanto mi pare
-  congest();
-}
-
 // implementa il controllo della congestione
 void congest() {
   if (dim_send > 2) {
@@ -31,42 +25,19 @@ void congest() {
   }
 }
 
-// funzione che implementare la send to server
-void command_send(char *pkt) {
-  bool stay = true;
-  char *snd_buff = malloc(MAXLINE);
-  char *rcv_buff = malloc(MAXLINE);
-  char *ack = malloc(100);
-  char seq[100];
-  int k = 0, i = 0;
-  while (stay) {
+// gestisce il segnale di alarm (TIMEOUT)
+void sig_handler(int signum) {
+  // qui devo ridurre il len di quanto mi pare
+  congest();
+}
+
+void file_send(char *file_name){
+/*
+ * bool stay = true;
+   while (stay) {
     if (i < dim_send) {
       i++;
-      sprintf(seq, "%d ", k);
-      k++;
-      strcat(snd_buff, seq);
-
-      strcat(snd_buff, pkt);
-
-      buff[strlen(buff) + 1] = '\0';
-      // temp=read_file();
-      // strcat(buff+strlen(buff),temp);
-      printf("ecco il buff che passo al server %s\n", buff);
-
-      // Invia al server il pacchetto di richiesta
-
-      if (sendto(sockfd, snd_buff, sizeof(snd_buff), MSG_DONTWAIT,
-                 (struct sockaddr *)&servaddr, sizeof(servaddr)) < 0) {
-        perror("errore in sendto");
-        exit(1);
-      }
-
-      // per implementare il timeout uso SIGALRM
-
-      // alarm(0.5);  // Scheduled alarm after 500ms
-      // Legge dal socket il pacchetto di risposta
-
-      if (recvfrom(sockfd, rcv_buff, MAXLINE, MSG_DONTWAIT,
+    if (recvfrom(sockfd, rcv_buff, MAXLINE, MSG_DONTWAIT,
                    (struct sockaddr *)&servaddr, sizeof(servaddr) < 0)) {
         perror("errore in recvfrom");
         exit(1);
@@ -84,8 +55,60 @@ void command_send(char *pkt) {
 
       // invoco la funzione congest per gestire l'arrivo di un ack aumento len
       // congest();
-    }
-  }
+      // }
+      // }
+      // */
+
+}
+void file_receive(){
+
+}
+// funzione che implementare la send to server
+void command_send(char *pkt) {
+  char *snd_buff = malloc(MAXLINE);
+  char *rcv_buff = malloc(MAXLINE);
+  char *ack = malloc(10);
+  char seq[10];
+  int k = 0,i=0;
+      sprintf(seq, "%d ", k);
+
+      strcat(snd_buff, seq);
+
+      strcat(snd_buff, pkt);
+
+      snd_buff[strlen(snd_buff) + 1] = '\0';
+
+      printf("ecco il buff che passo al server %s\n", snd_buff);
+
+      // Invia al server il pacchetto di richiesta
+
+      if (sendto(sockfd, snd_buff, strlen(snd_buff), MSG_DONTWAIT,(struct sockaddr *)&servaddr, sizeof(servaddr)) < 0) {
+        perror("errore in sendto");
+        exit(1);
+      }
+
+      // per implementare il timeout uso SIGALRM
+
+      //alarm(0.5);  // Scheduled alarm after 500ms
+
+      // Legge dal socket il pacchetto di risposta
+      if (recvfrom(sockfd, rcv_buff, MAXLINE, 0, (struct sockaddr *)&servaddr, sizeof(servaddr) < 0)) {
+        perror("errore in recvfrom");
+        exit(1);
+      }
+      printf("%s\n",rcv_buff);
+   // qui copio l'ack inviato a numero dal server 
+      strcpy(ack,rcv_buff);
+
+      printf("ack rivecuto %s -> ack che mi aspettavo %s \n",ack,seq);
+      fflush(stdout);
+
+      if(strcmp(ack,seq)){
+	      alarm(0);
+      }
+      free(snd_buff);
+      free(rcv_buff);
+      // qui per gestire la ritrasmissione posso usare una variabile globale in cui associo un valore per GET ecc e la gestisco al sign_handler per richiamare command_send e ritrasmettere il comando 
 }
 
 // concateno la stringa e creo il comando get da inviare al server
@@ -128,7 +151,7 @@ void cput() {
 void req() {
   int a;
   while (1) {
-    printf("Inserire numero 0=get 1=list 2=put : -1 exit \n");
+    printf("Inserire numero:\nget=0\nlist=1\nput=2\nexit=-1\n");
     fscanf(stdin, "%d", &a);
     switch (a) {
       case 0:

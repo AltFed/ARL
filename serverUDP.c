@@ -15,7 +15,6 @@
 
 // vedere gli indirizzi da usare per recvform sendto
 int TO = 0;
-static int rcvlen = 100;
 static int nchildren;
 static pid_t *pids;
 static struct flock lock_it, unlock_it;
@@ -89,45 +88,37 @@ void send_list() {}
 // gestisce il comando che il client richiede
 void send_control(int sockfd) {
   char *buff = malloc(MAXLINE);
-  char *temp_buff = malloc(L);
+  char *str = malloc(MAXLINE);
   int lenbuff = 0;
-  int i = 0, k = 0, n = 0;
+  int i = 0, k = 0;
   char ack[100];
   char seq[100];
-  temp_buff = "ciaociaociao";
   while (1) {
     // ho capito se leggiamo e poi implementiamo la gestione delle cose su altre
     // funzione allora dobbiamo passare anche il buffer sennò quello che leggo
     // cancello dalla socket vedere anche il client in tale caso !!!!!!!
-    if ((recvfrom(sockfd, buff, rcvlen, 0, (struct sockaddr *)&addr,
-                  &addrlen)) < 0) {
+    if ((recvfrom(sockfd, buff,MAXLINE, 0, (struct sockaddr *)&addr,&addrlen)) < 0) {
       perror("errore in recvfrom");
       exit(-1);
     }
-
+    //leggo seq_num del client 
     while (buff[i] != ' ') {
       i++;
     }
 
-    while (buff[i + n] != ' ') {
-      n++;
-    }
-
     strncpy(ack, buff, i);
-    ack[i + 1] = ' ';
-    ack[i + 2] = '\0';
-    strncpy(seq, buff + i, k);
+
+    ack[i + 1] = '\0';
+
     printf("ack ricevuto %s\n", ack);
+
     printf("msg ricevuto %s\n", buff);
-    printf("seq mio che si aspetta %s\n", seq);
-    char *str = malloc(MAXLINE);
+
     strcat(str, ack);
-    strcat(str, temp_buff);
 
     printf(" invio il msg %s \n", str);
 
-    if (sendto(sockfd, str, strlen(str), 0, (struct sockaddr *)&addr,
-               &addrlen) < 0) {
+    if (sendto(sockfd, str, strlen(str), 0, (struct sockaddr *)&addr,sizeof(addr)) < 0) {
       perror("errore in sendto");
       exit(-1);
     }
