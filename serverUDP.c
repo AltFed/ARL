@@ -94,6 +94,8 @@ void send_control(int sockfd) {
   char ack[100];
   char seq[100];
   while (1) {
+	  buff[0]='\0';
+	  str[0]='\0';
     // ho capito se leggiamo e poi implementiamo la gestione delle cose su altre
     // funzione allora dobbiamo passare anche il buffer sennò quello che leggo
     // cancello dalla socket vedere anche il client in tale caso !!!!!!!
@@ -118,7 +120,7 @@ void send_control(int sockfd) {
 
     printf(" invio il msg %s \n", str);
 
-    if (sendto(sockfd, str, strlen(str), 0, (struct sockaddr *)&addr,sizeof(addr)) < 0) {
+    if ((sendto(sockfd, buff,MAXLINE, 0, (struct sockaddr *)&addr,addrlen)) < 0)  {
       perror("errore in sendto");
       exit(-1);
     }

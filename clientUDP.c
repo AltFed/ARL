@@ -17,7 +17,7 @@ int dim_send = 5;
 
 int sockfd;  // descrittore alla socket creata per comunicare con il server
 struct sockaddr_in servaddr;
-
+socklen_t addrlen = sizeof(struct sockaddr_in);
 // implementa il controllo della congestione
 void congest() {
   if (dim_send > 2) {
@@ -68,9 +68,14 @@ void command_send(char *pkt) {
   char *snd_buff = malloc(MAXLINE);
   char *rcv_buff = malloc(MAXLINE);
   char *ack = malloc(10);
-  char seq[10];
+  char *seq = malloc(10);
   int k = 0,i=0;
+      snd_buff[0]='\0';
+      printf("ecco il pkt---> %s\n",pkt);
+
       sprintf(seq, "%d ", k);
+
+      printf("ecco il seq---> %s\n",seq); 
 
       strcat(snd_buff, seq);
 
@@ -82,7 +87,7 @@ void command_send(char *pkt) {
 
       // Invia al server il pacchetto di richiesta
 
-      if (sendto(sockfd, snd_buff, strlen(snd_buff), MSG_DONTWAIT,(struct sockaddr *)&servaddr, sizeof(servaddr)) < 0) {
+      if (sendto(sockfd, snd_buff, strlen(snd_buff), 0,(struct sockaddr *)&servaddr, addrlen) < 0) {
         perror("errore in sendto");
         exit(1);
       }
@@ -92,7 +97,8 @@ void command_send(char *pkt) {
       //alarm(0.5);  // Scheduled alarm after 500ms
 
       // Legge dal socket il pacchetto di risposta
-      if (recvfrom(sockfd, rcv_buff, MAXLINE, 0, (struct sockaddr *)&servaddr, sizeof(servaddr) < 0)) {
+      if (recvfrom(sockfd, rcv_buff, MAXLINE, 0, (struct sockaddr *)&servaddr, &addrlen )< 0) {
+	     
         perror("errore in recvfrom");
         exit(1);
       }
@@ -101,13 +107,13 @@ void command_send(char *pkt) {
       strcpy(ack,rcv_buff);
 
       printf("ack rivecuto %s -> ack che mi aspettavo %s \n",ack,seq);
-      fflush(stdout);
 
       if(strcmp(ack,seq)){
 	      alarm(0);
       }
       free(snd_buff);
       free(rcv_buff);
+      free(ack);
       // qui per gestire la ritrasmissione posso usare una variabile globale in cui associo un valore per GET ecc e la gestisco al sign_handler per richiamare command_send e ritrasmettere il comando 
 }
 
@@ -120,13 +126,14 @@ void cget() {
   fscanf(stdin, "%s", b);
   snprintf(buff, MAXLINE, "get %s", b);
   command_send(buff);
+  free(buff);
  //file_receive();  
 }
 
 // creo il comando list
 void clist() {
   char *buff = malloc(MAXLINE);
-  buff = "list";
+  buff="list ";
   command_send(buff);
  //file_receive();
 }
@@ -144,7 +151,8 @@ void cput() {
   // metto un numero perchè cosi gestisco i casi in cui richiedo solo dal caso
   // in cui devo inviare il file e aprire quindi un file leggerlo ecc
   command_send(buff);
-  //file_send(b);	
+  //file_send(b);
+  free(buff);	
 }
 
 // gestisco la richiesta dell'utente
