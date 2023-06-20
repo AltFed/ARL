@@ -9,10 +9,9 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <wait.h>
-
+#include <time.h>
 #define L 4
 #define MAXLINE 4096
-
 // vedere gli indirizzi da usare per recvform sendto
 int TO = 0;
 static int nchildren;
@@ -99,19 +98,26 @@ void send_control(int sockfd) {
     // ho capito se leggiamo e poi implementiamo la gestione delle cose su altre
     // funzione allora dobbiamo passare anche il buffer sennò quello che leggo
     // cancello dalla socket vedere anche il client in tale caso !!!!!!!
-    if ((recvfrom(sockfd, buff,MAXLINE, 0, (struct sockaddr *)&addr,&addrlen)) < 0) {
+    if ((recvfrom(sockfd, buff,MAXLINE,0, (struct sockaddr *)&addr,&addrlen)) < 0) {
       perror("errore in recvfrom");
       exit(-1);
     }
+
+    printf(" rcv_buff -->%s\n",buff);
     //leggo seq_num del client 
     while (buff[i] != ' ') {
       i++;
     }
-
     strncpy(ack, buff, i);
 
     ack[i + 1] = '\0';
 
+    if((rand() % 2+1)<2){
+
+	printf("ZZZZZZ\n");
+	continue;
+
+    }
     printf("ack ricevuto %s\n", ack);
 
     printf("msg ricevuto %s\n", buff);
@@ -120,7 +126,7 @@ void send_control(int sockfd) {
 
     printf(" invio il msg %s \n", str);
 
-    if ((sendto(sockfd, buff,MAXLINE, 0, (struct sockaddr *)&addr,addrlen)) < 0)  {
+     if ((sendto(sockfd, buff,MAXLINE, 0, (struct sockaddr *)&addr,addrlen)) < 0)  {
       perror("errore in sendto");
       exit(-1);
     }
@@ -219,7 +225,7 @@ int main(int argc, char **argv) {
   int p = atoi(argv[1]);
   TO = atoi(argv[2]);
   int SERV_PORT = atoi(argv[3]);
-
+  srand (time(NULL));
   if (SERV_PORT < 255) {
     fprintf(stderr, "inserire num. porta >255");
     exit(1);

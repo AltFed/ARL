@@ -8,15 +8,16 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
-
+#include <sys/time.h>
 #define DIM_MAX 5
 #define SERV_PORT 5193
 #define MAXLINE 1024
-
+#define TIMEOUT_MS      100
 int dim_send = 5;
-
+char pkt_send[MAXLINE]; 
 int sockfd;  // descrittore alla socket creata per comunicare con il server
 struct sockaddr_in servaddr;
+void command_send(char *);
 socklen_t addrlen = sizeof(struct sockaddr_in);
 // implementa il controllo della congestione
 void congest() {
@@ -28,7 +29,8 @@ void congest() {
 // gestisce il segnale di alarm (TIMEOUT)
 void sig_handler(int signum) {
   // qui devo ridurre il len di quanto mi pare
-  congest();
+  printf("sig_hanlder ======\n");
+  command_send(pkt_send);
 }
 
 void file_send(char *file_name){
@@ -69,8 +71,11 @@ void command_send(char *pkt) {
   char *rcv_buff = malloc(MAXLINE);
   char *ack = malloc(10);
   char *seq = malloc(10);
-  int k = 0,i=0;
+  int k = 0,i=0,n=0;
       snd_buff[0]='\0';
+      ack[0]='\0';
+      rcv_buff[0]='\0';
+      seq[0]='\0';
       printf("ecco il pkt---> %s\n",pkt);
 
       sprintf(seq, "%d ", k);
@@ -81,12 +86,13 @@ void command_send(char *pkt) {
 
       strcat(snd_buff, pkt);
 
+      strcpy(pkt_send,pkt);
+
       snd_buff[strlen(snd_buff) + 1] = '\0';
 
       printf("ecco il buff che passo al server %s\n", snd_buff);
 
       // Invia al server il pacchetto di richiesta
-
       if (sendto(sockfd, snd_buff, strlen(snd_buff), 0,(struct sockaddr *)&servaddr, addrlen) < 0) {
         perror("errore in sendto");
         exit(1);
@@ -94,23 +100,31 @@ void command_send(char *pkt) {
 
       // per implementare il timeout uso SIGALRM
 
-      //alarm(0.5);  // Scheduled alarm after 500ms
+     // alarm(1);  // Scheduled alarm after 500ms
 
       // Legge dal socket il pacchetto di risposta
-      if (recvfrom(sockfd, rcv_buff, MAXLINE, 0, (struct sockaddr *)&servaddr, &addrlen )< 0) {
-	     
+	setsockopt(sockfd,SOL_SOCKET,SO_RCVTIMEO,NULL,NULL);
+      if (n=recvfrom(sockfd, rcv_buff, MAXLINE, 0, (struct sockaddr *)&servaddr, &addrlen )<0) {   
         perror("errore in recvfrom");
         exit(1);
       }
-      printf("%s\n",rcv_buff);
+      if(n==0){
+	      command_send(pkt_send);
+      }
+
+      printf("rcv_buff -->> %s\n",rcv_buff);
+
    // qui copio l'ack inviato a numero dal server 
+
       strcpy(ack,rcv_buff);
 
       printf("ack rivecuto %s -> ack che mi aspettavo %s \n",ack,seq);
 
-      if(strcmp(ack,seq)){
-	      alarm(0);
+      /* if(strcmp(ack,seq)){
+
       }
+
+  */
       free(snd_buff);
       free(rcv_buff);
       free(ack);
