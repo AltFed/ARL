@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <wait.h>
 #include <time.h>
+#include <dirent.h>
 #define L 4
 #define MAXLINE 4096
 // vedere gli indirizzi da usare per recvform sendto
@@ -76,13 +77,45 @@ void my_lock_release() {
 }
 
 // gestice nello specifico il comando get
-void send_get() {}
+void send_get(int sockfd,char *str) {
+
+	printf("send_get alive\n");
+
+
+}
 
 // gestice nello specifico il comando put
-void send_put() {}
+void send_put(int sockfd,char *str) {
+
+	printf("send_put alive\n");
+}
 
 // gestice nello specifico il comando list
-void send_list() {}
+void send_list(int sockfd,char * str) {
+	DIR * d;
+	struct dirent *dir;
+	int k=1;
+	char *snd_buff=malloc(MAXLINE);
+	printf("send_list alive\n");
+	d=opendir("prova");
+	if(dir){
+		while((dir = readdir(d)) != NULL ){
+			// qui aggiungere ack ecc 
+			snd_buff[0]='\0';
+			sprintf(snd_buff,"%d ",k);
+			k++;
+			strcat(snd_buff,dir->d_name);
+			printf(" send_list invio msg %s\n",snd_buff);
+
+			if ((sendto(sockfd, snd_buff  ,strlen(snd_buff), 0, (struct sockaddr *)&addr,addrlen)) < 0)  {
+      				perror("errore in sendto");
+     				 exit(-1);
+		       	}
+		}
+
+		closedir(d);
+	}
+}
 
 // gestisce il comando che il client richiede
 void send_control(int sockfd) {
@@ -104,20 +137,16 @@ void send_control(int sockfd) {
     }
 
     printf(" rcv_buff -->%s\n",buff);
+
     //leggo seq_num del client 
+
     while (buff[i] != ' ') {
       i++;
     }
     strncpy(ack, buff, i);
 
     ack[i + 1] = '\0';
-
-    if((rand() % 2+1)<2){
-
-	printf("ZZZZZZ\n");
-	continue;
-
-    }
+  
     printf("ack ricevuto %s\n", ack);
 
     printf("msg ricevuto %s\n", buff);
@@ -126,41 +155,27 @@ void send_control(int sockfd) {
 
     printf(" invio il msg %s \n", str);
 
-     if ((sendto(sockfd, buff,MAXLINE, 0, (struct sockaddr *)&addr,addrlen)) < 0)  {
+     if ((sendto(sockfd, str ,MAXLINE, 0, (struct sockaddr *)&addr,addrlen)) < 0)  {
       perror("errore in sendto");
       exit(-1);
     }
-  }
+          strncpy(str,buff+i,strlen(buff)-i);
 
-  // 	qui devo implementare la logica di risposta del server
-  // 	faccio un while cosi da individuare l'indice che mi serve per poi
-  // ottenere il comando scelto dal client
-  /*
-          while(buff[i] != " "){
-                  i++;
-          }
-          strncpy(temp_buff,buff,i+1);
-
-          //forse serve
-
-          temp_buff [i+1]='\0';
+	  printf("ecco cosa invio alle send %s\n",str);
 
           // implemento logica  per gestire i vari casi
 
-          if (strcmp(temp_buff, "get") == 0) {
-                  send_get();
+          if (strncmp(str, " get",4) == 0) {
+                  send_get(sockfd,str);
           }
-          else if (strcmp(temp_buff, "put") == 0){
-                  send_put();
+          else if (strncmp(str, " put",4) == 0){
+                  send_put(sockfd,str);
           }
-          else if(strcmp(temp_buff,"list") == 0){
-                  send_list();
+          else if(strncmp(str," list",5) == 0){
+                  send_list(sockfd,str);
           }
+  }
 
-
-
-
-  */
 }
 
 void child_main(int i, int listenfd, int addrlen) {
@@ -278,5 +293,6 @@ int main(int argc, char **argv) {
     fprintf(stderr, "errore in signal TO");
     exit(1);
   }
+  system("mkdir prova");
   for (;;) pause(); /* everything done by children */
 }

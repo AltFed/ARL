@@ -32,9 +32,35 @@ void sig_handler(int signum) {
   printf("sig_hanlder ======\n");
   command_send(pkt_send);
 }
-
+// gestico la list 
+void control_list(){
+	printf("control_list alive\n");
+	char *rcv_buff=malloc(MAXLINE);
+	int n=1,i=0,k=1;
+	char *seq_ack=malloc(MAXLINE);
+	sprintf(seq_ack,"%d",k);
+	while(n>0){
+		rcv_buff[0]='\0';
+		if (n=(recvfrom(sockfd, rcv_buff, MAXLINE, 0, (struct sockaddr *)&servaddr, &addrlen ))< 0) {
+        		perror("errore in recvfrom");
+       			exit(1);
+		}
+		printf("valore di n->%d \n",n);
+		rcv_buff[strlen(rcv_buff)+1]='\0';
+		while(rcv_buff[i] != ' '){
+			i++;
+		}
+		if(strncmp(seq_ack,rcv_buff,i+1)){
+			printf("ack che mi aspetto-> %s ||||| ack ricevuto ->%s \n",seq_ack,rcv_buff);
+		}else{
+			perror("errore ack seq num");
+			exit(1);
+		}
+		printf("%s\n",rcv_buff+i+1);
+	}
+}
 void file_send(char *file_name){
-/*
+	/*
  * bool stay = true;
    while (stay) {
     if (i < dim_send) {
@@ -100,16 +126,11 @@ void command_send(char *pkt) {
 
       // per implementare il timeout uso SIGALRM
 
-     // alarm(1);  // Scheduled alarm after 500ms
-
       // Legge dal socket il pacchetto di risposta
-	setsockopt(sockfd,SOL_SOCKET,SO_RCVTIMEO,NULL,NULL);
-      if (n=recvfrom(sockfd, rcv_buff, MAXLINE, 0, (struct sockaddr *)&servaddr, &addrlen )<0) {   
+	
+      if (recvfrom(sockfd, rcv_buff, MAXLINE, 0, (struct sockaddr *)&servaddr, &addrlen )<0) {   
         perror("errore in recvfrom");
         exit(1);
-      }
-      if(n==0){
-	      command_send(pkt_send);
       }
 
       printf("rcv_buff -->> %s\n",rcv_buff);
@@ -120,11 +141,15 @@ void command_send(char *pkt) {
 
       printf("ack rivecuto %s -> ack che mi aspettavo %s \n",ack,seq);
 
-      /* if(strcmp(ack,seq)){
+      if(strcmp(ack,seq)){
 
+	      //control_get();
+
+	      control_list();
+
+	      //control_put();
       }
 
-  */
       free(snd_buff);
       free(rcv_buff);
       free(ack);
