@@ -7,8 +7,10 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #include <wait.h>
+#include <stdbool.h>
 #include <time.h>
 #include <dirent.h>
 #define L 4
@@ -79,7 +81,7 @@ void my_lock_release() {
 // gestice nello specifico il comando get
 void send_get(int sockfd,char *str) {
 
-	printf("send_get alive\n");
+	
 
 
 }
@@ -135,47 +137,79 @@ void send_control(int sockfd) {
       perror("errore in recvfrom");
       exit(-1);
     }
-
     printf(" rcv_buff -->%s\n",buff);
-
-    //leggo seq_num del client 
-
-    while (buff[i] != ' ') {
+    while (buff[i] != '\n') {
       i++;
     }
+
     strncpy(ack, buff, i);
+    ack[i] = '\n';
+    ack[i+1] = '\0';
 
-    ack[i + 1] = '\0';
-  
-    printf("ack ricevuto %s\n", ack);
 
-    printf("msg ricevuto %s\n", buff);
+    printf("seq ricevuto %s --> invio ack %s\n", ack, ack);
+    printf("msg ricevuto %s\n", buff+i+1);
+    
+    if(!strncmp("get", buff+i+1,3)){
+    bool found = false;
+    DIR *dir;
+    struct dirent *entry;
+    struct stat fileStat;
 
-    strcat(str, ack);
+    // Apri la cartella
+    dir = opendir("prova");
+    if (dir == NULL) {
+        perror("Impossibile aprire la cartella");
+        exit(-1);
+    }
+    // Leggi i nomi dei file nella cartella
+    while ((entry = readdir(dir)) != NULL && !found) {
+        char fullPath[256];  // Percorso completo del file
+        snprintf(fullPath, sizeof(fullPath), "%s/%s", "prova", entry->d_name);
+        if (stat(fullPath, &fileStat) == 0 && S_ISREG(fileStat.st_mode) && !strcmp(entry->d_name, buff+i+5)) {           
+            found = true;
+        }
+    }
+    if(found){
+      puts("File trovato mando ack e entro in send_get");
+      send_get(sockfd ,entry->d_name);
+      printf(" invio ack:%s\n", ack);
+      if ((sendto(sockfd, ack ,MAXLINE, 0, (struct sockaddr *)&addr,addrlen)) < 0)  {
+          perror("errore in sendto");
+          exit(-1);
+      }
+     // send_get(sockfd, entry->d_name);
+    }else if(!found){
+    //Gestisco caso file non trovato
+    
+    sprintf(ack+i+1,"-1\n File non trovato, riprova. \n");
+    puts("invio ack con errore");
+    if ((sendto(sockfd, ack ,MAXLINE, 0, (struct sockaddr *)&addr,addrlen)) < 0)  {
+                perror("errore in sendto");
+                exit(-1);
+            }
+    }
+    // Chiudi la cartella
+    closedir(dir); 
+    continue;
+    }
 
-    printf(" invio il msg %s \n", str);
 
-     if ((sendto(sockfd, str ,MAXLINE, 0, (struct sockaddr *)&addr,addrlen)) < 0)  {
+
+
+    if(!strncmp("list", buff+i+1, 4)){
+        puts("invio ack, creo il file e chiamo send_list");
+    }
+    if(!strncmp("put", buff+i+1,  3)){
+        puts("invio ack, creo il file e chiamo rcv_put");
+    }
+
+    if ((sendto(sockfd, ack ,MAXLINE, 0, (struct sockaddr *)&addr,addrlen)) < 0)  {
       perror("errore in sendto");
       exit(-1);
     }
-          strncpy(str,buff+i,strlen(buff)-i);
 
-	  printf("ecco cosa invio alle send %s\n",str);
-
-          // implemento logica  per gestire i vari casi
-
-          if (strncmp(str, " get",4) == 0) {
-                  send_get(sockfd,str);
-          }
-          else if (strncmp(str, " put",4) == 0){
-                  send_put(sockfd,str);
-          }
-          else if(strncmp(str," list",5) == 0){
-                  send_list(sockfd,str);
-          }
   }
-
 }
 
 void child_main(int i, int listenfd, int addrlen) {

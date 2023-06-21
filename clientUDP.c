@@ -9,6 +9,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <sys/time.h>
+#include <stdbool.h>
 #define DIM_MAX 5
 #define SERV_PORT 5193
 #define MAXLINE 1024
@@ -17,6 +18,7 @@ int dim_send = 5;
 char pkt_send[MAXLINE]; 
 int sockfd;  // descrittore alla socket creata per comunicare con il server
 struct sockaddr_in servaddr;
+bool stay = true;
 void command_send(char *);
 socklen_t addrlen = sizeof(struct sockaddr_in);
 // implementa il controllo della congestione
@@ -33,18 +35,19 @@ void sig_handler(int signum) {
   command_send(pkt_send);
 }
 // gestico la list 
-void control_list(){
-	printf("control_list alive\n");
+void recvfile(){
+	printf("recvfile alive\n");
 	char *rcv_buff=malloc(MAXLINE);
 	int n=1,i=0,k=1;
 	char *seq_ack=malloc(MAXLINE);
 	sprintf(seq_ack,"%d",k);
-	while(n>0){
+	while(stay){
 		rcv_buff[0]='\0';
-		if (n=(recvfrom(sockfd, rcv_buff, MAXLINE, 0, (struct sockaddr *)&servaddr, &addrlen ))< 0) {
+		if (( n=(recvfrom(sockfd, rcv_buff, MAXLINE, 0, (struct sockaddr *)&servaddr, &addrlen )))< 0) {
         		perror("errore in recvfrom");
        			exit(1);
 		}
+        if(n!=0){
 		printf("valore di n->%d \n",n);
 		rcv_buff[strlen(rcv_buff)+1]='\0';
 		while(rcv_buff[i] != ' '){
@@ -52,12 +55,17 @@ void control_list(){
 		}
 		if(strncmp(seq_ack,rcv_buff,i+1)){
 			printf("ack che mi aspetto-> %s ||||| ack ricevuto ->%s \n",seq_ack,rcv_buff);
+        
 		}else{
 			perror("errore ack seq num");
 			exit(1);
 		}
-		printf("%s\n",rcv_buff+i+1);
-	}
+		printf("directory -> %s\n",rcv_buff+i+1);
+        
+        }else if(n==0){
+            stay=false;
+        }
+    }
 }
 void file_send(char *file_name){
 	/*
@@ -88,43 +96,35 @@ void file_send(char *file_name){
       // */
 
 }
-void file_receive(){
-
-}
 // funzione che implementare la send to server
-void command_send(char *pkt) {
+void command_send(char *pkt){ 
+
   char *snd_buff = malloc(MAXLINE);
   char *rcv_buff = malloc(MAXLINE);
   char *ack = malloc(10);
   char *seq = malloc(10);
-  int k = 0,i=0,n=0;
-      snd_buff[0]='\0';
-      ack[0]='\0';
-      rcv_buff[0]='\0';
-      seq[0]='\0';
-      printf("ecco il pkt---> %s\n",pkt);
+  int k=0,i=0,n=0;
+      printf("comando da inviare ---> %s\n",pkt);
 
-      sprintf(seq, "%d ", k);
-
+      sprintf(seq, "%d\n", k);
+      seq[sizeof(k)+1] = '\0';
       printf("ecco il seq---> %s\n",seq); 
 
       strcat(snd_buff, seq);
-
       strcat(snd_buff, pkt);
-
       strcpy(pkt_send,pkt);
 
+      sprintf(snd_buff, "%s%s",seq, pkt);
       snd_buff[strlen(snd_buff) + 1] = '\0';
 
-      printf("ecco il buff che passo al server %s\n", snd_buff);
+      printf("ecco il buff che passo al server \n\n%s\n\n", snd_buff);
 
       // Invia al server il pacchetto di richiesta
       if (sendto(sockfd, snd_buff, strlen(snd_buff), 0,(struct sockaddr *)&servaddr, addrlen) < 0) {
         perror("errore in sendto");
         exit(1);
       }
-
-      // per implementare il timeout uso SIGALRM
+      free(snd_buff);
 
       // Legge dal socket il pacchetto di risposta
 	
@@ -133,27 +133,37 @@ void command_send(char *pkt) {
         exit(1);
       }
 
-      printf("rcv_buff -->> %s\n",rcv_buff);
+      printf("rcv_buff -->> \n%s\n",rcv_buff);
 
    // qui copio l'ack inviato a numero dal server 
-
-      strcpy(ack,rcv_buff);
+      while(rcv_buff[i] != '\n'){
+          i++;
+      }
+      strncpy(ack,rcv_buff, i);
+      ack[i]='\0';
 
       printf("ack rivecuto %s -> ack che mi aspettavo %s \n",ack,seq);
-
-      if(strcmp(ack,seq)){
-
-	      //control_get();
-
-	      control_list();
-
-	      //control_put();
+      fflush(stdout);
+      
+      int j = 0;
+      while(rcv_buff[i+j+1] != '\n'){
+          j++;
       }
+      if(!strncmp(ack,seq,i) && !strncmp(rcv_buff+i+1, "-1", j)){
+        
+          printf("Errore : %s\n",rcv_buff+i+j);
+      }
+      else if(!strncmp(ack,seq,i) ){
+          puts("OK!");
+              }
+      
 
-      free(snd_buff);
-      free(rcv_buff);
       free(ack);
-      // qui per gestire la ritrasmissione posso usare una variabile globale in cui associo un valore per GET ecc e la gestisco al sign_handler per richiamare command_send e ritrasmettere il comando 
+      free(seq);
+      free(rcv_buff);
+
+    
+      
 }
 
 // concateno la stringa e creo il comando get da inviare al server
@@ -172,7 +182,7 @@ void cget() {
 // creo il comando list
 void clist() {
   char *buff = malloc(MAXLINE);
-  buff="list ";
+  buff="list";
   command_send(buff);
  //file_receive();
 }
