@@ -81,7 +81,7 @@ void my_lock_release() {
 // gestice nello specifico il comando get
 void send_get(int sockfd,char *str) {
 
-	
+	puts("Hello, send_get here");
 
 
 }
