@@ -155,6 +155,7 @@ void command_send(char *pkt){
       }
       else if(!strncmp(ack,seq,i) ){
           puts("OK!");
+          printf("Phrase : %s\n",rcv_buff+i+j);
               }
       
 

@@ -1,4 +1,4 @@
-#include<arpa/inet.h>
+#include <arpa/inet.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
@@ -81,7 +81,11 @@ void my_lock_release() {
 // gestice nello specifico il comando get
 void send_get(int sockfd,char *str) {
 
-	puts("Hello, send_get here");
+	FILE *file;
+  if((file=fopen(str, "r+")) == NULL){
+    printf("Errore in open del file\n");
+    exit(-1);
+  }
 
 
 }
@@ -93,30 +97,36 @@ void send_put(int sockfd,char *str) {
 }
 
 // gestice nello specifico il comando list
-void send_list(int sockfd,char * str) {
-	DIR * d;
-	struct dirent *dir;
-	int k=1;
-	char *snd_buff=malloc(MAXLINE);
-	printf("send_list alive\n");
-	d=opendir("prova");
-	if(dir){
-		while((dir = readdir(d)) != NULL ){
-			// qui aggiungere ack ecc 
-			snd_buff[0]='\0';
-			sprintf(snd_buff,"%d ",k);
-			k++;
-			strcat(snd_buff,dir->d_name);
-			printf(" send_list invio msg %s\n",snd_buff);
+void send_list(int sockfd) {
+  FILE *filelist;
+  if((filelist=fopen("filelist", "r+")) == NULL){
+    printf("Errore in open del file\n");
+    exit(-1);
+  }
+  DIR *directory;
+  struct dirent *file;
 
-			if ((sendto(sockfd, snd_buff  ,strlen(snd_buff), 0, (struct sockaddr *)&addr,addrlen)) < 0)  {
-      				perror("errore in sendto");
-     				 exit(-1);
-		       	}
-		}
+  // Apertura della cartella
+  directory = opendir("Server_Files");
 
-		closedir(d);
-	}
+  // Verifica se la cartella è stata aperta correttamente
+  if (directory == NULL) {
+    printf("Impossibile aprire la cartella.\n");
+    exit(-1);
+  }
+
+    // Lettura dei file all'interno della cartella
+    while ((file = readdir(directory)) != NULL) {
+        // Ignora le voci "." e ".."
+        if (strcmp(file->d_name, ".") != 0 && strcmp(file->d_name, "..") != 0) {
+            fprintf(filelist, "%s\n", file->d_name);
+        }
+    }
+
+    // Chiusura della cartella
+    closedir(directory);
+  fclose(filelist);
+
 }
 
 // gestisce il comando che il client richiede
@@ -150,6 +160,10 @@ void send_control(int sockfd) {
     printf("seq ricevuto %s --> invio ack %s\n", ack, ack);
     printf("msg ricevuto %s\n", buff+i+1);
     
+
+
+/* ---------------------- gestisco caso get ----------------------------------------------*/
+
     if(!strncmp("get", buff+i+1,3)){
     bool found = false;
     DIR *dir;
@@ -171,13 +185,13 @@ void send_control(int sockfd) {
         }
     }
     if(found){
-      puts("File trovato mando ack e entro in send_get");
-      send_get(sockfd ,entry->d_name);
-      printf(" invio ack:%s\n", ack);
-      if ((sendto(sockfd, ack ,MAXLINE, 0, (struct sockaddr *)&addr,addrlen)) < 0)  {
-          perror("errore in sendto");
-          exit(-1);
-      }
+    puts("File trovato mando ack e entro in send_get");
+    sprintf(ack+i+1,"3\nFile trovato. \n");
+    puts("Invio ACK");
+    if ((sendto(sockfd, ack ,MAXLINE, 0, (struct sockaddr *)&addr,addrlen)) < 0)  {
+                perror("errore in sendto");
+                exit(-1);
+    }
      // send_get(sockfd, entry->d_name);
     }else if(!found){
     //Gestisco caso file non trovato
@@ -194,23 +208,35 @@ void send_control(int sockfd) {
     continue;
     }
 
-
+/* ---------------------------------- gestisco caso list ------------------------------------------------*/
 
 
     if(!strncmp("list", buff+i+1, 4)){
-        puts("invio ack, creo il file e chiamo send_list");
+    sprintf(ack+i+1,"3\nList in esecuzione \n");
+    puts("Invio ACK");
+    if ((sendto(sockfd, ack ,MAXLINE, 0, (struct sockaddr *)&addr,addrlen)) < 0)  {
+                perror("errore in sendto");
+                exit(-1);
+            }
     }
-    if(!strncmp("put", buff+i+1,  3)){
-        puts("invio ack, creo il file e chiamo rcv_put");
+        send_list(sockfd);
     }
 
-    if ((sendto(sockfd, ack ,MAXLINE, 0, (struct sockaddr *)&addr,addrlen)) < 0)  {
-      perror("errore in sendto");
-      exit(-1);
+/* ------------------------ gestisco caso put --------------------------------------*/
+    if(!strncmp("put", buff+i+1,  3)){
+      puts("invio ack, creo il file e chiamo rcv_put");
+      puts("File trovato mando ack e entro in send_get");
+      sprintf(ack+i+1,"3\nFile trovato. \n");
+      puts("Invio ACK");
+      if ((sendto(sockfd, ack ,MAXLINE, 0, (struct sockaddr *)&addr,addrlen)) < 0)  {
+        perror("errore in sendto");
+        exit(-1);
+    }
+
     }
 
   }
-}
+
 
 void child_main(int i, int listenfd, int addrlen) {
   printf("child %ld starting\n", (long)getpid());
