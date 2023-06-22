@@ -157,7 +157,7 @@ void send_control(int sockfd) {
     struct stat fileStat;
 
     // Apri la cartella
-    dir = opendir("prova");
+    dir = opendir("Server_Files");
     if (dir == NULL) {
         perror("Impossibile aprire la cartella");
         exit(-1);
@@ -165,7 +165,7 @@ void send_control(int sockfd) {
     // Leggi i nomi dei file nella cartella
     while ((entry = readdir(dir)) != NULL && !found) {
         char fullPath[256];  // Percorso completo del file
-        snprintf(fullPath, sizeof(fullPath), "%s/%s", "prova", entry->d_name);
+        snprintf(fullPath, sizeof(fullPath), "%s/%s", "Server_Files", entry->d_name);
         if (stat(fullPath, &fileStat) == 0 && S_ISREG(fileStat.st_mode) && !strcmp(entry->d_name, buff+i+5)) {           
             found = true;
         }
@@ -327,6 +327,6 @@ int main(int argc, char **argv) {
     fprintf(stderr, "errore in signal TO");
     exit(1);
   }
-  system("mkdir prova");
+  system("mkdir Server_Files");
   for (;;) pause(); /* everything done by children */
 }
