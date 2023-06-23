@@ -84,62 +84,88 @@ void send_get(int sockfd,char *str) {
 	FILE *file;
   if((file=fopen(str, "r+")) == NULL){
     printf("Errore in open del file\n");
-    exit(-1);
+    exit(1);
   }
 
 
 }
 
 // gestice nello specifico il comando put
-void send_put(int sockfd,char *str) {
+void rcv_put(int sockfd,char *str) {
 
 	printf("send_put alive\n");
 }
 
 // gestice nello specifico il comando list
 void send_list(int sockfd) {
-  FILE *filelist;
-  if((filelist=fopen("filelist", "r+")) == NULL){
-    printf("Errore in open del file\n");
-    exit(-1);
-  }
+  printf("send_list alive\n");
+  char fin_buff[MAXLINE+10];	// poi modificare il 10 deve essere comunque maggiore di MAXLINE di almeno 3/4 
+  char snd_buff[MAXLINE];
+  char *fin="END";
   DIR *directory;
+  bool stay=true;
   struct dirent *file;
 
+  int temp=1;
+  while(stay){
+  snd_buff[0]='\0';
+  sprintf(snd_buff,"%d\n",temp);
   // Apertura della cartella
   directory = opendir("Server_Files");
 
   // Verifica se la cartella è stata aperta correttamente
   if (directory == NULL) {
     printf("Impossibile aprire la cartella.\n");
-    exit(-1);
+    exit(1);
   }
 
     // Lettura dei file all'interno della cartella
     while ((file = readdir(directory)) != NULL) {
         // Ignora le voci "." e ".."
         if (strcmp(file->d_name, ".") != 0 && strcmp(file->d_name, "..") != 0) {
-            fprintf(filelist, "%s\n", file->d_name);
-        }
+
+		// implementare controllo sulla lunghezza attuale della snd_buff 
+
+            sprintf(snd_buff+strlen(snd_buff), "%s\n", file->d_name);
+	}
     }
-
-    // Chiusura della cartella
-    closedir(directory);
-  fclose(filelist);
-
+       	//qui vedo se il buff che invio al client è pieno o meno se si vado avanti altrimenti inserisco il terminatore
+	 if(strlen(snd_buff) < MAXLINE){
+		 printf("Chiusura comando list\n");
+		  sprintf(fin_buff,"%s\n",fin);
+		  strncpy(fin_buff+strlen(fin_buff),snd_buff+2,strlen(snd_buff)-2);
+		  // +2: perchè tolgo il numero e lo \n 
+		  // -2: perchè copio i bit ma devo togliere il numero e \n che vengono contati dallo strlen
+	          if ((sendto(sockfd, fin_buff,strlen(fin_buff), 0, (struct sockaddr *)&addr,addrlen)) < 0)  {
+               		perror("errore in sendto");
+                	exit(1);
+		  }
+		  stay=false;
+	 }else{
+		 if ((sendto(sockfd, snd_buff,strlen(snd_buff), 0, (struct sockaddr *)&addr,addrlen)) < 0)  {
+                			perror("errore in sendto");
+                			exit(1);
+		 }
+		 temp++;
+	 }
+  }
+  printf("chiudo la directory\n");
+	// Chiusura della cartella
+    	closedir(directory);
 }
 
 // gestisce il comando che il client richiede
 void send_control(int sockfd) {
   char *buff = malloc(MAXLINE);
   char *str = malloc(MAXLINE);
-  int lenbuff = 0;
   int i = 0, k = 0;
   char ack[100];
   char seq[100];
   while (1) {
 	  buff[0]='\0';
 	  str[0]='\0';
+	  i=0;
+	  k=0;
     // ho capito se leggiamo e poi implementiamo la gestione delle cose su altre
     // funzione allora dobbiamo passare anche il buffer sennò quello che leggo
     // cancello dalla socket vedere anche il client in tale caso !!!!!!!
@@ -158,6 +184,7 @@ void send_control(int sockfd) {
 
 
     printf("seq ricevuto %s --> invio ack %s\n", ack, ack);
+
     printf("msg ricevuto %s\n", buff+i+1);
     
 
@@ -174,11 +201,11 @@ void send_control(int sockfd) {
     dir = opendir("Server_Files");
     if (dir == NULL) {
         perror("Impossibile aprire la cartella");
-        exit(-1);
+        exit(1);
     }
     // Leggi i nomi dei file nella cartella
     while ((entry = readdir(dir)) != NULL && !found) {
-        char fullPath[256];  // Percorso completo del file
+        char fullPath[500];  // Percorso completo del file
         snprintf(fullPath, sizeof(fullPath), "%s/%s", "Server_Files", entry->d_name);
         if (stat(fullPath, &fileStat) == 0 && S_ISREG(fileStat.st_mode) && !strcmp(entry->d_name, buff+i+5)) {           
             found = true;
@@ -188,9 +215,9 @@ void send_control(int sockfd) {
     puts("File trovato mando ack e entro in send_get");
     sprintf(ack+i+1,"3\nFile trovato. \n");
     puts("Invio ACK");
-    if ((sendto(sockfd, ack ,MAXLINE, 0, (struct sockaddr *)&addr,addrlen)) < 0)  {
+    if ((sendto(sockfd, ack ,strlen(ack), 0, (struct sockaddr *)&addr,addrlen)) < 0)  {
                 perror("errore in sendto");
-                exit(-1);
+                exit(1);
     }
      // send_get(sockfd, entry->d_name);
     }else if(!found){
@@ -198,9 +225,9 @@ void send_control(int sockfd) {
     
     sprintf(ack+i+1,"-1\n File non trovato, riprova. \n");
     puts("invio ack con errore");
-    if ((sendto(sockfd, ack ,MAXLINE, 0, (struct sockaddr *)&addr,addrlen)) < 0)  {
+    if ((sendto(sockfd, ack ,strlen(ack), 0, (struct sockaddr *)&addr,addrlen)) < 0)  {
                 perror("errore in sendto");
-                exit(-1);
+                exit(1);
             }
     }
     // Chiudi la cartella
@@ -214,12 +241,11 @@ void send_control(int sockfd) {
     if(!strncmp("list", buff+i+1, 4)){
     sprintf(ack+i+1,"3\nList in esecuzione \n");
     puts("Invio ACK");
-    if ((sendto(sockfd, ack ,MAXLINE, 0, (struct sockaddr *)&addr,addrlen)) < 0)  {
+    if ((sendto(sockfd, ack ,strlen(ack), 0, (struct sockaddr *)&addr,addrlen)) < 0)  {
                 perror("errore in sendto");
-                exit(-1);
+                exit(1);
             }
-    }
-        send_list(sockfd);
+	 send_list(sockfd);	 
     }
 
 /* ------------------------ gestisco caso put --------------------------------------*/
@@ -230,15 +256,17 @@ void send_control(int sockfd) {
       puts("Invio ACK");
       if ((sendto(sockfd, ack ,MAXLINE, 0, (struct sockaddr *)&addr,addrlen)) < 0)  {
         perror("errore in sendto");
-        exit(-1);
+        exit(1);
     }
 
     }
 
   }
+}
 
 
 void child_main(int i, int listenfd, int addrlen) {
+
   printf("child %ld starting\n", (long)getpid());
 
   for (;;) {
