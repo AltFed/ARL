@@ -87,7 +87,7 @@ void rcv_list(){
 
 		//confronto il numero ricevuto e quello che mi aspetto
 
-        }else if(n==atoi(number_pkt) && stay == true ){
+        }else if(n==strtol(number_pkt,NULL,10) && stay == true ){
 
 		printf("valore di n->%d \n",n);
 
@@ -96,10 +96,9 @@ void rcv_list(){
 		//incremento n
 		n++;
         }
-	else if( n != atoi(number_pkt) && stay == true ){
+	else if( n != strtol(number_pkt,NULL,10) && stay == true ){
 		//gestire ack non in ordine ES: inviamo un ack al sender e gli diciamo di inviare tutto dopo quel numero 
 		printf("Numero ricevuto diverso da quello che mi aspettavo\n");
-			stay=false;
 		sprintf(snd_buff,"%d\n",n);
 		if (sendto(sockfd, snd_buff, strlen(snd_buff), 0,(struct sockaddr *)&servaddr, addrlen) < 0) {
         		perror("errore in sendto");
@@ -219,7 +218,7 @@ void command_send(char *pkt){
 	  }
 
 	  //implento la get
-	  if(!strcmp(command_buff,"get")){
+	  else if (!strcmp(command_buff,"get")){
 
 		  // copio il nome del file 
 		  strcpy(nome_file,pkt+r);
@@ -227,8 +226,7 @@ void command_send(char *pkt){
 	  }
 
 	  //implemento la put 
-	  if(!strcmp(command_buff,"put")){
-
+	  else if (!strcmp(command_buff,"put")){
 		  //copio il nome del file 
 		  strcpy(nome_file,pkt+r);
 		  snd_put(nome_file);
@@ -259,18 +257,6 @@ void cget() {
   free(buff);
   
 }
-
-// creo il comando list
-void clist() {
-  char *buff=malloc(MAXLINE);
-  char *str="list";
-  sprintf(buff,"%s",str);
- printf("%s\n",buff); 
-  command_send(buff);
-  printf("ok\n");
-  free(buff);
-}
-
 // creo il comando put
 void cput() {
   char *buff = malloc(MAXLINE);
@@ -290,6 +276,7 @@ void cput() {
 
 // gestisco la richiesta dell'utente
 void req() {
+	puts("ciao");
   int a=0;
   while (1) {
     printf("Inserire numero:\nget=0\nlist=1\nput=2\nexit=-1\n");
@@ -300,7 +287,7 @@ void req() {
         break;
 
       case 1:
-        clist();
+        command_send("list");	//passo direttamento la list alla command_send senza usare una funzione ausiliaria
         break;
 
       case 2:
