@@ -101,13 +101,14 @@ void send_list(int sockfd) {
   printf("send_list alive\n");
   char fin_buff[MAXLINE+10];	// poi modificare il 10 deve essere comunque maggiore di MAXLINE di almeno 3/4 
   char snd_buff[MAXLINE];
-  char *fin="END";
+  char *fin="END\n";
   DIR *directory;
   bool stay=true;
   struct dirent *file;
 
   int temp=1;
   while(stay){
+  fin_buff[0]='\0';	  
   snd_buff[0]='\0';
   sprintf(snd_buff,"%d\n",temp);
   // Apertura della cartella
@@ -131,12 +132,13 @@ void send_list(int sockfd) {
     }
        	//qui vedo se il buff che invio al client è pieno o meno se si vado avanti altrimenti inserisco il terminatore
 	 if(strlen(snd_buff) < MAXLINE){
+		 printf("snd_buff %s",snd_buff);
 		 printf("Chiusura comando list\n");
-		  sprintf(fin_buff,"%s\n",fin);
+		  sprintf(fin_buff,"%s",fin);
 		  strncpy(fin_buff+strlen(fin_buff),snd_buff+2,strlen(snd_buff)-2);
-		  // +2: perchè tolgo il numero e lo \n 
-		  // -2: perchè copio i bit ma devo togliere il numero e \n che vengono contati dallo strlen
-	          if ((sendto(sockfd, fin_buff,strlen(fin_buff), 0, (struct sockaddr *)&addr,addrlen)) < 0)  {
+		  // +1: perchè tolgo il numero 
+		  // -1: perchè copio i bit ma devo togliere il numero  che vengono contati dallo strlen
+	          if ((sendto(sockfd,fin_buff ,strlen(fin_buff), 0, (struct sockaddr *)&addr,addrlen)) < 0)  {
                		perror("errore in sendto");
                 	exit(1);
 		  }
@@ -160,8 +162,7 @@ void send_control(int sockfd) {
   char *str = malloc(MAXLINE);
   int i = 0, k = 0;
   char ack[100];
-  char seq[100];
-  while (1) {
+    while (1) {
 	  buff[0]='\0';
 	  str[0]='\0';
 	  i=0;
@@ -240,8 +241,8 @@ void send_control(int sockfd) {
 
     if(!strncmp("list", buff+i+1, 4)){
     sprintf(ack+i+1,"3\nList in esecuzione \n");
-    puts("Invio ACK");
-    if ((sendto(sockfd, ack ,strlen(ack), 0, (struct sockaddr *)&addr,addrlen)) < 0)  {
+    printf("Invio ACK->%s\n",ack);
+    if ((sendto(sockfd, ack,strlen(ack), 0, (struct sockaddr *)&addr,addrlen)) < 0)  {
                 perror("errore in sendto");
                 exit(1);
             }
@@ -254,7 +255,7 @@ void send_control(int sockfd) {
       puts("File trovato mando ack e entro in send_get");
       sprintf(ack+i+1,"3\nFile trovato. \n");
       puts("Invio ACK");
-      if ((sendto(sockfd, ack ,MAXLINE, 0, (struct sockaddr *)&addr,addrlen)) < 0)  {
+      if ((sendto(sockfd, ack ,strlen(ack), 0, (struct sockaddr *)&addr,addrlen)) < 0)  {
         perror("errore in sendto");
         exit(1);
     }

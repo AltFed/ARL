@@ -56,11 +56,13 @@ void snd_put(char *file){
 //implemento la rcv del comando list 
 void rcv_list(){
 	printf("rcv_list alive\n");
-	char *rcv_buff=malloc(MAXLINE);
-	char snd_buff[10];
-	char number_pkt[10];
+	char rcv_buff[MAXLINE];
+	char snd_buff[30];
+	char number_pkt[30];
 	int n=1,i=0,k=1;
 	while(stay){
+		snd_buff[0]='\0';
+		number_pkt[0]='\0';
 		rcv_buff[0]='\0';
 		if ((recvfrom(sockfd, rcv_buff, MAXLINE, 0, (struct sockaddr *)&servaddr, &addrlen ))< 0) {
         		perror("errore in recvfrom");
@@ -69,9 +71,8 @@ void rcv_list(){
 		while(rcv_buff[i] != '\n'){
 			i++;
 		}
-
-	strncpy(number_pkt,rcv_buff,i);	
-
+		strncpy(number_pkt,rcv_buff,i);	
+		number_pkt[i]='\0';
 	// END == terminatore pkt inviati 
 	printf("NUM RICEVUTO-> %s\n",number_pkt);
 
@@ -82,6 +83,7 @@ void rcv_list(){
 		printf("Terminatore ricevuto\n");
 
 		printf("%s\n",rcv_buff+i);
+		fflush(stdout);
 
 		stay=false;
 
@@ -93,6 +95,7 @@ void rcv_list(){
 
 		printf("%s\n",rcv_buff+i);
 
+		fflush(stdout);
 		//incremento n
 		n++;
         }
@@ -100,13 +103,14 @@ void rcv_list(){
 		//gestire ack non in ordine ES: inviamo un ack al sender e gli diciamo di inviare tutto dopo quel numero 
 		printf("Numero ricevuto diverso da quello che mi aspettavo\n");
 		sprintf(snd_buff,"%d\n",n);
+		fflush(stdout);
 		if (sendto(sockfd, snd_buff, strlen(snd_buff), 0,(struct sockaddr *)&servaddr, addrlen) < 0) {
         		perror("errore in sendto");
         			exit(1);
 		}
 	}
     }
-	free(rcv_buff);
+	sleep(1);
 }
 void file_send(char *file_name){
 	/*
@@ -139,26 +143,27 @@ void file_send(char *file_name){
 }
 // funzione che implementare la send to server
 void command_send(char *pkt){ 
-  char command_buff[10];
-  char *nome_file=malloc(256);
-  char *snd_buff = malloc(MAXLINE);
-  char *rcv_buff = malloc(MAXLINE);
-  char *ack = malloc(10);
-  char *seq = malloc(10);
+  char command_buff[100];
+  char nome_file[256];
+  char snd_buff[MAXLINE];
+  char rcv_buff[MAXLINE];
+  char ack [10];
+  char seq [10];
   int k=0,i=0,n=0,r=0;
+
      while( pkt[r] != ' '){
 	     r++;
      }
       // copio il comando lo uso dopo per avviare la funzione corretta
       strncpy(command_buff,pkt,r);
 
-      printf("comando da inviare ---> %s",pkt);
+      printf("comando da inviare ---> %s\n",pkt);
 
       sprintf(seq, "%d\n", k);
 
       seq[strlen(seq)+1] = '\0';
 
-      printf("ecco il seq---> %s",seq); 
+      printf("ecco il seq---> %s\n",seq); 
 
       strcat(snd_buff, seq);
 
@@ -167,11 +172,19 @@ void command_send(char *pkt){
       strcpy(pkt_send,pkt);
 
       sprintf(snd_buff, "%s%s",seq, pkt);
+      //controllo in caso il snd_buff è pieno metto il terminatore alla fine 
+      if(strlen(snd_buff)<MAXLINE){
 
       snd_buff[strlen(snd_buff) + 1] = '\0';
 
+      }else{
+	      snd_buff[strlen(snd_buff)] = '\0';
+      }
+
       printf("ecco il buff che passo al server \n\n%s\n\n", snd_buff);
+
       fflush(stdout);
+
       // Invia al server il pacchetto di richiesta
       if (sendto(sockfd, snd_buff, strlen(snd_buff), 0,(struct sockaddr *)&servaddr, addrlen) < 0) {
         perror("errore in sendto");
@@ -190,12 +203,17 @@ void command_send(char *pkt){
           i++;
       }
       strncpy(ack,rcv_buff, i);
+
       ack[i]='\0';
 
-      printf("ack rivecuto %s -> ack che mi aspettavo %s \n",ack,seq);
+      printf("Command_send: ack rivecuto %s -> ack che mi aspettavo %s \n",ack,seq);
 
       fflush(stdout);
-      
+     if(!strcmp(ack,seq)){
+	     printf("\nnumero ricevuto diverso ritorno su \n");
+	     sleep(10);
+	     command_send(pkt);
+     }
       int j = 0;
 
       while(rcv_buff[i+j+1] != '\n'){
@@ -208,6 +226,7 @@ void command_send(char *pkt){
 	  //gestire errore 
       }
       else if(!strncmp(ack,seq,i) ){
+
           puts("OK!");
           printf("Code + Phrase : %s\n",rcv_buff+i+j);
 
@@ -233,16 +252,7 @@ void command_send(char *pkt){
 	  }
               }
 
-      free(ack);
-
-      free(seq);
-
-      free(rcv_buff);  
-
-      free(nome_file);
-
-      free(snd_buff);
-     printf("sto uscendo dalla command\n"); 
+          printf("sto uscendo dalla command\n"); 
 }
 
 // concateno la stringa e creo il comando get da inviare al server
@@ -276,10 +286,9 @@ void cput() {
 
 // gestisco la richiesta dell'utente
 void req() {
-	puts("ciao");
   int a=0;
   while (1) {
-    printf("Inserire numero:\nget=0\nlist=1\nput=2\nexit=-1\n");
+    printf("\nInserire numero:\nget=0\nlist=1\nput=2\nexit=-1\n");
     fscanf(stdin, "%d", &a);
     switch (a) {
       case 0:
@@ -288,7 +297,8 @@ void req() {
 
       case 1:
         command_send("list");	//passo direttamento la list alla command_send senza usare una funzione ausiliaria
-        break;
+        fflush(stdout);
+	break;
 
       case 2:
         cput();
