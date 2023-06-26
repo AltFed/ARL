@@ -80,14 +80,74 @@ void my_lock_release() {
 
 // gestice nello specifico il comando get
 void send_get(int sockfd,char *str) {
-
-	FILE *file;
-  if((file=fopen(str, "r+")) == NULL){
+  FILE *file;
+  char fin_buff[MAXLINE+10];	// poi modificare il 10 deve essere comunque maggiore di MAXLINE di almeno 3/4 
+  char snd_buff[MAXLINE+10];
+  char rcv_buff[100];
+  char path_file[200];
+  char *fin="END\n";
+  bool stay=true;
+  bool error=true;
+  int temp=1;
+  int rcv_number=0;
+  sprintf(path_file,"Server_Files/%s",str);
+  printf("path %s\n",path_file);
+  if((file=fopen(path_file, "r+")) == NULL){
     printf("Errore in open del file\n");
     exit(1);
   }
+  while(stay){
+  fin_buff[0]='\0';	  
+  snd_buff[0]='\0';
+  rcv_buff[0]='\0';
+  // inserisco il numero al pkt che invio 
+  sprintf(snd_buff,"%d\n",temp);
+  //leggo il file 
+  if((fread(snd_buff+2,MAXLINE,1,file) < 0)){
+		  perror("Error read file\n");
+		  exit(1);
+		  }
+  printf("pkt che invio al recever %s\n",snd_buff);
+  if(strlen(snd_buff) < MAXLINE){	
+	 printf("Chiusura comando list\n");
+	sprintf(fin_buff,"%s",fin);
+	 strncpy(fin_buff+strlen(fin_buff),snd_buff+2,strlen(snd_buff)-2);
+	// +1: perchè tolgo il numero 
+        // -1: perchè copio i bit ma devo togliere il numero  che vengono contati dallo strlen
+	if ((sendto(sockfd,fin_buff ,strlen(fin_buff), 0, (struct sockaddr *)&addr,addrlen)) < 0)  {
+               perror("errore in sendto");
+               exit(1);
+	}
+	stay=false;
+	 }else{
+		 // controllo se è arrivato un ack dal receiver in caso gestisco gli errori non bloccante
+		 /*if ((recvfrom(sockfd,rcv_buff,sizeof(rcv_buff),MSG_DONTWAIT, (struct sockaddr *)&addr,&addrlen)) < 0) {
+      					perror("errore in recvfrom");
+      					exit(-1);
+		 }
+		 //ricevo qualcosa ancora da implementare 
+		 if(strlen(rcv_buff) != 0){
+			 // se il numero ricevuto è diverso da quello corrente errore il receiver non bufferizza nulla  
+			 rcv_number=strtol(rcv_buff,NULL,10);
+			 if(rcv_number != temp ){
+				 while(error){
 
-
+					 // qui devo implementare una variabile globale che mantiene i buff inviati almeno un po
+					 // poi invio tutti i pkt dal rcv_number fino al temp e esco
+					 error=false;
+				 }
+			 }
+		 }
+*/
+		//invio il pkt 
+		 if ((sendto(sockfd, snd_buff,strlen(snd_buff), 0, (struct sockaddr *)&addr,addrlen)) < 0)  {
+                			perror("errore in sendto");
+                			exit(1);
+		 }
+		 temp++;
+	 }
+  }
+  printf("send_get return\n");
 }
 
 // gestice nello specifico il comando put
@@ -100,16 +160,19 @@ void rcv_put(int sockfd,char *str) {
 void send_list(int sockfd) {
   printf("send_list alive\n");
   char fin_buff[MAXLINE+10];	// poi modificare il 10 deve essere comunque maggiore di MAXLINE di almeno 3/4 
-  char snd_buff[MAXLINE];
+  char snd_buff[MAXLINE+10];
+  char rcv_buff[100];
   char *fin="END\n";
   DIR *directory;
-  bool stay=true;
   struct dirent *file;
-
+  bool stay=true;
+  bool error=true;
   int temp=1;
+  int rcv_number=0;
   while(stay){
   fin_buff[0]='\0';	  
   snd_buff[0]='\0';
+  rcv_buff[0]='\0';
   sprintf(snd_buff,"%d\n",temp);
   // Apertura della cartella
   directory = opendir("Server_Files");
@@ -144,6 +207,25 @@ void send_list(int sockfd) {
 		  }
 		  stay=false;
 	 }else{
+		 // controllo se è arrivato un ack dal receiver in caso gestisco gli errori non bloccante
+		 if ((recvfrom(sockfd,rcv_buff,sizeof(rcv_buff),MSG_DONTWAIT, (struct sockaddr *)&addr,&addrlen)) < 0) {
+      					perror("errore in recvfrom");
+      					exit(-1);
+		 }
+		 //ricevo qualcosa
+		 if(strlen(rcv_buff) != 0){
+			 // se il numero ricevuto è diverso da quello corrente errore il receiver non bufferizza nulla  
+			 rcv_number=strtol(rcv_buff,NULL,10);
+			 if(rcv_number != temp ){
+				 while(error){
+
+					 // qui devo implementare una variabile globale che mantiene i buff inviati almeno un po
+					 // poi invio tutti i pkt dal rcv_number fino al temp e esco
+					 error=false;
+				 }
+			 }
+		 }
+		//invio il pkt 
 		 if ((sendto(sockfd, snd_buff,strlen(snd_buff), 0, (struct sockaddr *)&addr,addrlen)) < 0)  {
                 			perror("errore in sendto");
                 			exit(1);
@@ -155,22 +237,18 @@ void send_list(int sockfd) {
 	// Chiusura della cartella
     	closedir(directory);
 }
-
 // gestisce il comando che il client richiede
 void send_control(int sockfd) {
   char *buff = malloc(MAXLINE);
   char *str = malloc(MAXLINE);
   int i = 0, k = 0;
-  char ack[100];
+   char ack[100];
     while (1) {
 	  buff[0]='\0';
 	  str[0]='\0';
 	  i=0;
 	  k=0;
-    // ho capito se leggiamo e poi implementiamo la gestione delle cose su altre
-    // funzione allora dobbiamo passare anche il buffer sennò quello che leggo
-    // cancello dalla socket vedere anche il client in tale caso !!!!!!!
-    if ((recvfrom(sockfd, buff,MAXLINE,0, (struct sockaddr *)&addr,&addrlen)) < 0) {
+  if ((recvfrom(sockfd, buff,MAXLINE,0, (struct sockaddr *)&addr,&addrlen)) < 0) {
       perror("errore in recvfrom");
       exit(-1);
     }
@@ -178,12 +256,10 @@ void send_control(int sockfd) {
     while (buff[i] != '\n') {
       i++;
     }
-
     strncpy(ack, buff, i);
     ack[i] = '\n';
     ack[i+1] = '\0';
-
-
+    
     printf("seq ricevuto %s --> invio ack %s\n", ack, ack);
 
     printf("msg ricevuto %s\n", buff+i+1);
@@ -197,13 +273,13 @@ void send_control(int sockfd) {
     DIR *dir;
     struct dirent *entry;
     struct stat fileStat;
-
-    // Apri la cartella
+      // Apri la cartella
     dir = opendir("Server_Files");
     if (dir == NULL) {
         perror("Impossibile aprire la cartella");
         exit(1);
     }
+    printf("CIAO %s\n",buff+i+5);
     // Leggi i nomi dei file nella cartella
     while ((entry = readdir(dir)) != NULL && !found) {
         char fullPath[500];  // Percorso completo del file
@@ -215,16 +291,22 @@ void send_control(int sockfd) {
     if(found){
     puts("File trovato mando ack e entro in send_get");
     sprintf(ack+i+1,"3\nFile trovato. \n");
-    puts("Invio ACK");
+    printf("Invio ACK %s\n",ack);
     if ((sendto(sockfd, ack ,strlen(ack), 0, (struct sockaddr *)&addr,addrlen)) < 0)  {
                 perror("errore in sendto");
                 exit(1);
     }
-     // send_get(sockfd, entry->d_name);
+
+    // entro nella funzione che implementa la send del file 
+    
+     send_get(sockfd,buff+i+5);
+
+
     }else if(!found){
+
     //Gestisco caso file non trovato
     
-    sprintf(ack+i+1,"-1\n File non trovato, riprova. \n");
+    sprintf(ack+i+1,"-1\n File non trovato, riprova.\n");
     puts("invio ack con errore");
     if ((sendto(sockfd, ack ,strlen(ack), 0, (struct sockaddr *)&addr,addrlen)) < 0)  {
                 perror("errore in sendto");
@@ -261,7 +343,6 @@ void send_control(int sockfd) {
     }
 
     }
-
   }
 }
 
