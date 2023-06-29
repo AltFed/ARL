@@ -28,6 +28,7 @@ static int lock_fd = -1;
 struct sockaddr_in addr;
 socklen_t addrlen = sizeof(struct sockaddr_in);
 
+
 // implementa il controllo di segnali per gestire poi i figli
 typedef void Sigfunc(int);
 Sigfunc *signal(int signum, Sigfunc *handler);
@@ -92,7 +93,7 @@ void send_get(int sockfd,char *str) {
   int rcv_number=0;
   sprintf(path_file,"Server_Files/%s",str);
   printf("path %s\n",path_file);
-  if((file=fopen(path_file, "r+")) == NULL){
+  if((file = fopen(path_file, "r+")) == NULL){
     printf("Errore in open del file\n");
     exit(1);
   }
@@ -108,8 +109,9 @@ void send_get(int sockfd,char *str) {
 		  exit(1);
 		  }
   printf("pkt che invio al recever %s\n",snd_buff);
+
   if(strlen(snd_buff) < MAXLINE){	
-	 printf("Chiusura comando list\n");
+	 printf("Chiusura comando get\n");
 	sprintf(fin_buff,"%s",fin);
 	 strncpy(fin_buff+strlen(fin_buff),snd_buff+2,strlen(snd_buff)-2);
 	// +1: perchè tolgo il numero 
@@ -119,6 +121,15 @@ void send_get(int sockfd,char *str) {
                exit(1);
 	}
 	stay=false;
+	//controllo se il recevier ha ricevuto il terminatore 
+	if (recvfrom(sockfd, rcv_buff, MAXLINE, 0, (struct sockaddr *)&addr, &addrlen ) <0 ) {
+       		 perror("errore in recvfrom");
+        	 exit(1);
+		}
+	// implemento gestione fine connessione mi aspetto un pkt con solo OK dal receiver
+	if(!strcmp(rcv_buff,"OK\n")){
+		printf("\nConnessione chiusa correttamente ricevuto ACK %s\n",rcv_buff);
+	}
 	 }else{
 		 // controllo se è arrivato un ack dal receiver in caso gestisco gli errori non bloccante
 		 /*if ((recvfrom(sockfd,rcv_buff,sizeof(rcv_buff),MSG_DONTWAIT, (struct sockaddr *)&addr,&addrlen)) < 0) {
@@ -138,10 +149,11 @@ void send_get(int sockfd,char *str) {
 				 }
 			 }
 		 }
-*/
+		 */
 		//invio il pkt 
-		 if ((sendto(sockfd, snd_buff,strlen(snd_buff), 0, (struct sockaddr *)&addr,addrlen)) < 0)  {
-                			perror("errore in sendto");
+		printf("SIZE OF SND_BUFF %ld\n",sizeof(snd_buff));
+	 if ((sendto(sockfd, snd_buff,strlen(snd_buff), 0, (struct sockaddr *)&addr,addrlen)) < 0)  {
+					perror("errore in sendto");
                 			exit(1);
 		 }
 		 temp++;
@@ -151,9 +163,106 @@ void send_get(int sockfd,char *str) {
 }
 
 // gestice nello specifico il comando put
-void rcv_put(int sockfd,char *str) {
+void rcv_put(int sockfd,char *file) {
+	char path_file[200];
 
-	printf("send_put alive\n");
+	printf("\nSend_put alive\n");
+	printf("ecco il nome del file %s\n",file);
+	sprintf(path_file,"Server_Files/%s",file);
+
+	FILE * fptr;
+	//creo il file se già esiste lo cancello tanto voglio quello aggiornato
+	
+	char rcv_buff[MAXLINE+10];
+	char snd_buff[30];
+	char number_pkt[30];
+	int n=1,i=0,k=1;
+	bool stay=true;
+	while(stay){
+
+		if((fptr = fopen(path_file,"a+")) == NULL){
+		perror("Error opening file");
+		exit(1);
+		}
+		snd_buff[0]='\0';
+		number_pkt[0]='\0';
+		rcv_buff[0]='\0';
+
+		if ((recvfrom(sockfd, rcv_buff, MAXLINE+2, 0, (struct sockaddr *)&addr, &addrlen ))< 0) {
+        		perror("errore in recvfrom");
+       			exit(1);
+		}
+
+		while(rcv_buff[i] != '\n'){
+			i++;
+		}
+
+		strncpy(number_pkt,rcv_buff,i);
+
+		number_pkt[i]='\0';
+
+	// END == terminatore pkt inviati
+	
+	printf("\n NUM RICEVUTO-> %s\n",number_pkt);
+
+	printf("\n NUM CHE VOGLIO->%d\n",n);
+
+	printf("\n PKT SIZE %ld\n",sizeof(rcv_buff));
+
+	fflush(stdout);
+
+        if(!strcmp(number_pkt,"END")){
+
+		printf("Terminatore ricevuto\n");
+
+		//devo aprire il file e scriverci l'ultimo pkt
+		printf("\nPKT-->%s\n",rcv_buff);
+		rcv_buff[MAXLINE+2]='\0';
+		if((fwrite(rcv_buff+i,strlen(rcv_buff)-i,1,fptr) <0 )){
+				perror("Error in write rcv_get\n");
+				exit(1);
+				}
+		stay=false;
+
+		//invio  ACK di fine ricezione al sender 
+		sprintf(snd_buff,"OK\n");
+
+
+		printf("invio il pkt %s\n",snd_buff);
+
+		fflush(stdout);
+		if (sendto(sockfd, snd_buff, strlen(snd_buff), 0,(struct sockaddr *)&addr, addrlen) < 0) {
+        			perror("errore in sendto");
+        			exit(1);
+		}
+		fclose(fptr);
+	//confronto il numero ricevuto e quello che mi aspetto
+        }else if(n==strtol(number_pkt,NULL,10) && stay == true ){
+
+		printf("\nPKT-->%s\n",rcv_buff);
+
+		if((fwrite(rcv_buff+i,sizeof(rcv_buff)-i,1,fptr) <0 )){
+				perror("Error in write rcv_get\n");
+				exit(1);
+				}
+		//incremento n
+		n++;
+		fclose(fptr);
+	}
+	else if( n != strtol(number_pkt,NULL,10) && stay == true ){
+		//gestire ack non in ordine ES: inviamo un ack al sender e gli diciamo di inviare tutto dopo quel numero
+		printf("Numero ricevuto diverso da quello che mi aspettavo\n");
+		// invio al sender un ack comulativo
+		sprintf(snd_buff,"%d\n",n);
+
+		if (sendto(sockfd, snd_buff, strlen(snd_buff), 0,(struct sockaddr *)&addr, addrlen) < 0) {
+        		perror("errore in sendto");
+        			exit(1);
+		}
+	}
+    }
+	printf("\nreturn rcv_put\n");
+	fflush(stdout);
 }
 
 // gestice nello specifico il comando list
@@ -213,6 +322,7 @@ void send_list(int sockfd) {
       					exit(-1);
 		 }
 		 //ricevo qualcosa
+		 /*
 		 if(strlen(rcv_buff) != 0){
 			 // se il numero ricevuto è diverso da quello corrente errore il receiver non bufferizza nulla  
 			 rcv_number=strtol(rcv_buff,NULL,10);
@@ -225,6 +335,7 @@ void send_list(int sockfd) {
 				 }
 			 }
 		 }
+		 */
 		//invio il pkt 
 		 if ((sendto(sockfd, snd_buff,strlen(snd_buff), 0, (struct sockaddr *)&addr,addrlen)) < 0)  {
                 			perror("errore in sendto");
@@ -239,11 +350,13 @@ void send_list(int sockfd) {
 }
 // gestisce il comando che il client richiede
 void send_control(int sockfd) {
-  char *buff = malloc(MAXLINE);
-  char *str = malloc(MAXLINE);
+  char buff[MAXLINE];
+  char str[MAXLINE];
+  char nome_file[200];
   int i = 0, k = 0;
+  bool stay=true;
    char ack[100];
-    while (1) {
+    while (stay) {
 	  buff[0]='\0';
 	  str[0]='\0';
 	  i=0;
@@ -252,7 +365,7 @@ void send_control(int sockfd) {
       perror("errore in recvfrom");
       exit(-1);
     }
-    printf(" rcv_buff -->%s\n",buff);
+   // printf(" rcv_buff -->%s\n",buff);
     while (buff[i] != '\n') {
       i++;
     }
@@ -269,6 +382,7 @@ void send_control(int sockfd) {
 /* ---------------------- gestisco caso get ----------------------------------------------*/
 
     if(!strncmp("get", buff+i+1,3)){
+	    printf("\nOPEN GET\n");
     bool found = false;
     DIR *dir;
     struct dirent *entry;
@@ -279,7 +393,6 @@ void send_control(int sockfd) {
         perror("Impossibile aprire la cartella");
         exit(1);
     }
-    printf("CIAO %s\n",buff+i+5);
     // Leggi i nomi dei file nella cartella
     while ((entry = readdir(dir)) != NULL && !found) {
         char fullPath[500];  // Percorso completo del file
@@ -307,12 +420,15 @@ void send_control(int sockfd) {
     //Gestisco caso file non trovato
     
     sprintf(ack+i+1,"-1\n File non trovato, riprova.\n");
+
     puts("invio ack con errore");
+
     if ((sendto(sockfd, ack ,strlen(ack), 0, (struct sockaddr *)&addr,addrlen)) < 0)  {
                 perror("errore in sendto");
                 exit(1);
             }
     }
+
     // Chiudi la cartella
     closedir(dir); 
     continue;
@@ -333,15 +449,16 @@ void send_control(int sockfd) {
 
 /* ------------------------ gestisco caso put --------------------------------------*/
     if(!strncmp("put", buff+i+1,  3)){
-      puts("invio ack, creo il file e chiamo rcv_put");
-      puts("File trovato mando ack e entro in send_get");
-      sprintf(ack+i+1,"3\nFile trovato. \n");
-      puts("Invio ACK");
+	 printf("\nStart command put\n");
+      sprintf(ack+i+1,"3\nPut  in esecuzione \n");
       if ((sendto(sockfd, ack ,strlen(ack), 0, (struct sockaddr *)&addr,addrlen)) < 0)  {
         perror("errore in sendto");
         exit(1);
-    }
-
+      }
+      strcpy(nome_file,buff+i+5);
+      printf("NOME FILE %s\n",nome_file);
+      rcv_put(sockfd,buff+i+5);
+     
     }
   }
 }
@@ -353,10 +470,10 @@ void child_main(int i, int listenfd, int addrlen) {
 
   for (;;) {
     my_lock_wait(); /* my_lock_wait() usa fcntl() */
-    my_lock_release();
-    // va bene cosi perchè sennò lavora solo una per volta invece cosi solo uno
+      // va bene cosi perchè sennò lavora solo una per volta invece cosi solo uno
     // per volta legge il comando
     send_control(listenfd); /* processa la richiesta */
+    my_lock_release();
   }
 }
 

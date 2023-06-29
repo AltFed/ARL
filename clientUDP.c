@@ -12,7 +12,7 @@
 #include <stdbool.h>
 #define DIM_MAX 5
 #define SERV_PORT 5193
-#define MAXLINE 1024
+#define MAXLINE 4096
 #define TIMEOUT_MS      100
 
 int dim_send = 5;
@@ -45,60 +45,82 @@ void sig_handler(int signum) {
 
 //implemento la rcv del comando get 
 void rcv_get(char *file){
+
 	printf("rcv_get alive\n");
 	printf("ecco il nome del file %s\n",file);
 	FILE * fptr;
 
 	//creo il file se già esiste lo cancello tanto voglio quello aggiornato 
-	if((fptr = fopen(file,"w+")) == NULL){
-		perror("Error opening file");
-		exit(1);
-	}
-	char rcv_buff[MAXLINE];
+	char rcv_buff[MAXLINE+10];
 	char snd_buff[30];
 	char number_pkt[30];
 	int n=1,i=0,k=1;
 	bool stay=true;
 	while(stay){
+		if((fptr = fopen(file,"a+")) == NULL){
+		perror("Error opening file");
+		exit(1);
+		}
 		snd_buff[0]='\0';
 		number_pkt[0]='\0';
 		rcv_buff[0]='\0';
-		if ((recvfrom(sockfd, rcv_buff, MAXLINE, 0, (struct sockaddr *)&servaddr, &addrlen ))< 0) {
+
+		if ((recvfrom(sockfd, rcv_buff, MAXLINE+2, 0, (struct sockaddr *)&servaddr, &addrlen ))< 0) {
         		perror("errore in recvfrom");
        			exit(1);
 		}
+
 		while(rcv_buff[i] != '\n'){
 			i++;
 		}
-		strncpy(number_pkt,rcv_buff,i);	
+		printf("PKT RICEVUTO %s\n",rcv_buff);
+
+		fflush(stdout);
+
+		strncpy(number_pkt,rcv_buff,i);
+
 		number_pkt[i]='\0';
+
 	// END == terminatore pkt inviati 
+	
 	printf("NUM RICEVUTO-> %s\n",number_pkt);
 
 	printf("NUM CHE VOGLIO->%d\n",n);
+
+	printf("\nPKT SIZE %ld\n",sizeof(rcv_buff));
+
         if(!strcmp(number_pkt,"END")){
 
 		printf("Terminatore ricevuto\n");
 
 		//devo aprire il file e scriverci l'ultimo pkt 
-
-		fflush(stdout);
-		if((fwrite(rcv_buff+i,sizeof(rcv_buff)-i,1,fptr) <0)){
+		
+		rcv_buff[MAXLINE+2]='\0';
+		if((fwrite(rcv_buff+i,sizeof(rcv_buff)-i,1,fptr) <0 )){
 				perror("Error in write rcv_get\n");
 				exit(1);
 				}
 		stay=false;
+		//invio  ACK di fine ricezione al sender
+		sprintf(snd_buff,"OK\n");
 
+		if (sendto(sockfd, snd_buff, strlen(snd_buff), 0,(struct sockaddr *)&servaddr, addrlen) < 0) {
+        			perror("errore in sendto");
+        			exit(1);
+		}
+		fclose(fptr);
 	//confronto il numero ricevuto e quello che mi aspetto
         }else if(n==strtol(number_pkt,NULL,10) && stay == true ){
 
 		printf("valore di n->%d \n",n);
-		if((fwrite(rcv_buff+i,sizeof(rcv_buff)-i,1,fptr) <0)){
+
+		if((fwrite(rcv_buff+i,sizeof(rcv_buff)-i,1,fptr) <0 )){
 				perror("Error in write rcv_get\n");
 				exit(1);
 				}
 		//incremento n
 		n++;
+		fclose(fptr);
         }
 	else if( n != strtol(number_pkt,NULL,10) && stay == true ){
 		//gestire ack non in ordine ES: inviamo un ack al sender e gli diciamo di inviare tutto dopo quel numero 
@@ -115,8 +137,101 @@ void rcv_get(char *file){
 }
 
 //implemento la snd del comando put 
-void snd_put(char *file){
+void snd_put(char *str){
+FILE *file;
+  char fin_buff[MAXLINE+2];	// poi modificare il 10 deve essere comunque maggiore di MAXLINE di almeno 3/4 
+  char snd_buff[MAXLINE+2];
+  char rcv_buff[100];
+  char path_file[200];
+  char *fin="END\n";
+  bool stay=true;
+  bool error=true;
+  int temp=1;
+  char *fin_file=malloc(100);
+  int rcv_number=0;
+  sprintf(path_file,"Server_Files/%s",str);
+  printf("path %s\n",path_file);
+  if((file = fopen(path_file, "r+")) == NULL){
+    printf("Errore in open del file\n");
+    exit(1);
+  }
+  while(stay){
+   //leggo il file 
+  while(fgets(snd_buff+2,sizeof(snd_buff)-2,file) != NULL )
+  {
+	   // inserisco il numero al pkt che invio 
+  	  sprintf(snd_buff,"%d\n",temp);
+	  printf("\nNUMBER %d\n",temp);
+	  printf("\nPKT--> \n");
+	  printf("%s\n",snd_buff);
+	  fflush(stdout);
 
+	 if ((sendto(sockfd, snd_buff,strlen(snd_buff), 0, (struct sockaddr *)&servaddr,addrlen)) < 0)  {
+                			perror("errore in sendto");
+                			exit(1);
+		 }
+		 temp++;
+	 }
+  if(feof(file)){
+
+	 printf("Chiusura comando put \n");
+
+	 printf("\nULTIMO PKT\n");
+	 printf("%s\n",snd_buff);
+
+	 fflush(stdout);
+
+	sprintf(fin_buff,"%s",fin);
+
+	 strncpy(fin_buff+strlen(fin_buff),snd_buff+2,strlen(snd_buff)-2);
+
+	// +2: perchè tolgo il numero 
+        // -2: perchè copio i bit ma devo togliere il numero  che vengono contati dallo strlen
+	printf("invio al sender il pkt %s\n",fin_buff);
+
+	fflush(stdout);
+	if ((sendto(sockfd,fin_buff ,strlen(fin_buff), 0, (struct sockaddr *)&servaddr,addrlen)) < 0)  {
+               perror("errore in sendto");
+               exit(1);
+	}
+	stay=false;
+
+	if (recvfrom(sockfd, rcv_buff, MAXLINE, 0, (struct sockaddr *)&servaddr, &addrlen ) <0 ) {   
+       		 perror("errore in recvfrom");
+        	 exit(1);
+		}
+	// implemento gestione fine connessione mi aspetto un pkt con solo OK dal receiver
+	printf("pkt ricevuto %s\n",rcv_buff);
+	if(!strcmp(rcv_buff,"OK\n")){
+		printf("\nConnessione chiusa correttamente ricevuto ACK %s\n",rcv_buff);
+	}else{
+		//gestione errore ritrasmettere pkt 
+
+  }
+  }
+  }
+	 		 // controllo se è arrivato un ack dal receiver in caso gestisco gli errori non bloccante
+		 /*if ((recvfrom(sockfd,rcv_buff,sizeof(rcv_buff),MSG_DONTWAIT, (struct sockaddr *)&addr,&addrlen)) < 0) {
+      					perror("errore in recvfrom");
+      					exit(-1);
+		 }
+		 //ricevo qualcosa ancora da implementare 
+		 if(strlen(rcv_buff) != 0){
+			 // se il numero ricevuto è diverso da quello corrente errore il receiver non bufferizza nulla  
+			 rcv_number=strtol(rcv_buff,NULL,10);
+			 if(rcv_number != temp ){
+				 while(error){
+
+					 // qui devo implementare una variabile globale che mantiene i buff inviati almeno un po
+					 // poi invio tutti i pkt dal rcv_number fino al temp e esco
+					 error=false;
+				 }
+			 }
+		 }
+*/
+		//invio il pkt 
+		
+  printf("send_get return\n");
 }
 
 //implemento la rcv del comando list 
@@ -150,8 +265,16 @@ void rcv_list(){
 
 		printf("%s\n",rcv_buff+i);
 		fflush(stdout);
+		//invio  ACK di fine ricezione al sender 
+		sprintf(snd_buff,"OK\n");
 
+		if (sendto(sockfd, snd_buff, strlen(snd_buff), 0,(struct sockaddr *)&servaddr, addrlen) < 0) {
+        			perror("errore in sendto");
+        			exit(1);
+		}
+		//fare sul server questa cosa |||||||||||||||
 		stay=false;
+
 
 		//confronto il numero ricevuto e quello che mi aspetto
 
@@ -246,7 +369,6 @@ void command_send(char *pkt){
       fflush(stdout);
      if(!strcmp(ack,seq)){
 	     printf("\nnumero ricevuto diverso ritorno su \n");
-	     sleep(10);
 	     command_send(pkt);
      }
       int j = 0;
