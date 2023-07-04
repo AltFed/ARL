@@ -81,88 +81,141 @@ void my_lock_release() {
 
 // gestice nello specifico il comando get
 void send_get(int sockfd,char *str) {
+	struct st_pkt
+	{
+		int ack;
+		char pl[MAXLINE];
+	};
+	struct st_pkt pkt;
+	//implemento il buff di mantenimento pkt
+	struct st_pkt retr[2];
   FILE *file;
-  char snd_buff[MAXLINE+2];
-  char temp[MAXLINE];
-  char rcv_buff[100];
-  char path_file[200];
-  char *fin="END\n";
+  char *fin="END";
   bool stay=true;
-  bool error=true;
-  int t=1;
-  sprintf(path_file,"Server_Files/%s",str);
+  int t=1,n=0,i=0; 
+
+    sprintf(path_file,"Server_Files/%s",str);
   printf("path %s\n",path_file);
   if((file = fopen("ciao", "r+")) == NULL){
     printf("Errore in open del file\n");
     exit(1);
   }
   while(stay){
-  	while(fgets(temp,MAXLINE,file)){
-		fflush(stdout);
-		sprintf(snd_buff,"%d\n",t);
-		sprintf(snd_buff+2,"%s",temp);
-		snd_buff[strlen(snd_buff)]='\0';
-		printf("PKT SIZE %ld\n",strlen(snd_buff));
-		printf("invio il pkt %s",snd_buff);
-		fflush(stdout);
-		if ((sendto(sockfd,snd_buff ,strlen(snd_buff), 0, (struct sockaddr *)&addr,addrlen)) < 0)  {
+	  //implemento la congestione 
+	if(CongWin < 10)
+  	while(fgets(pkt.pl,sizeof(pkt.pl),file)){	
+		pkt.ack=t;
+		printf("seq %d\n",pkt.ack);
 
-               		perror("errore in sendto");
+		printf("invio il pkt %s\n",pkt.pl);
+	
+		fflush(stdout);
+
+		//cicliclo 
+		i= i % 2; // i = (0;1)
+
+		//mantengo 2 pkt massimo
+		retr[i]=pkt;
+		i++;
+		if ((sendto(sockfd,&pkt,sizeof(pkt), 0, (struct sockaddr *)&addr,addrlen)) < 0)  
+		{	
+			perror("errore in sendto");
               		exit(1);
+		}		
+		// mi aspetto di ricevere l ack
+		if(n == Win){
+			n= n % 1;
+			printf("\nASPETTO ACK CUM \n");
+			if (recvfrom(sockfd, &pkt, sizeof(pkt),0,(struct sockaddr *)&addr, &addrlen ) <0 ) {
+       			 perror("errore in recvfrom");
+        		 exit(1);
+			}
+
+			//ritrasmetto i pkt non arrivati 
+			if(pkt.ack != t-1){
+
+				printf("\n ACK cumul RICEVUTO %d\n",pkt.ack);
+				fflush(stdout);
+
+				//pkt.ack è il numero che si aspetta di ricevere il receiver 
+
+				//ritrasmetto i pkt 
+				k=pkt.ack;
+				//se ricevuto k=2 e sto in t=4 allora devo inviare tutte e due i pkt bufferizzati
+				while( (t-k) > 0 ){
+				if ((sendto(sockfd,&retr[-t+k+2],sizeof(pkt), 0, (struct sockaddr *)&addr,addrlen)) < 0)  {
+					perror("errore in sendto");
+              				exit(1);
+				}
+				k++;
+				}
+			}
 		}
+		//ogni 2 pkt il receiver mi invia un ack di conferma più facile con n
+		n++;
+
 		t++;
 	}
+	//primo pkt inviato con errore ma non gestisco l ack lo faccio qui perchè ack cum quindi vedere bene 
 	if(feof(file)){
 		stay=false;
+		// poichè se fgets termina subito non arrivo mai a n==2 allora devo verificare cosa il receiver mi invia 
 		printf("Chiusura comando get\n");
 
-		printf("\nULTIMO PKT\n");
+		printf("\nInvio al rcv il pkt %s\n",fin);
 
 		fflush(stdout);
 
-		printf("\nInvio al rcv il pkt \n %s\n",fin);
-
-		fflush(stdout);
-
-	//controllo se il recevier ha ricevuto il terminatore 
-	if (sendto(sockfd,fin, strlen(fin), 0, (struct sockaddr *)&addr, addrlen ) <0 ) {
+		sprintf(pkt.pl,"%s",fin);
+		pkt.ack=t;
+		retr[i]=pkt;
+	//invio il terminatore 
+	if (sendto(sockfd,&pkt,sizeof(pkt), 0, (struct sockaddr *)&addr, addrlen ) <0 ) {
        		 perror("errore in recvfrom");
         	 exit(1);
 		}
-	if (recvfrom(sockfd, rcv_buff, MAXLINE,0,(struct sockaddr *)&addr, &addrlen ) <0 ) {
+	if (recvfrom(sockfd, &pkt, sizeof(pkt),0,(struct sockaddr *)&addr, &addrlen ) <0 ) {
        		 perror("errore in recvfrom");
         	 exit(1);
 		}
-	printf("pkt ricevuto %s\n",rcv_buff);
 
-	if(!strcmp(rcv_buff,"OK\n")){
-		printf("\nConnessione chiusa correttamente ricevuto ACK %s\n",rcv_buff);
-	 }else{
-		 //gestione errore ritrasmettere pkt 
+	printf("PAYLOAD RICEVUTO%s\n",pkt.pl);
+
+	printf("SEQ RICEVUTA %d\n",pkt.ack);
+
+	fflush(stdout);
+
+		//se ricevuto ok e un numero non non mi aspetto ritrasmetto 
+	if(pkt.ack != t){
+		 printf("\n errore nel ack dell END \n");
+		 fflush(stdout);
+
+		 k=pkt.ack;
+
+		 retr[0].ack=1;//da togliere
+
+		 //se ricevuto k=2 e sto in t=4 allora devo inviare tutte e due i pkt bufferizzati
+		 while( (t-k) > 0 ){
+			 printf("Invio pkt con seq=%d e payload=%s\n",retr[-t+k+2].ack,retr[-t+k+2].pl);
+			 if ((sendto(sockfd,&retr[-t+k+2],sizeof(pkt), 0, (struct sockaddr *)&addr,addrlen)) < 0)  {
+					perror("errore in sendto");
+              				exit(1);
+			 }
+			 k++;
 		 }
+		if (recvfrom(sockfd, &pkt, sizeof(pkt),0,(struct sockaddr *)&addr, &addrlen ) <0 ) {
+       		 perror("errore in recvfrom");
+        	 exit(1);
+		}	
+		printf("PKT FINALE RICEVUTO %d NUM CHE HO ORA %d PAYLOAD %s \n",pkt.ack,t,pkt.pl);
+		// se ricevo OK e il numero che mi aspetto chiudo 
+       	}else if(!strcmp(pkt.pl,"OK") && pkt.ack == t-1){	
+		printf("\nConnessione chiusa correttamente ricevuto ACK %s\n",rcv_buff);
+	}
 	}
   }
-		 // controllo se è arrivato un ack dal receiver in caso gestisco gli errori non bloccante
-		 /*if ((recvfrom(sockfd,rcv_buff,sizeof(rcv_buff),MSG_DONTWAIT, (struct sockaddr *)&addr,&addrlen)) < 0) {
-      					perror("errore in recvfrom");
-      					exit(-1);
-		 }
-		 //ricevo qualcosa ancora da implementare 
-		 if(strlen(rcv_buff) != 0){
-			 // se il numero ricevuto è diverso da quello corrente errore il receiver non bufferizza nulla  
-			 rcv_number=strtol(rcv_buff,NULL,10);
-			 if(rcv_number != temp ){
-				 while(error){
-
-					 // qui devo implementare una variabile globale che mantiene i buff inviati almeno un po
-					 // poi invio tutti i pkt dal rcv_number fino al temp e esco
-					 error=false;
-				 }
-			 }
-		 }
-		 */
-		//invio il pkt 
   printf("\nSend_get return\n");
+  fflush(stdout);
 }
 
 // gestice nello specifico il comando put

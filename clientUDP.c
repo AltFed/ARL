@@ -26,15 +26,13 @@ struct sockaddr_in servaddr;
 void command_send(char *);
 
 socklen_t addrlen = sizeof(struct sockaddr_in);
+struct st_pkt
+{
+	int ack;
+	char pl[MAXLINE];
+};
 // serve 
 void cget();
-
-// implementa il controllo della congestione
-void congest() {
-  if (dim_send > 2) {
-    dim_send--;
-  }
-}
 
 // gestisce il segnale di alarm (TIMEOUT)
 void sig_handler(int signum) {
@@ -45,102 +43,105 @@ void sig_handler(int signum) {
 
 //implemento la rcv del comando get 
 void rcv_get(char *file){
-
+	struct st_pkt pkt;
 	printf("rcv_get alive\n");
 	printf("ecco il nome del file %s\n",file);
 	FILE * fptr;
 
 	//creo il file se già esiste lo cancello tanto voglio quello aggiornato 
-	char rcv_buff[MAXLINE+2];
-	char snd_buff[30];
-	char number_pkt[30];
-	int n=1,i=0,k=1;
+	int n=1,i=0;
+
+	pkt.ack=n;
+
 	bool stay=true;
 	if((fptr = fopen("ciao","r+")) == NULL){
 		perror("Error opening file");
 		exit(1);
 		}
-	while(stay){
-		snd_buff[0]='\0';
-		number_pkt[0]='\0';
-		rcv_buff[0]='\0';
-		if ((k=recvfrom(sockfd, rcv_buff, MAXLINE+2, 0, (struct sockaddr *)&servaddr,&addrlen ))< 0) {
+	while(stay){	
+		if ((recvfrom(sockfd,&pkt, sizeof(pkt), 0, (struct sockaddr *)&servaddr,&addrlen ))< 0) {
         		perror("errore in recvfrom");
        			exit(1);
-		}
-		printf("DIM PKT RICEVUTO %d\n",strlen(rcv_buff));
-		fflush(stdout);
-		while(rcv_buff[i] != '\n'){
-			i++;
-		}
-		printf(" K:%d\n",k);
-		printf(" I:%d\n",i);
-		fflush(stdout);
-		rcv_buff[k-1]='\0';
-
-		strncpy(number_pkt,rcv_buff,i);
-
-		number_pkt[i]='\0';
-
+		}		
 	// END == terminatore pkt inviati 
 	
-	printf("NUM RICEVUTO-> %s\n",number_pkt);
+	printf("NUM RICEVUTO-> %d\n",pkt.ack);
 
 	printf("NUM CHE VOGLIO->%d\n",n);
 
+	printf("\n PKT Payload %s\n",pkt.pl);
 	fflush(stdout);
+	//se ricevo END e con numero corretto invio la chiusura e stop 
+        if(!strcmp(pkt.pl,"END") && pkt.ack == n){
 
-        if(!strcmp(number_pkt,"END")){
+		printf("\nTerminatore ricevuto\n");
+		fflush(stdout);
 
-		printf("Terminatore ricevuto\n");
-
-		printf("\nPKT--->%s\n",rcv_buff);
-
-		//devo aprire il file e scriverci l'ultimo pkt 
-		
-		rcv_buff[MAXLINE+2]='\0';
-
-		if((fwrite(rcv_buff+i+1,k-i,1,fptr) <0 )){
-				perror("Error in write rcv_get\n");
-				exit(1);
-				}
+		//devo aprire il file e scriverci l'ultimo pkt 	
 		stay=false;
 
 		//invio  ACK di fine ricezione al sender
-
-		sprintf(snd_buff,"OK\n");
-
-		printf("invio il pkt %s\n",snd_buff);
-
-		if (sendto(sockfd, snd_buff, strlen(snd_buff), 0,(struct sockaddr *)&servaddr,addrlen) < 0) {
+		sprintf(pkt.pl,"OK");
+		//invio il numero di seq del pkt risolvo in caso mi inviasse un unico pkt con numero sbagliato
+		printf("\nPKT---> %d %s\n",pkt.ack,pkt.pl);
+		if (sendto(sockfd,&pkt, sizeof(pkt), 0,(struct sockaddr *)&servaddr,addrlen) < 0) {
         			perror("errore in sendto");
         			exit(1);
 		}
 		//confronto il numero ricevuto e quello che mi aspetto
-        }else if(n==strtol(number_pkt,NULL,10) && stay == true ){
+        }else if(n == pkt.ack && stay == true && strcmp(pkt.pl,"END")){
+		//ogni 2 pkt invio un ack cum
+		if(i == 1){
+			printf("\nInvio ack cum\n");
+			fflush(stdout);
+			i= i % 1;
+			pkt.ack=n;
+			//forse qui posso mandare solo il pkt.ack 
+			if (sendto(sockfd,&pkt, sizeof(pkt), 0,(struct sockaddr *)&servaddr,addrlen) < 0) {
+        			perror("errore in sendto");
+        			exit(1);
+			}
+		}
+		printf("\nScrivo il msg sul file ->%s\n",pkt.pl);
 
-		printf("\nPKT-->%s\n",rcv_buff);
+		fflush(stdout);
 
-		if((fwrite(rcv_buff+i+1,k-i+1,1,fptr) <0 )){
+		if((fwrite(pkt.pl,strlen(pkt.pl),1,fptr) <0 )){
 				perror("Error in write rcv_get\n");
 				exit(1);
 				}
+		//incremento i mii implementa ack cum
+		i++;
 		//incremento n
 		n++;
 	
         }
-	else if( n != strtol(number_pkt,NULL,10) && stay == true ){
+
+	// se arriva un pkt fuori ordine invio subito ack non faccio la bufferizzazione lato rcv 
+	else if( n != pkt.ack && stay == true /*&& strcmp(pkt.pl,"END" )*/){
+
 		//gestire ack non in ordine ES: inviamo un ack al sender e gli diciamo di inviare tutto dopo quel numero 
 		printf("Numero ricevuto diverso da quello che mi aspettavo\n");
-		// invio al sender un ack comulativo 
-		sprintf(snd_buff,"%d\n",n);
-	
-		if (sendto(sockfd, snd_buff, strlen(snd_buff), 0,(struct sockaddr *)&servaddr,addrlen) < 0) {
+		// invio al sender un ack comulativo fino a dove ho ricevuto
+		pkt.ack=n;
+		if (sendto(sockfd,&pkt, sizeof(pkt), 0,(struct sockaddr *)&servaddr,addrlen) < 0) {
+        		perror("errore in sendto");
+        		exit(1);
+		}
+		// END e ack diverso 
+	}/*else if(!strcmp(pkt.pl,"END") && pkt.ack != n){
+		printf("=============");
+		sprintf(pkt.pl,"OK");
+
+		pkt.ack=n;
+		printf("Ricevuto END con ack diverso\n");
+		if (sendto(sockfd,&pkt, sizeof(pkt), 0,(struct sockaddr *)&servaddr,addrlen) < 0) {
         		perror("errore in sendto");
         			exit(1);
 		}
 	}
-    }
+	*/
+	}
 	printf("\nreturn rcv_get\n");
 	fflush(stdout);
 }
