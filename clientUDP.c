@@ -499,5 +499,5 @@ int main(int argc, char *argv[]) {
   }
 
   // invoco la funzione per gestire le richieste dell'utente
-  req();
+ req();
 }
