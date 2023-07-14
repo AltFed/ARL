@@ -20,7 +20,6 @@ int dim_send = 5;
 char pkt_send[MAXLINE]; 
 
 int sockfd;  // descrittore alla socket creata per comunicare con il server
-
 struct sockaddr_in servaddr;
 
 void command_send(char *);
