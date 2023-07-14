@@ -16,7 +16,7 @@
 #define TIMEOUT_MS      100
 
 int dim_send = 5;
-
+aaaaa
 char pkt_send[MAXLINE]; 
 
 int sockfd;  // descrittore alla socket creata per comunicare con il server
