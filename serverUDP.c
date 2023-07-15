@@ -90,10 +90,11 @@ void send_get(int sockfd,char *str) {
 	//implemento il buff di mantenimento pkt
 	struct st_pkt retr[2];
   FILE *file;
+  int k = 0;
   char *fin="END";
   bool stay=true;
   int t=1,n=0,i=0; 
-
+  char path_file[MAXLINE];
     sprintf(path_file,"Server_Files/%s",str);
   printf("path %s\n",path_file);
   if((file = fopen("ciao", "r+")) == NULL){
@@ -102,7 +103,7 @@ void send_get(int sockfd,char *str) {
   }
   while(stay){
 	  //implemento la congestione 
-	if(CongWin < 10)
+    
   	while(fgets(pkt.pl,sizeof(pkt.pl),file)){	
 		pkt.ack=t;
 		printf("seq %d\n",pkt.ack);
@@ -123,7 +124,7 @@ void send_get(int sockfd,char *str) {
               		exit(1);
 		}		
 		// mi aspetto di ricevere l ack
-		if(n == Win){
+		if(n == 1){
 			n= n % 1;
 			printf("\nASPETTO ACK CUM \n");
 			if (recvfrom(sockfd, &pkt, sizeof(pkt),0,(struct sockaddr *)&addr, &addrlen ) <0 ) {
@@ -210,7 +211,7 @@ void send_get(int sockfd,char *str) {
 		printf("PKT FINALE RICEVUTO %d NUM CHE HO ORA %d PAYLOAD %s \n",pkt.ack,t,pkt.pl);
 		// se ricevo OK e il numero che mi aspetto chiudo 
        	}else if(!strcmp(pkt.pl,"OK") && pkt.ack == t-1){	
-		printf("\nConnessione chiusa correttamente ricevuto ACK %s\n",rcv_buff);
+		printf("\nConnessione chiusa correttamente ricevuto ACK %d\n",pkt.ack );
 	}
 	}
   }
