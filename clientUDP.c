@@ -278,7 +278,7 @@ void command_send(char *cd,char *nome_str){
 	char str[MAXLINE];
 	strcat(str,cd);
 	strcat(str,nome_str);
-	printf("\n nome comando%s\n",str);
+	printf("\n nome comando %s\n",str);
 	strcpy(pkt.pl,str);
 	pkt.finbit=0;
 	int i=0;
@@ -312,12 +312,12 @@ void command_send(char *cd,char *nome_str){
 		 printf("rcv_list return\n");
 	  }
 	  //implento la get
-	  else if (!strcmp(cd,"get")){
+	  else if (!strcmp(cd,"get ")){
 		  rcv_get(nome_str);
 		  printf("rcv_get return\n");
 	  }
 	  //implemento la put 
-	  else if (!strcmp(cd,"put")){
+	  else if (!strcmp(cd,"put ")){
 		  snd_put(nome_str);
 	  }
 		}
@@ -336,8 +336,8 @@ void req() {
       case 0:
 			char buff[MAXLINE];
 			printf("\nInserire nome file\n");
-			fgets(buff,MAXLINE,stdin);
-        command_send("get",buff);
+			  fscanf(stdin, "%s", buff);
+        command_send("get ",buff);
         break;
 
       case 1:
@@ -347,8 +347,8 @@ void req() {
       case 2:
 			char buff1[MAXLINE];
 			printf("\nInserire nome file\n");
-			fgets(buff1,MAXLINE,stdin);
-      command_send("put",buff1);
+			fscanf(stdin, "%s", buff1);
+      command_send("put ",buff1);
 
         break;
 

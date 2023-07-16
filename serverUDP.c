@@ -21,7 +21,7 @@
 int TO = 0;
 
 // numero sequenza globale 
-int seqnum=1;
+int seqnum=0;
 int sockfd;
 int lt_ack_rcvd=0;
 static int nchildren;
@@ -94,27 +94,28 @@ void my_lock_release() {
 }
 void * rcv_cong(){
   struct st_pkt pkt;
-  int k = 0,n;
-  struct timeval tv;
-  fd_set fds;
-
-//Set up the file descriptor set.
-FD_ZERO(&fds) ;
-FD_SET(sockfd, &fds);
-
+  int k = 0;
 // Set up the struct timeval for the timeout.
+fd_set fds ;
+int n ;
+struct timeval tv ;
 
-tv.tv_sec = TO;  //TO ms timeout(TO preso in argv)
+// Set up the file descriptor set.
+FD_ZERO(&fds) ;
+FD_SET(sockfd, &fds) ;
+tv.tv_sec = 5;  //TO ms timeout(TO preso in argv)
 tv.tv_usec = 0;
 
 // Wait until timeout or data received.
-k=lt_ack_rcvd;
 bool stay=true;
 while(stay){
-  n = select ( sockfd, &fds, NULL, NULL, &tv );
+  printf("\nTimer start\n");
+ n = select ( sockfd, NULL, NULL, NULL, &tv );
   if ( n == 0)
   { 
    printf("\nTimeout..\n");
+   fflush(stdout);
+   k=lt_ack_rcvd;
     //implemento la ritrasmissione di tutti i pkt dopo lt_ack_rcvd
     while( (seqnum-k) > 0 ){
 				  if ((sendto(sockfd,&retr[-seqnum+k+2],sizeof(pkt), 0, (struct sockaddr *)&addr,addrlen)) < 0)  {
@@ -136,6 +137,8 @@ while(stay){
   }
   //ultimo ack ricevuto(ricevo ack comulativi)
   lt_ack_rcvd=pkt.ack;
+  printf("\nAck cum ricevuto %d\n",pkt.ack);
+  fflush(stdout);
   if(pkt.finbit == 1 && pkt.ack == seqnum){
     stay = false;
   }
@@ -143,39 +146,35 @@ while(stay){
 }
 // gestice nello specifico il comando get
 void send_get(char *str) {
-  printf("\nSEND ALIVE 12312\n");
+  printf("\nSEND ALIVE\n");
 	struct st_pkt pkt;
   FILE *file;
   bool stay=true;
   int i=0; 
   char path_file[MAXLINE];
   sprintf(path_file,"Server_Files/%s",str);
-  printf("path %s\n",path_file);
-
   if((file = fopen(path_file, "r+")) == NULL){
     printf("Errore in open del file\n");
     exit(1);
   }
    pthread_t thread_id;
   // creo il thread che mi legge le socket (lettura bloccante)
+  
   if(pthread_create(&thread_id,NULL,rcv_cong,NULL) != 0){
     perror("error pthread_create");
     exit(1);
   }
 
   while(stay){
-
-    seqnum++; 
-
   	while(fgets(pkt.pl,sizeof(pkt.pl),file)){	
-
+    seqnum++;
 		pkt.ack=seqnum;
-
     pkt.finbit=0;
 
 		printf("seq %d\n",pkt.ack);
-
+    printf("finbit %d\n",pkt.finbit);
 		printf("invio il pkt %s\n",pkt.pl);
+    printf("lst_ack_rcv %d\n",lt_ack_rcvd);
 	
 		fflush(stdout);
 
@@ -187,7 +186,7 @@ void send_get(char *str) {
 
 		i++;
 
-		if ((sendto(sockfd,&pkt,sizeof(pkt), 0, (struct sockaddr *)&addr,addrlen)) < 0)  
+		if ((sendto(sockfd,&pkt,sizeof(pkt),0,(struct sockaddr *)&addr,addrlen)) < 0)  
 		{	
 			perror("errore in sendto");
               		exit(1);
@@ -197,13 +196,15 @@ void send_get(char *str) {
 
   //fine lettura del file  
 	if(feof(file)){
-		stay=false;
-
-    // da migliorare è inutile inviare di nuovo il payload vecchio 
+    printf("\nEnd file\n");
+		stay=false; 
 		pkt.ack=seqnum;
     pkt.finbit=1;
 		retr[i]=pkt;
-
+    printf("seq %d\n",pkt.ack);
+    printf("finbit %d\n",pkt.finbit);
+		printf("invio il pkt %s\n",pkt.pl);
+    fflush(stdout);
 	//invio il terminatore 
 	if (sendto(sockfd,&pkt,sizeof(pkt), 0, (struct sockaddr *)&addr, addrlen ) <0 ) {
        		 perror("errore in recvfrom");
@@ -413,6 +414,7 @@ void send_control(int sockfd) {
   struct st_pkt pkt;
   
     while (stay) {
+
   if ((recvfrom(sockfd, &pkt,sizeof(pkt),0, (struct sockaddr *)&addr,&addrlen)) < 0) {
       perror("errore in recvfrom");
       exit(-1);
@@ -421,20 +423,20 @@ void send_control(int sockfd) {
       i++;
     }
     //+1 perchè la i è un indice
-    strncpy(cd,pkt.pl,i+1);
+    strncpy(cd,pkt.pl,i);
     // +2 perchè non voglio lo spazio 
-    strcpy(name,pkt.pl+i+2);
-
-    printf("seq ricevuto %d --> invio ack %d\n", pkt.ack, seqnum);
+    strcpy(name,pkt.pl+i+1);
 
     printf("msg ricevuto %s\n", pkt.pl);
-    
+
+    fflush(stdout);
 
 
 /* ---------------------- gestisco caso get ----------------------------------------------*/
 
     if(!strcmp("get",cd)){
 	    printf("\nOPEN GET\n");
+      fflush(stdout);
     bool found = false;
     DIR *dir;
     struct dirent *entry;
@@ -456,12 +458,14 @@ void send_control(int sockfd) {
     if(found){
       pkt.ack=0;
     strcpy(pkt.pl,"File trovato.");
+    printf("\npayload %s\n",pkt.pl);
     if ((sendto(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,addrlen)) < 0)  {
                 perror("errore in sendto");
                 exit(1);
     }
     // entro nella funzione che implementa la send del file 
      send_get(name);
+     sleep(10);
      printf("\n Send get return \n");
     }else if(!found){
     //Gestisco caso file non trovato
@@ -586,13 +590,11 @@ int main(int argc, char **argv) {
   // variabili normali
   nchildren = 5;  // numeri di figli qui possiamo rendere le cose dinamiche
 
-  sockfd=listenfd;
-
   if ((listenfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) { /* crea il socket */
     perror("errore in socket");
     exit(1);
   }
-
+  sockfd=listenfd;
   memset((void *)&addr, 0, sizeof(addr));
   addr.sin_family = AF_INET;
   addr.sin_addr.s_addr =
