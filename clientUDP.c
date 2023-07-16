@@ -304,7 +304,7 @@ void command_send(char *cd,char *nome_str){
 			req();
 		 }
       else if(pkt.ack == temp){
-				printf("\nServer responde %s\n",pkt.pl);
+				printf("\nServer response %s\n",pkt.pl);
 
 	  //implento la list 
 	  if(!strcmp(cd,"list")){
