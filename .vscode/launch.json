@@ -8,8 +8,8 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": true,
-      "cwd": "c:/Users/feder/Documents/GitHub/ARL-1",
-      "program": "c:/Users/feder/Documents/GitHub/ARL-1/build/Debug/outDebug",
+      "cwd": "c:/Users/Daniele/Documents/GitHub/ARL",
+      "program": "c:/Users/Daniele/Documents/GitHub/ARL/build/Debug/outDebug",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [
