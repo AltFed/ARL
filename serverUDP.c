@@ -143,6 +143,7 @@ while(stay){
 }
 // gestice nello specifico il comando get
 void send_get(char *str) {
+  printf("\nSEND ALIVE 12312\n");
 	struct st_pkt pkt;
   FILE *file;
   bool stay=true;
