@@ -154,7 +154,7 @@ void snd_put(char *str){
   char rcv_buff[100];
   char path_file[200];
   char *fin="END\n";
-  bool stay=true;
+  bool stay=true
   bool error=true;
   int t=1;    
   sprintf(path_file,"Server_Files/%s",str);
