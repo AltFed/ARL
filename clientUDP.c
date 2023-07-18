@@ -15,19 +15,21 @@
 #define MAXLINE 4096
 
 char pkt_send[MAXLINE]; 
-
+bool loop=false;
 int sockfd;  // descrittore alla socket creata per comunicare con il server
 struct sockaddr_in servaddr;
 
 void command_send(char *,char *);
 
 socklen_t addrlen = sizeof(struct sockaddr_in);
+//struct pkt 
 struct st_pkt
 {
 	int ack;
 	int finbit;
 	char pl[MAXLINE];
 };
+
 void cget();
 void req();
 
@@ -35,13 +37,12 @@ void req();
 void rcv_get(char *file){
 
 	struct st_pkt pkt;
-	printf("\n Rcv_get alive\n");
-	printf("\n Ecco il nome del file %s\n",file);
+	printf("\n Client : get alive\n");
 	FILE * fptr;
 
 	//creo il file se già esiste lo cancello tanto voglio quello aggiornato 
 	int n=0;
-	bool stay=true;
+	bool stay=true,different=false;
 
 	if((fptr = fopen("ciao","r+")) == NULL){
 		perror("Error opening file");
@@ -49,8 +50,12 @@ void rcv_get(char *file){
 		}
 	while(stay){	
 		//incremento n
+		if(different){
+			//se il numero che ricevo è differente non incremento n ovvio 
+		}else{
+			//incremento n solo se il numero che ricevo è quello che mi aspetto altrimenti gli invio sempre un ack cum uguale
 		n++;
-		pkt.ack=n;
+		}
 		if ((recvfrom(sockfd,&pkt, sizeof(pkt), 0, (struct sockaddr *)&servaddr,&addrlen ))< 0) {
         		perror("errore in recvfrom");
        			exit(1);
@@ -60,26 +65,32 @@ void rcv_get(char *file){
 
 	printf("NUM CHE VOGLIO->%d\n",n);
 
-	printf("\n PKT Payload %s\n",pkt.pl);
+	printf("\n PKT Payload: \n %s\n",pkt.pl);
 
 	fflush(stdout);
 	//finbit == 1 allora chiudo la connessione 
 	if(pkt.finbit == 1 && pkt.ack == n){
-		printf("\n Finbit ricevuto termino connessione \n");
-
-		fflush(stdout);
-
-		stay=false;
-
+		printf("\n Client : Server close connection \n");
+		//invio subito ack cum 
 		pkt.ack=n;
 		pkt.finbit=1;
+		printf("\n Client : Confermo chiusura\n");
+		fflush(stdout);
 		if (sendto(sockfd,&pkt, sizeof(pkt), 0,(struct sockaddr *)&servaddr,addrlen) < 0) {
         			perror("errore in sendto");
         			exit(1);
 		}
+		//se mi arriva come unico pkt un pkt di fine rapporto chiudo e scrivo sul file però altrimenti non scrivo 
+		if(n == 1){
+			if((fwrite(pkt.pl,strlen(pkt.pl),1,fptr) <0 )){
+				perror("Error in write rcv_get\n");
+				exit(1);
+				}
+		}
+		stay=false;
 		//se il finbit è 0 e il numero di pkt è quello che mi aspettavo scrivo sul file il pkt ricevuto
         }else if(pkt.finbit == 0 && pkt.ack == n){
-
+					different=false;
 					// invio un ack ogni pkt che ricevo
 					pkt.ack=n;
 					pkt.finbit=0;
@@ -88,7 +99,7 @@ void rcv_get(char *file){
         			exit(1);
 			}
 
-		printf("\nScrivo il msg sul file ->%s\n",pkt.pl);
+		printf("\n Client : Scrivo il msg sul file ->%s\n",pkt.pl);
 
 		fflush(stdout);
 
@@ -100,19 +111,18 @@ void rcv_get(char *file){
 
 	// se arriva un pkt fuori ordine invio subito ack non faccio la bufferizzazione lato rcv 
 	else if( n != pkt.ack && stay == true){
-
+		//non incremento n pongo diff = true
+		different=true;
 		//gestire ack non in ordine ES: inviamo un ack al sender e gli diciamo di inviare tutto dopo quel numero 
-		printf("Numero ricevuto diverso da quello che mi aspettavo invio ack cum \n");
+		printf(" Client : Pkt fuori ordine ricevuto invio ack \n");
 		// invio al sender un ack comulativo fino a dove ho ricevuto
 		pkt.ack=n;
 		if (sendto(sockfd,&pkt, sizeof(pkt), 0,(struct sockaddr *)&servaddr,addrlen) < 0) {
         		perror("errore in sendto");
         		exit(1);
-		}
-		
+		}	
 	}
 	}
-	printf("\n Return rcv_get \n");
 }
 
 //implemento la snd del comando put 
@@ -295,26 +305,34 @@ void command_send(char *cd,char *nome_str){
         exit(1);
 			}
 			//se il numero è sbagliato del pkt ricevuto rientro in command_send e ritrasmetto il pkt 
+			/* non penso serva 
      if(pkt.ack != temp ){
 	     printf("\n numero diverso da quello che mi aspettavo ritrasmetto \n");
 	     command_send(cd,nome_str);
 			 // se il num pkt è uguale e ritorna un codice di errore 
-		 }else if(pkt.ack == -1){
-			printf("\nError server = %s\n",pkt.pl);
+		 }*/
+		 if(pkt.ack == -1){
+			printf("\n Error Server = %s\n",pkt.pl);
 			req();
+			loop=true;
+			//vedere se va bene cosi con il return sennò facciamo altro
+			return;
 		 }
       else if(pkt.ack == temp){
-				printf("\nServer response %s\n",pkt.pl);
-
+				printf("\n Server response : %s\n",pkt.pl);
+				//invio ack di conferma 
+				printf("\n Client: Send ack cum %d\n",pkt.ack);
+				if (sendto(sockfd, &pkt, sizeof(pkt), 0,(struct sockaddr *)&servaddr,addrlen) < 0) {
+        	perror("errore in sendto");
+        	exit(1);
+      }
 	  //implento la list 
 	  if(!strcmp(cd,"list")){
 		 rcv_list();
-		 printf("rcv_list return\n");
 	  }
 	  //implento la get
 	  else if (!strcmp(cd,"get ")){
 		  rcv_get(nome_str);
-		  printf("rcv_get return\n");
 	  }
 	  //implemento la put 
 	  else if (!strcmp(cd,"put ")){
@@ -327,6 +345,10 @@ void command_send(char *cd,char *nome_str){
 void req() {
   int a=0;
   while (1) {
+		//se ho gestito un errore e si è creato un loop chiudo 
+		if(loop){
+			break;
+		}
 
     printf("\nInserire numero:\nget = 0\nlist = 1\nput = 2\nexit = -1\n");
 
