@@ -115,9 +115,7 @@ tv.tv_sec = TO; //s waiting
 // Wait until timeout or data received.
 bool stay=true;
 while(stay){
-  printf("\nPkt %d Timer Start\n",seqnum);
-  fflush(stdout);
- n = select ( sockfd,&fds, NULL, NULL, &tv );
+ n = select (sizeof(fds)*8,&fds, NULL, NULL, &tv );
   if ( n == 0)
   { 
    printf("\nTimeout ritrasmetto pkt \n");
