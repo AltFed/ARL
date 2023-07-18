@@ -109,7 +109,7 @@ FD_SET(sockfd, &fds);
 
 //implementare un TO dinamico 
 
-tv.tv_usec = 0; //ms waiting
+tv.tv_usec = 0; //ms waitingee
 tv.tv_sec = TO; //s waiting
 
 // Wait until timeout or data received.
