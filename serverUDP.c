@@ -15,7 +15,6 @@
 #include <dirent.h>
 #include <pthread.h>
 #include <sys/select.h>
-#define CONGWIN 10
 #define MAXLINE 4096
 // variabili globali 
 int TO = 0; 
@@ -118,7 +117,7 @@ bool stay=true;
 while(stay){
   printf("\nPkt %d Timer Start\n",seqnum);
   fflush(stdout);
- n = select ( sockfd, NULL, NULL, NULL, &tv );
+ n = select ( sockfd,&fds, NULL, NULL, &tv );
   if ( n == 0)
   { 
    printf("\nTimeout ritrasmetto pkt \n");
