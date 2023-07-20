@@ -99,6 +99,7 @@ void my_lock_release() {
 }
 //thread per la gestione del ack cum ecc
 void * rcv_cong(){
+sleep(1);
 struct st_pkt pkt;
 int k = 0;
 // Set up the struct timeval for the timeout.
@@ -130,7 +131,7 @@ while(stay){
     //implemento la ritrasmissione di tutti i pkt dopo lt_ack_rcvd
     //ritrasmetto se ultimo ack è < del mio numero 
     while( k < seqnum ){
-      //printf("\nRetr pkt seq trasmesso %d\n",retr[k-1].ack);
+      printf("\nK= %d ACK=%d SEQNUM=%d\n",k,retr[k-1].ack,seqnum);
       //fflush(stdout);
       //k-1 perchè è un indice 
 				  if ((sendto(sockfd,&retr[k],sizeof(pkt), 0, (struct sockaddr *)&addr,addrlen)) < 0)  {
@@ -201,10 +202,10 @@ void send_get(char *str) {
     while(cwnd < CongWin && stay == true){
       cwnd++;
       while((dimpl=fread(pkt.pl,1,sizeof(pkt.pl),file)) == MAXLINE){
-        seqnum++;
+        seqnum=seqnum+1;
         pkt.finbit=0;
         pkt.ack=seqnum;
-        printf("Server : Payload:  %s\n",pkt.pl);
+        //printf("Server : Payload:  %s\n",pkt.pl);
 		    fflush(stdout);
 
         //aumento la dim del vettore che mi salva i pkt 
@@ -221,6 +222,8 @@ void send_get(char *str) {
 
 		    //mantengo CongWin pkt
 		    retr[i]=pkt;
+        printf("\nACK RETR %d  I= %d\n",retr[i].ack,i);
+        fflush(stdout);
         //printf("\n i VALUE %d\n",i);
         //printf("\n retr[i] num %d\n",retr[i].ack);
         //fflush(stdout);
