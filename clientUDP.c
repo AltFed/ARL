@@ -18,7 +18,6 @@ char pkt_send[MAXLINE];
 bool loop=false;
 int sockfd;  // descrittore alla socket creata per comunicare con il server
 struct sockaddr_in servaddr;
-
 void command_send(char *,char *);
 
 socklen_t addrlen = sizeof(struct sockaddr_in);
@@ -37,11 +36,11 @@ void req();
 void rcv_get(char *file){
 
 	struct st_pkt pkt;
-	printf("\n Client : get alive\n");
+	printf("\n Client : Get function alive\n");
 	FILE * fptr;
 
 	//creo il file se già esiste lo cancello tanto voglio quello aggiornato 
-	int n=0;
+	int n=0,temp=0;
 	bool stay=true,different=false;
 
 	if((fptr = fopen("ciao","r+")) == NULL){
@@ -54,20 +53,21 @@ void rcv_get(char *file){
 			//se il numero che ricevo è differente non incremento n ovvio 
 		}else{
 			//incremento n solo se il numero che ricevo è quello che mi aspetto altrimenti gli invio sempre un ack cum uguale
+			//cosi gli invio ack 2 ovvero ho ricevuto tutto fino all 1 mi aspetto di ricevere il 2 
 		n++;
 		}
-		if ((recvfrom(sockfd,&pkt, sizeof(pkt), 0, (struct sockaddr *)&servaddr,&addrlen ))< 0) {
+		if ((temp=recvfrom(sockfd,&pkt, sizeof(pkt), 0, (struct sockaddr *)&servaddr,&addrlen ))< 0) {
         		perror("errore in recvfrom");
        			exit(1);
-		}		
-
+		}	
+		//tolgo i due int della struct 
+		//temp=temp-8;	
 	printf("NUM RICEVUTO-> %d\n",pkt.ack);
 
 	printf("NUM CHE VOGLIO->%d\n",n);
 
-	printf("\n PKT Payload: \n %s\n",pkt.pl);
+	printf("PKT ::::::: %s\n",pkt.pl);
 
-	fflush(stdout);
 	//finbit == 1 allora chiudo la connessione 
 	if(pkt.finbit == 1 && pkt.ack == n){
 		printf("\n Client : Server close connection \n");
@@ -81,12 +81,10 @@ void rcv_get(char *file){
         			exit(1);
 		}
 		//se mi arriva come unico pkt un pkt di fine rapporto chiudo e scrivo sul file però altrimenti non scrivo 
-		if(n == 1){
-			if((fwrite(pkt.pl,strlen(pkt.pl),1,fptr) <0 )){
+			if((fwrite(pkt.pl,temp,1,fptr) <0 )){
 				perror("Error in write rcv_get\n");
 				exit(1);
 				}
-		}
 		stay=false;
 		//se il finbit è 0 e il numero di pkt è quello che mi aspettavo scrivo sul file il pkt ricevuto
         }else if(pkt.finbit == 0 && pkt.ack == n){
@@ -94,29 +92,25 @@ void rcv_get(char *file){
 					// invio un ack ogni pkt che ricevo
 					pkt.ack=n;
 					pkt.finbit=0;
+					printf("Client : invio ack %d\n\n",pkt.ack);
+					fflush(stdout);
 			if (sendto(sockfd,&pkt, sizeof(pkt), 0,(struct sockaddr *)&servaddr,addrlen) < 0) {
         			perror("errore in sendto");
         			exit(1);
 			}
-
-		printf("\n Client : Scrivo il msg sul file ->%s\n",pkt.pl);
-
-		fflush(stdout);
-
-		if((fwrite(pkt.pl,strlen(pkt.pl),1,fptr) <0 )){
+		if((fwrite(pkt.pl,temp,1,fptr) <0 )){
 				perror("Error in write rcv_get\n");
 				exit(1);
 				}
         }
-
 	// se arriva un pkt fuori ordine invio subito ack non faccio la bufferizzazione lato rcv 
 	else if( n != pkt.ack && stay == true){
 		//non incremento n pongo diff = true
 		different=true;
 		//gestire ack non in ordine ES: inviamo un ack al sender e gli diciamo di inviare tutto dopo quel numero 
-		printf(" Client : Pkt fuori ordine ricevuto invio ack \n");
+		printf(" Client : Pkt fuori ordine ricevuto invio ack [%d]\n",n);
 		// invio al sender un ack comulativo fino a dove ho ricevuto
-		pkt.ack=n;
+		pkt.ack=n-1;
 		if (sendto(sockfd,&pkt, sizeof(pkt), 0,(struct sockaddr *)&servaddr,addrlen) < 0) {
         		perror("errore in sendto");
         		exit(1);
@@ -320,12 +314,15 @@ void command_send(char *cd,char *nome_str){
 		 }
       else if(pkt.ack == temp){
 				printf("\n Server response : %s\n",pkt.pl);
+				// qui possiamo implementare la perdita del pkt
 				//invio ack di conferma 
+				/*
 				printf("\n Client: Send ack cum %d\n",pkt.ack);
 				if (sendto(sockfd, &pkt, sizeof(pkt), 0,(struct sockaddr *)&servaddr,addrlen) < 0) {
         	perror("errore in sendto");
         	exit(1);
       }
+			*/
 	  //implento la list 
 	  if(!strcmp(cd,"list")){
 		 rcv_list();
@@ -339,7 +336,6 @@ void command_send(char *cd,char *nome_str){
 		  snd_put(nome_str);
 	  }
 		}
-		printf(" command return \n"); 
 }
 // gestisco la richiesta dell'utente
 void req() {

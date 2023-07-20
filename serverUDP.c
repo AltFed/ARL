@@ -15,15 +15,18 @@
 #include <dirent.h>
 #include <pthread.h>
 #include <sys/select.h>
-#define MAXLINE 4096
+#define MAXLINE 100
 // variabili globali 
-int TO = 0; 
+int TOs = 0; 
+int TOms = 0;
 int seqnum=1;
 int sockfd;
 int lt_ack_rcvd=1;
 int cwnd=0;
 int CongWin=1;
 double p=0;
+int maxackrcv=-1;
+int dim=20;
 //preforking variable 
 static int nchildren;
 static pid_t *pids;
@@ -47,7 +50,7 @@ struct st_pkt
     
 	};
 //start dimensione 20
-struct st_pkt retr[20];
+struct st_pkt *retr;
 
 // implementa la logica di lock/unlock
 void my_lock_init(char *pathname) {
@@ -109,8 +112,8 @@ FD_SET(sockfd, &fds);
 
 //implementare un TO dinamico 
 
-tv.tv_usec = 0; //ms waitingee
-tv.tv_sec = TO; //s waiting
+tv.tv_usec = TOms; //ms waitingee
+tv.tv_sec = TOs; //s waiting
 
 // Wait until timeout or data received.
 bool stay=true;
@@ -118,13 +121,17 @@ while(stay){
  n = select (sizeof(fds)*8,&fds, NULL, NULL, &tv );
   if ( n == 0)
   { 
-   printf("\nTimeout ritrasmetto pkt \n");
-     CongWin= CongWin >> 2; 
-   printf("\nCongwin dimezzato [%d]\n",CongWin);
+   printf("\nTimeout ritrasmetto i pkt\n");
+     CongWin= CongWin >> 1; 
+   printf("\nCongwin dimezzato dim :[%d]\n",CongWin);
    fflush(stdout);
+   //perchè gli ack che ricevo corrispondono all pkt che il client si aspetta di ricevere 
    k=lt_ack_rcvd;
     //implemento la ritrasmissione di tutti i pkt dopo lt_ack_rcvd
-    while( k < seqnum ){
+    //ritrasmetto se ultimo ack è < del mio numero 
+    while( k <= seqnum ){
+      //printf("\nRetr pkt seq trasmesso %d\n",retr[k-1].ack);
+      fflush(stdout);
       //k-1 perchè è un indice 
 				  if ((sendto(sockfd,&retr[k-1],sizeof(pkt), 0, (struct sockaddr *)&addr,addrlen)) < 0)  {
 					  perror("errore in sendto");
@@ -132,6 +139,7 @@ while(stay){
 				  }
 				  k++;
 				  }
+          continue;
   }
   else if( n == -1 )
   {
@@ -143,25 +151,32 @@ while(stay){
        			 perror("errore in recvfrom");
         		 exit(1);
   }
+  printf("\nLETTO\n");
+  fflush(stdout);
   //ultimo ack ricevuto(ricevo ack comulativi)
   lt_ack_rcvd=pkt.ack;
-  printf("\nAck cum ricevuto %d\n",pkt.ack);
+  printf("\nServer : Ack cum  %d\n",pkt.ack);
   fflush(stdout);
-  //incremento la finestra di trasmissione di 2 ogni ack se arriva un ack nuovo 
-  if(seqnum == pkt.ack){
-    CongWin++;
-    printf("\n CongWin Attuale %d\n",CongWin);
-    fflush(stdout);
-  }
-  if(pkt.finbit == 1 && pkt.ack == seqnum){
+  //incremento la finestra di trasmissione  ogni ack se arriva un ack nuovo 
+   if(pkt.finbit == 1 ){//&& pkt.ack == seqnum){
     printf("Server : Client disconesso \n");
     stay = false;
+    continue;
+  }
+  if(maxackrcv < lt_ack_rcvd){
+    CongWin=CongWin << 1;
+    printf("\n CongWin dim %d\n",CongWin);
+    fflush(stdout);
+  }
+  //mantengo il num di ack più alto ricevuto 
+  if(maxackrcv < lt_ack_rcvd){
+    maxackrcv=lt_ack_rcvd;
   }
 }
 }
 // gestice nello specifico il comando get
 void send_get(char *str) {
-  printf("\nSEND ALIVE\n");
+  retr=malloc(sizeof(struct st_pkt)*dim);
 	struct st_pkt pkt;
   FILE *file;
   bool stay=true;
@@ -184,43 +199,42 @@ void send_get(char *str) {
     //se last ack non è uguale al mio seqnum mi fermo altrimenti entro dentro e invio da 0 a CongWin pkt e poi mi aspetto di ricevere come lastack quello dell'ultimo pkt inviato poi continuo 
     if(lt_ack_rcvd == seqnum){ 
     cwnd=0; 
-    while(cwnd < CongWin){
+    while(cwnd < CongWin && stay == true){
       cwnd++;
-      while(fread(pkt.pl,sizeof(pkt.pl),1,file) ==1 ){
+      while(fread(pkt.pl,sizeof(pkt.pl),1,file) == 1){
         pkt.finbit=0;
         pkt.ack=seqnum;
-		    printf("seq %d\n",pkt.ack);
-        printf("finbit %d\n",pkt.finbit);
-        printf("lst_ack_rcv %d\n",lt_ack_rcvd);
-		    printf("invio il pkt %s\n",pkt.pl);
-	
+        printf("Server : Payload:  %s\n",pkt.pl);
 		    fflush(stdout);
+
         //aumento la dim del vettore che mi salva i pkt 
-        if(CongWin > (sizeof(retr)/sizeof(struct st_pkt))){
-          int e=sizeof(retr)/sizeof(struct st_pkt);
-          struct st_pkt temp[e];
-          //copio il contenuto di retr in temp 
-          memcpy(temp,retr,e);
-          //raddopio la dim di retr
-          struct st_pkt retr[e>>2];
-          //copio il contenuto di temp in retr con dim doppia
-          memcpy(retr,temp,e);
+        if(CongWin > dim){
+           printf("\n Old size of retr %d\n",dim);
+          //raddopio la dimensione di retr
+          dim=dim<<1;
+          retr=realloc(retr,dim);
+          printf("\nNew size of retr %d\n",dim);
+          fflush(stdout);
         }
 		    //cicliclo 
-		    i= i % CongWin; 
+		    i= i % dim; 
 
 		    //mantengo CongWin pkt
 		    retr[i]=pkt;
-
+        //printf("\n i VALUE %d\n",i);
+        //printf("\n retr[i] num %d\n",retr[i].ack);
+        //fflush(stdout);
 		    i++;
         prob=(double)rand() / RAND_MAX;
         if(prob < p){
-          printf("MSG PERSO\n");
+          printf("Server : pkt lost  %d\n",pkt.ack);
+          fflush(stdout);
             msgPerso++;
              msgTot++;
           // Il messaggio è stato perso 
           continue;
         }else{
+          printf("Server : send pkt %d\n",pkt.ack);
           // Trasmetto con successo 
 		if ((sendto(sockfd,&pkt,sizeof(pkt),0,(struct sockaddr *)&addr,addrlen)) < 0)  
 		{	
@@ -236,22 +250,20 @@ void send_get(char *str) {
 
   //fine lettura del file  
 	if(feof(file)){
-    printf("\nEnd file\n");
 		pkt.ack=seqnum;
     pkt.finbit=1;
 		retr[i]=pkt;
-    printf("seq %d\n",pkt.ack);
-    printf("finbit %d\n",pkt.finbit);
-		printf("invio il pkt %s\n",pkt.pl);
-    fflush(stdout);
     prob=(double)rand() / RAND_MAX;
         if(prob < p){
-          printf("\nMSG PERSO\n");
+          printf("\n Pkt lost %d\n",pkt.ack);
+          fflush(stdout);
           msgPerso++;
           // Il messaggio è stato perso 
           msgTot++;
           continue;
         }else{
+          printf("Server : send pkt %d\n",pkt.ack);
+          printf("\n Server : Close connection \n");
           stay=false;
 	//invio il terminatore 
 	if (sendto(sockfd,&pkt,sizeof(pkt), 0, (struct sockaddr *)&addr, addrlen ) <0 ) {
@@ -259,18 +271,20 @@ void send_get(char *str) {
         	 exit(1);
 		}
     msgInviati++;
-     msgTot++;
+    msgTot++;
   }
   }
   }
   }
   }
-  printf("\nMSG TOTALI INVIATI %d\n",msgTot);
-  printf("\nMSG PERSI %d\n",msgPerso);
-  printf("\nMSG INVIATI %d\n",msgInviati);
-  printf("\n PROB DI SCARTARE UN MSG %f\n",p);
   //aspetto la terminazione del thread che legge 
   pthread_join(thread_id,NULL);
+  printf("\nMSG TOTALI %d\n",msgTot);
+  printf("\nMSG PERSI %d\n",msgPerso);
+  printf("\nMSG INVIATI %d\n",msgInviati);
+  printf("\n Dim CongWin finale %d\n",CongWin);
+  printf("\n PROB DI SCARTARE UN MSG %f\n",p);
+  fflush(stdout);
 }
 
 // gestice nello specifico il comando put
@@ -468,15 +482,11 @@ void send_control(int sockfd) {
     // +1 perchè non voglio lo spazio 
     strcpy(name,pkt.pl+i+1);
 
-    printf(" Server : Msg ricevuto :  %s\n", pkt.pl);
-
-    fflush(stdout);
-
+    printf(" Server : Msg ricevuto   %s\n", pkt.pl);
 
 /* ---------------------- gestisco caso get ----------------------------------------------*/
 
     if(!strcmp("get",cd)){
-      fflush(stdout);
     bool found = false;
     DIR *dir;
     struct dirent *entry;
@@ -498,7 +508,7 @@ void send_control(int sockfd) {
     if(found){
       pkt.ack=0;
     strcpy(pkt.pl,"File trovato.");
-    printf("\npayload %s\n",pkt.pl);
+    printf("\nServer : %s\n",pkt.pl);
     if ((sendto(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,addrlen)) < 0)  {
                 perror("errore in sendto");
                 exit(1);
@@ -601,18 +611,19 @@ void sig_int(int signo) {
 }
 
 int main(int argc, char **argv) {
-  if (argc != 4) {
-    fprintf(stderr, " utilizzo:<pkt loss probab P , TO[ms] , SERV_Port > \n");
+  if (argc != 5) {
+    fprintf(stderr, " utilizzo:<pkt loss probab P , TO[s] , TO[ms] , SERV_Port > \n");
     exit(1);
   }
   // variabili richieste dalla traccia
   p=strtod(argv[1],NULL);
+  TOs = atoi(argv[2]);
+  TOms = atoi(argv[3]);
+  int SERV_PORT = atoi(argv[4]);
 
-  TO = atoi(argv[2]);
-
-  int SERV_PORT = atoi(argv[3]);
   printf("\nProb inserita %f\n",p);
-  printf("\nTO inserito %d\n",TO);
+  printf("\nTO inserito %d [s] \n",TOs);
+  printf("\nTO inserito %d [ms] \n",TOms);
   printf("\nSERV_PORT inserito %d\n",SERV_PORT);
 
   if (SERV_PORT < 255) {
