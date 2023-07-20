@@ -61,13 +61,11 @@ void rcv_get(char *file){
        			exit(1);
 		}	
 		//tolgo i due int della struct 
-		//temp=temp-8;	
+		temp=temp-8;	
 	printf("NUM RICEVUTO-> %d\n",pkt.ack);
 
 	printf("NUM CHE VOGLIO->%d\n",n);
-
-	printf("PKT ::::::: %s\n",pkt.pl);
-
+	printf("TEMP %d\n",temp);
 	//finbit == 1 allora chiudo la connessione 
 	if(pkt.finbit == 1 && pkt.ack == n){
 		printf("\n Client : Server close connection \n");
@@ -80,14 +78,18 @@ void rcv_get(char *file){
         			perror("errore in sendto");
         			exit(1);
 		}
+		if( n == 1){
 		//se mi arriva come unico pkt un pkt di fine rapporto chiudo e scrivo sul file però altrimenti non scrivo 
 			if((fwrite(pkt.pl,temp,1,fptr) <0 )){
 				perror("Error in write rcv_get\n");
 				exit(1);
 				}
+		}
 		stay=false;
 		//se il finbit è 0 e il numero di pkt è quello che mi aspettavo scrivo sul file il pkt ricevuto
         }else if(pkt.finbit == 0 && pkt.ack == n){
+					printf("PKT ::::::: %s\n",pkt.pl);
+					fflush(stdout);
 					different=false;
 					// invio un ack ogni pkt che ricevo
 					pkt.ack=n;
@@ -354,9 +356,9 @@ void req() {
       case 0:
 			char buff[MAXLINE];
 			printf("\nInserire nome file\n");
-			  fscanf(stdin, "%s", buff);
-        command_send("get ",buff);
-        break;
+			fscanf(stdin, "%s", buff);
+      command_send("get ",buff);
+      break;
 
       case 1:
         command_send("list",NULL);	//passo direttamento la list alla command_send senza usare una funzione ausiliaria

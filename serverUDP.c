@@ -15,7 +15,7 @@
 #include <dirent.h>
 #include <pthread.h>
 #include <sys/select.h>
-#define MAXLINE 100
+#define MAXLINE 4096
 // variabili globali 
 int TOs = 0; 
 int TOms = 0;
@@ -118,7 +118,7 @@ tv.tv_sec = TOs; //s waiting
 // Wait until timeout or data received.
 bool stay=true;
 while(stay){
- n = select (sizeof(fds)*8,&fds, NULL, NULL, &tv );
+ n = select (sizeof(fds)*8,&fds, NULL, NULL, &tv);
   if ( n == 0)
   { 
    printf("\nTimeout ritrasmetto i pkt\n");
@@ -129,11 +129,11 @@ while(stay){
    k=lt_ack_rcvd;
     //implemento la ritrasmissione di tutti i pkt dopo lt_ack_rcvd
     //ritrasmetto se ultimo ack è < del mio numero 
-    while( k <= seqnum ){
+    while( k < seqnum ){
       //printf("\nRetr pkt seq trasmesso %d\n",retr[k-1].ack);
-      fflush(stdout);
+      //fflush(stdout);
       //k-1 perchè è un indice 
-				  if ((sendto(sockfd,&retr[k-1],sizeof(pkt), 0, (struct sockaddr *)&addr,addrlen)) < 0)  {
+				  if ((sendto(sockfd,&retr[k],sizeof(pkt), 0, (struct sockaddr *)&addr,addrlen)) < 0)  {
 					  perror("errore in sendto");
               	  			exit(1);
 				  }
@@ -146,7 +146,7 @@ while(stay){
     perror("Error in select wait");
     exit(1);
   }
-//se non scade il tempo e non ho errore allora leggo e vedo l ack che il receiver mi invia
+//se non ho errore allora leggo e vedo l ack che il receiver mi invia
   if (recvfrom(sockfd, &pkt, sizeof(pkt),0,(struct sockaddr *)&addr, &addrlen ) <0 ){
        			 perror("errore in recvfrom");
         		 exit(1);
@@ -180,7 +180,7 @@ void send_get(char *str) {
 	struct st_pkt pkt;
   FILE *file;
   bool stay=true;
-  int i=0,msgInviati=0,msgPerso=0,msgTot=0; 
+  int i=0,msgInviati=0,msgPerso=0,msgTot=0,dimpl=0; 
   double prob=0;
   char path_file[MAXLINE];
   sprintf(path_file,"Server_Files/%s",str);
@@ -201,7 +201,7 @@ void send_get(char *str) {
     cwnd=0; 
     while(cwnd < CongWin && stay == true){
       cwnd++;
-      while(fread(pkt.pl,sizeof(pkt.pl),1,file) == 1){
+      while((dimpl=fread(pkt.pl,1,sizeof(pkt.pl),file)) == MAXLINE){
         pkt.finbit=0;
         pkt.ack=seqnum;
         printf("Server : Payload:  %s\n",pkt.pl);
@@ -217,7 +217,7 @@ void send_get(char *str) {
           fflush(stdout);
         }
 		    //cicliclo 
-		    i= i % dim; 
+		    //i= i % dim; 
 
 		    //mantengo CongWin pkt
 		    retr[i]=pkt;
@@ -230,7 +230,7 @@ void send_get(char *str) {
           printf("Server : pkt lost  %d\n",pkt.ack);
           fflush(stdout);
             msgPerso++;
-             msgTot++;
+            msgTot++;
           // Il messaggio è stato perso 
           continue;
         }else{
@@ -242,9 +242,9 @@ void send_get(char *str) {
               		exit(1);
 		}		
     msgInviati++;
-    seqnum++;
-     msgTot++;
+    msgTot++;
         }
+        seqnum++;
     //la lettura la fa il thread cosi non mi blocco io main thread 
 	}
 
@@ -252,6 +252,7 @@ void send_get(char *str) {
 	if(feof(file)){
 		pkt.ack=seqnum;
     pkt.finbit=1;
+    pkt.pl[dimpl]='\0';
 		retr[i]=pkt;
     prob=(double)rand() / RAND_MAX;
         if(prob < p){
@@ -482,7 +483,7 @@ void send_control(int sockfd) {
     // +1 perchè non voglio lo spazio 
     strcpy(name,pkt.pl+i+1);
 
-    printf(" Server : Msg ricevuto   %s\n", pkt.pl);
+    printf(" Server : Msg ricevuto   %s\n", pkt.pl); 
 
 /* ---------------------- gestisco caso get ----------------------------------------------*/
 
