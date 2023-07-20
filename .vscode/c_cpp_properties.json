@@ -12,6 +12,25 @@
       "compilerArgs": [
         ""
       ]
+    },
+    {
+      "name": "linux-gcc-x64",
+      "includePath": [
+        "c:\\Users\\Daniele\\Documents\\GitHub\\ARL/**"
+      ],
+      "defines": [
+        "_DEBUG",
+        "UNICODE",
+        "_UNICODE"
+      ],
+      "intelliSenseMode": "linux-gcc-x64",
+      "mergeConfigurations": false,
+      "browse": {
+        "path": [
+          "${workspaceFolder}/**"
+        ],
+        "limitSymbolsToIncludedHeaders": true
+      }
     }
   ],
   "version": 4
