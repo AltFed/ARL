@@ -63,9 +63,7 @@ void rcv_get(char *file){
 		//tolgo i due int della struct 
 		temp=temp-8;	
 	printf("NUM RICEVUTO-> %d\n",pkt.ack);
-
 	printf("NUM CHE VOGLIO->%d\n",n);
-	printf("TEMP %d\n",temp);
 	//finbit == 1 allora chiudo la connessione 
 	if(pkt.finbit == 1 && pkt.ack == n){
 		printf("\n Client : Server close connection \n");
@@ -88,8 +86,6 @@ void rcv_get(char *file){
 		stay=false;
 		//se il finbit è 0 e il numero di pkt è quello che mi aspettavo scrivo sul file il pkt ricevuto
         }else if(pkt.finbit == 0 && pkt.ack == n){
-					printf("PKT ::::::: %s\n",pkt.pl);
-					fflush(stdout);
 					different=false;
 					// invio un ack ogni pkt che ricevo
 					pkt.ack=n;
@@ -109,10 +105,10 @@ void rcv_get(char *file){
 	else if( n != pkt.ack && stay == true){
 		//non incremento n pongo diff = true
 		different=true;
-		//gestire ack non in ordine ES: inviamo un ack al sender e gli diciamo di inviare tutto dopo quel numero 
-		printf(" Client : Pkt fuori ordine ricevuto invio ack [%d]\n",n);
 		// invio al sender un ack comulativo fino a dove ho ricevuto
 		pkt.ack=n-1;
+		//gestire ack non in ordine ES: inviamo un ack al sender e gli diciamo di inviare tutto dopo quel numero 
+		printf(" Client : Pkt fuori ordine ricevuto invio ack [%d]\n",pkt.ack);
 		if (sendto(sockfd,&pkt, sizeof(pkt), 0,(struct sockaddr *)&servaddr,addrlen) < 0) {
         		perror("errore in sendto");
         		exit(1);

@@ -19,9 +19,9 @@
 // variabili globali 
 int TOs = 0; 
 int TOms = 0;
-int seqnum=1;
+int seqnum=0;
 int sockfd;
-int lt_ack_rcvd=1;
+int lt_ack_rcvd=0;
 int cwnd=0;
 int CongWin=1;
 double p=0;
@@ -139,7 +139,6 @@ while(stay){
 				  }
 				  k++;
 				  }
-          continue;
   }
   else if( n == -1 )
   {
@@ -202,6 +201,7 @@ void send_get(char *str) {
     while(cwnd < CongWin && stay == true){
       cwnd++;
       while((dimpl=fread(pkt.pl,1,sizeof(pkt.pl),file)) == MAXLINE){
+        seqnum++;
         pkt.finbit=0;
         pkt.ack=seqnum;
         printf("Server : Payload:  %s\n",pkt.pl);
@@ -244,7 +244,6 @@ void send_get(char *str) {
     msgInviati++;
     msgTot++;
         }
-        seqnum++;
     //la lettura la fa il thread cosi non mi blocco io main thread 
 	}
 
