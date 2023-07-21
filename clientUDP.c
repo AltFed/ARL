@@ -61,8 +61,8 @@ void rcv_get(char *file){
        			exit(1);
 		}	
 		//tolgo i due int della struct
-	printf("NUM RICEVUTO-> %d\n",pkt.ack);
-	printf("NUM CHE VOGLIO->%d\n",n);
+	//printf("NUM RICEVUTO-> %d\n",pkt.ack);
+	//printf("NUM CHE VOGLIO->%d\n",n);
 	//finbit == 1 allora chiudo la connessione 
 	if(pkt.finbit == 1 && pkt.ack == n){
 		printf("\n Client : Server close connection \n");
@@ -70,6 +70,7 @@ void rcv_get(char *file){
 		pkt.ack=n;
 		pkt.finbit=1;
 		printf("\n Client : Confermo chiusura\n");
+		printf("ACK --> %d",pkt.ack);
     fflush(stdout);
 		if (sendto(sockfd,&pkt, sizeof(pkt), 0,(struct sockaddr *)&servaddr,addrlen) < 0) {
         			perror("errore in sendto");
@@ -87,7 +88,7 @@ void rcv_get(char *file){
 					// invio un ack ogni pkt che ricevo
 					pkt.ack=n;
 					pkt.finbit=0;
-					printf("\nClient : invio ack %d\n\n",pkt.ack);
+					//printf("\nClient : invio ack %d\n\n",pkt.ack);
 					fflush(stdout);
 			if (sendto(sockfd,&pkt, sizeof(pkt), 0,(struct sockaddr *)&servaddr,addrlen) < 0) {
         			perror("errore in sendto");
@@ -105,7 +106,7 @@ void rcv_get(char *file){
 		// invio al sender un ack comulativo fino a dove ho ricevuto
 		pkt.ack=n-1;
 		//gestire ack non in ordine ES: inviamo un ack al sender e gli diciamo di inviare tutto dopo quel numero 
-		printf(" Client : Pkt fuori ordine ricevuto invio ack [%d]\n",pkt.ack);
+		//printf(" Client : Pkt fuori ordine ricevuto invio ack [%d]\n",pkt.ack);
 		if (sendto(sockfd,&pkt, sizeof(pkt), 0,(struct sockaddr *)&servaddr,addrlen) < 0) {
         		perror("errore in sendto");
         		exit(1);

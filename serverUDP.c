@@ -100,7 +100,7 @@ void my_lock_release() {
 //thread per la gestione del ack cum ecc
 void * rcv_cong(){
 struct st_pkt pkt;
-int k = 0;
+int k = 0,msgRitr=0;
 // Set up the struct timeval for the timeout.
 fd_set fds;
 int n;
@@ -121,22 +121,21 @@ while(stay){
  n = select (sizeof(fds)*8,&fds, NULL, NULL, &tv);
   if ( n == 0)
   { 
-   printf("\nTimeout ritrasmetto i pkt\n");
+   //printf("\nTimeout ritrasmetto i pkt\n");
      CongWin= CongWin >> 1; 
-   printf("\nCongwin dimezzato dim :[%d]\n",CongWin);
    fflush(stdout);
    //perchè gli ack che ricevo corrispondono all pkt che il client si aspetta di ricevere 
    k=lt_ack_rcvd;
     //implemento la ritrasmissione di tutti i pkt dopo lt_ack_rcvd
     //ritrasmetto se ultimo ack è < del mio numero 
     while( k < seqnum ){
-      printf("\nK= %d ACK=%d SEQNUM=%d\n",k,retr[k].ack,seqnum);
-      fflush(stdout); 
 				  if ((sendto(sockfd,&retr[k],sizeof(pkt), 0, (struct sockaddr *)&addr,addrlen)) < 0)  {
 					  perror("errore in sendto");
               	  			exit(1);
 				  }
+          msgRitr++;
 				  k++;
+          k = k % dim;
 				  }
   }
   else if( n == -1 )
@@ -151,24 +150,28 @@ while(stay){
   }
   //ultimo ack ricevuto(ricevo ack comulativi)
   lt_ack_rcvd=pkt.ack;
-  printf("\nServer : Ack cum  %d  seqnum att %d \n",pkt.ack,seqnum);
+  printf("\nlt_ack %d   seqnum %d\n",pkt.ack,seqnum);
   fflush(stdout);
+  //printf("\nServer : Ack cum  %d  seqnum att %d \n",pkt.ack,seqnum);
+  //fflush(stdout);
   //incremento la finestra di trasmissione  ogni ack se arriva un ack nuovo 
-   if(pkt.finbit == 1  && pkt.ack == seqnum){
+   if(pkt.finbit == 1 && pkt.ack == seqnum){
     printf("Server : Client disconesso  correttamente \n");
+    fflush(stdout);
     stay = false;
     continue;
   }
   if(maxackrcv < lt_ack_rcvd){
     CongWin=CongWin << 1;
-    printf("\n CongWin dim %d\n",CongWin);
-    fflush(stdout);
+    //printf("\n CongWin dim %d\n",CongWin);
+    //fflush(stdout);
   }
   //mantengo il num di ack più alto ricevuto 
   if(maxackrcv < lt_ack_rcvd){
     maxackrcv=lt_ack_rcvd;
   }
 }
+printf("\nMSG Ritr %d\n",msgRitr);
 }
 // gestice nello specifico il comando get
 void send_get(char *str) {
@@ -206,14 +209,14 @@ void send_get(char *str) {
         pkt.ack=seqnum;
         //mantengo CongWin pkt
         retr[i]=pkt;
-        printf("\nACK RETR %d  I= %d\n",retr[i].ack,i);
+        //printf("\nACK RETR %d  I= %d\n",retr[i].ack,i);
         fflush(stdout);
         //printf("\n i VALUE %d\n",i);
         //printf("\n retr[i] num %d\n",retr[i].ack);
         //fflush(stdout);
 		    i++;
         //cicliclo 
-		    i= i % dim; 
+		    i = i % dim; 
         //printf("Server : Payload:  %s\n",pkt.pl);
 		    fflush(stdout);
 
@@ -232,14 +235,14 @@ void send_get(char *str) {
         */
         prob=(double)rand() / RAND_MAX;
         if(prob < p){
-          printf("Server : pkt lost  %d\n",pkt.ack);
-          fflush(stdout);
+          //printf("Server : pkt lost  %d\n",pkt.ack);
+          //fflush(stdout);
             msgPerso++;
             msgTot++;
           // Il messaggio è stato perso 
           continue;
         }else{
-          printf("Server : send pkt %d\n",pkt.ack);
+          //printf("Server : send pkt %d\n",pkt.ack);
           // Trasmetto con successo 
 		if ((sendto(sockfd,&pkt,sizeof(pkt),0,(struct sockaddr *)&addr,addrlen)) < 0)  
 		{	
@@ -254,6 +257,9 @@ void send_get(char *str) {
 
   //fine lettura del file  
 	if(feof(file)){
+    while(lt_ack_rcvd != seqnum){
+      printf("OOOOOO\n");
+    }
     seqnum++;
 		pkt.ack=seqnum;
     pkt.finbit=1;
@@ -261,8 +267,8 @@ void send_get(char *str) {
 		retr[i]=pkt;
     prob=(double)rand() / RAND_MAX;
         if(prob < p){
-          printf("\n Pkt lost %d\n",pkt.ack);
-          fflush(stdout);
+          //printf("\n Pkt lost %d\n",pkt.ack);
+          //fflush(stdout);
           msgPerso++;
           // Il messaggio è stato perso 
           msgTot++;
@@ -270,6 +276,7 @@ void send_get(char *str) {
         }else{
           printf("Server : send pkt %d\n",pkt.ack);
           printf("\n Server : Close connection \n");
+          fflush(stdout);
           stay=false;
 	//invio il terminatore 
 	if (sendto(sockfd,&pkt,sizeof(pkt), 0, (struct sockaddr *)&addr, addrlen ) <0 ) {
@@ -473,12 +480,10 @@ void send_list(int sockfd) {
 // gestisce il comando che il client richiede
 void send_control(int sockfd) {
   int i=0;
-  //bool stay=true;
+  bool stay=true;
   char cd[100];
   char name[100];
   struct st_pkt pkt;
-  
-   // while (stay) {
 
   if ((recvfrom(sockfd, &pkt,sizeof(pkt),0, (struct sockaddr *)&addr,&addrlen)) < 0) {
       perror("errore in recvfrom");
@@ -563,7 +568,6 @@ void send_control(int sockfd) {
       }
       rcv_put(sockfd,name);
     }
-    sleep(5);
 }
 
 
