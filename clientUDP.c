@@ -40,7 +40,7 @@ void rcv_get(char *file){
 	FILE * fptr;
 
 	//creo il file se già esiste lo cancello tanto voglio quello aggiornato 
-	int n=0,temp=0;
+	int n=0;
 	bool stay=true,different=false;
 
 	if((fptr = fopen("ciao","r+")) == NULL){
@@ -56,12 +56,11 @@ void rcv_get(char *file){
 			//cosi gli invio ack 2 ovvero ho ricevuto tutto fino all 1 mi aspetto di ricevere il 2 
 		n++;
 		}
-		if ((temp=recvfrom(sockfd,&pkt, sizeof(pkt), 0, (struct sockaddr *)&servaddr,&addrlen ))< 0) {
+		if ((recvfrom(sockfd,&pkt, sizeof(pkt), 0, (struct sockaddr *)&servaddr,&addrlen ))< 0) {
         		perror("errore in recvfrom");
        			exit(1);
 		}	
-		//tolgo i due int della struct 
-		temp=temp-8;	
+		//tolgo i due int della struct
 	printf("NUM RICEVUTO-> %d\n",pkt.ack);
 	printf("NUM CHE VOGLIO->%d\n",n);
 	//finbit == 1 allora chiudo la connessione 
@@ -71,18 +70,16 @@ void rcv_get(char *file){
 		pkt.ack=n;
 		pkt.finbit=1;
 		printf("\n Client : Confermo chiusura\n");
-		fflush(stdout);
+    fflush(stdout);
 		if (sendto(sockfd,&pkt, sizeof(pkt), 0,(struct sockaddr *)&servaddr,addrlen) < 0) {
         			perror("errore in sendto");
         			exit(1);
 		}
-		if( n == 1){
 		//se mi arriva come unico pkt un pkt di fine rapporto chiudo e scrivo sul file però altrimenti non scrivo 
-			if((fwrite(pkt.pl,temp,1,fptr) <0 )){
+			if((fwrite(pkt.pl,strlen(pkt.pl),1,fptr) <0 )){
 				perror("Error in write rcv_get\n");
 				exit(1);
 				}
-		}
 		stay=false;
 		//se il finbit è 0 e il numero di pkt è quello che mi aspettavo scrivo sul file il pkt ricevuto
         }else if(pkt.finbit == 0 && pkt.ack == n){
@@ -90,13 +87,13 @@ void rcv_get(char *file){
 					// invio un ack ogni pkt che ricevo
 					pkt.ack=n;
 					pkt.finbit=0;
-					printf("Client : invio ack %d\n\n",pkt.ack);
+					printf("\nClient : invio ack %d\n\n",pkt.ack);
 					fflush(stdout);
 			if (sendto(sockfd,&pkt, sizeof(pkt), 0,(struct sockaddr *)&servaddr,addrlen) < 0) {
         			perror("errore in sendto");
         			exit(1);
 			}
-		if((fwrite(pkt.pl,temp,1,fptr) <0 )){
+		if((fwrite(pkt.pl,strlen(pkt.pl),1,fptr) <0 )){
 				perror("Error in write rcv_get\n");
 				exit(1);
 				}

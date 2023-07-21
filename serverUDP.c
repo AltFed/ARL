@@ -26,7 +26,7 @@ int cwnd=0;
 int CongWin=1;
 double p=0;
 int maxackrcv=-1;
-int dim=20;
+int dim=200;
 //preforking variable 
 static int nchildren;
 static pid_t *pids;
@@ -99,7 +99,6 @@ void my_lock_release() {
 }
 //thread per la gestione del ack cum ecc
 void * rcv_cong(){
-sleep(1);
 struct st_pkt pkt;
 int k = 0;
 // Set up the struct timeval for the timeout.
@@ -131,9 +130,8 @@ while(stay){
     //implemento la ritrasmissione di tutti i pkt dopo lt_ack_rcvd
     //ritrasmetto se ultimo ack è < del mio numero 
     while( k < seqnum ){
-      printf("\nK= %d ACK=%d SEQNUM=%d\n",k,retr[k-1].ack,seqnum);
-      fflush(stdout);
-      //k-1 perchè è un indice 
+      printf("\nK= %d ACK=%d SEQNUM=%d\n",k,retr[k].ack,seqnum);
+      fflush(stdout); 
 				  if ((sendto(sockfd,&retr[k],sizeof(pkt), 0, (struct sockaddr *)&addr,addrlen)) < 0)  {
 					  perror("errore in sendto");
               	  			exit(1);
@@ -151,15 +149,13 @@ while(stay){
        			 perror("errore in recvfrom");
         		 exit(1);
   }
-  printf("\nLETTO\n");
-  fflush(stdout);
   //ultimo ack ricevuto(ricevo ack comulativi)
   lt_ack_rcvd=pkt.ack;
-  printf("\nServer : Ack cum  %d\n",pkt.ack);
+  printf("\nServer : Ack cum  %d  seqnum att %d \n",pkt.ack,seqnum);
   fflush(stdout);
   //incremento la finestra di trasmissione  ogni ack se arriva un ack nuovo 
-   if(pkt.finbit == 1 ){//&& pkt.ack == seqnum){
-    printf("Server : Client disconesso \n");
+   if(pkt.finbit == 1  && pkt.ack == seqnum){
+    printf("Server : Client disconesso  correttamente \n");
     stay = false;
     continue;
   }
@@ -176,7 +172,10 @@ while(stay){
 }
 // gestice nello specifico il comando get
 void send_get(char *str) {
-  retr=malloc(sizeof(struct st_pkt)*dim);
+  if((retr=malloc(sizeof(struct st_pkt)*dim)) == NULL){
+    perror("Error malloc");
+    exit(1);
+  }
 	struct st_pkt pkt;
   FILE *file;
   bool stay=true;
@@ -202,32 +201,35 @@ void send_get(char *str) {
     while(cwnd < CongWin && stay == true){
       cwnd++;
       while((dimpl=fread(pkt.pl,1,sizeof(pkt.pl),file)) == MAXLINE){
-        seqnum=seqnum+1;
+        seqnum++;
         pkt.finbit=0;
         pkt.ack=seqnum;
-        //printf("Server : Payload:  %s\n",pkt.pl);
-		    fflush(stdout);
-
-        //aumento la dim del vettore che mi salva i pkt 
-        if(CongWin > dim){
-           printf("\n Old size of retr %d\n",dim);
-          //raddopio la dimensione di retr
-          dim=dim<<1;
-          retr=realloc(retr,dim);
-          printf("\nNew size of retr %d\n",dim);
-          fflush(stdout);
-        }
-		    //cicliclo 
-		    //i= i % dim; 
-
-		    //mantengo CongWin pkt
-		    retr[i]=pkt;
+        //mantengo CongWin pkt
+        retr[i]=pkt;
         printf("\nACK RETR %d  I= %d\n",retr[i].ack,i);
         fflush(stdout);
         //printf("\n i VALUE %d\n",i);
         //printf("\n retr[i] num %d\n",retr[i].ack);
         //fflush(stdout);
 		    i++;
+        //cicliclo 
+		    i= i % dim; 
+        //printf("Server : Payload:  %s\n",pkt.pl);
+		    fflush(stdout);
+
+        //aumento la dim del vettore che mi salva i pkt 
+        /*
+        if(seqnum == dim){
+          //raddopio la dimensione di retr
+          dim=dim<<1;
+          retr=realloc(retr,dim*sizeof(struct st_pkt));
+          if (retr == NULL){
+            perror("Realloc could not allocate new memory");
+            exit(1);
+          }
+          printf("\nDIM VALUE %d\n",dim);
+        }
+        */
         prob=(double)rand() / RAND_MAX;
         if(prob < p){
           printf("Server : pkt lost  %d\n",pkt.ack);
@@ -252,6 +254,7 @@ void send_get(char *str) {
 
   //fine lettura del file  
 	if(feof(file)){
+    seqnum++;
 		pkt.ack=seqnum;
     pkt.finbit=1;
     pkt.pl[dimpl]='\0';
@@ -281,7 +284,10 @@ void send_get(char *str) {
   }
   }
   //aspetto la terminazione del thread che legge 
-  pthread_join(thread_id,NULL);
+  if(pthread_join(thread_id,NULL) != 0 ){
+    perror("Error pthread_join");
+    exit(1);
+  }
   printf("\nMSG TOTALI %d\n",msgTot);
   printf("\nMSG PERSI %d\n",msgPerso);
   printf("\nMSG INVIATI %d\n",msgInviati);
@@ -467,12 +473,12 @@ void send_list(int sockfd) {
 // gestisce il comando che il client richiede
 void send_control(int sockfd) {
   int i=0;
-  bool stay=true;
+  //bool stay=true;
   char cd[100];
   char name[100];
   struct st_pkt pkt;
   
-    while (stay) {
+   // while (stay) {
 
   if ((recvfrom(sockfd, &pkt,sizeof(pkt),0, (struct sockaddr *)&addr,&addrlen)) < 0) {
       perror("errore in recvfrom");
@@ -531,7 +537,7 @@ void send_control(int sockfd) {
     }
     // Chiudi la cartella
     closedir(dir); 
-    continue;
+    //continue;
     }
 
 /* ---------------------------------- gestisco caso list------------------------------------------------*/
@@ -557,7 +563,7 @@ void send_control(int sockfd) {
       }
       rcv_put(sockfd,name);
     }
-  }
+    sleep(5);
 }
 
 
