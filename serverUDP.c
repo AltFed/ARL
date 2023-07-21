@@ -132,7 +132,7 @@ while(stay){
     //ritrasmetto se ultimo ack è < del mio numero 
     while( k < seqnum ){
       printf("\nK= %d ACK=%d SEQNUM=%d\n",k,retr[k-1].ack,seqnum);
-      //fflush(stdout);
+      fflush(stdout);
       //k-1 perchè è un indice 
 				  if ((sendto(sockfd,&retr[k],sizeof(pkt), 0, (struct sockaddr *)&addr,addrlen)) < 0)  {
 					  perror("errore in sendto");
