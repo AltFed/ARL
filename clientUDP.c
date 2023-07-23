@@ -37,32 +37,25 @@ void rcv_get(char *file){
 
 	struct st_pkt pkt;
 	printf("\n Client : Get function alive\n");
+	fflush(stdout);
 	FILE * fptr;
-
 	//creo il file se già esiste lo cancello tanto voglio quello aggiornato 
 	int n=0;
 	bool stay=true,different=false;
 
-	if((fptr = fopen("ciao","r+")) == NULL){
+	if((fptr = fopen("ciao","w+")) == NULL){
 		perror("Error opening file");
 		exit(1);
 		}
 	while(stay){	
 		//incremento n
-		if(different){
-			//se il numero che ricevo è differente non incremento n ovvio 
-		}else{
-			//incremento n solo se il numero che ricevo è quello che mi aspetto altrimenti gli invio sempre un ack cum uguale
-			//cosi gli invio ack 2 ovvero ho ricevuto tutto fino all 1 mi aspetto di ricevere il 2 
-		n++;
+		if(!different){
+			n++;
 		}
 		if ((recvfrom(sockfd,&pkt, sizeof(pkt), 0, (struct sockaddr *)&servaddr,&addrlen ))< 0) {
         		perror("errore in recvfrom");
        			exit(1);
 		}	
-		//tolgo i due int della struct
-	//printf("NUM RICEVUTO-> %d\n",pkt.ack);
-	//printf("NUM CHE VOGLIO->%d\n",n);
 	//finbit == 1 allora chiudo la connessione 
 	if(pkt.finbit == 1 && pkt.ack == n){
 		printf("\n Client : Server close connection \n");
@@ -70,7 +63,7 @@ void rcv_get(char *file){
 		pkt.ack=n;
 		pkt.finbit=1;
 		printf("\n Client : Confermo chiusura\n");
-		printf("ACK --> %d",pkt.ack);
+		printf("\nACK --> %d   PL %s\n",pkt.ack,pkt.pl);
     fflush(stdout);
 		if (sendto(sockfd,&pkt, sizeof(pkt), 0,(struct sockaddr *)&servaddr,addrlen) < 0) {
         			perror("errore in sendto");
@@ -88,8 +81,6 @@ void rcv_get(char *file){
 					// invio un ack ogni pkt che ricevo
 					pkt.ack=n;
 					pkt.finbit=0;
-					//printf("\nClient : invio ack %d\n\n",pkt.ack);
-					fflush(stdout);
 			if (sendto(sockfd,&pkt, sizeof(pkt), 0,(struct sockaddr *)&servaddr,addrlen) < 0) {
         			perror("errore in sendto");
         			exit(1);
@@ -264,20 +255,22 @@ void rcv_list(){
         	if (sendto(sockfd, snd_buff, strlen(snd_buff), 0,(struct sockaddr *)&servaddr,addrlen) < 0) {
         		perror("errore in sendto");
         			exit(1);
+							}
 		}
 	}
-    }
 }
 
 // funzione che implementare la send to server
 void command_send(char *cd,char *nome_str){ 
 
 	struct st_pkt pkt;
-  int temp=0;
+  int temp=0,q=-2;
 	pkt.ack=0;
 	char str[MAXLINE];
-	strcat(str,cd);
-	strcat(str,nome_str);
+	strcpy(str,cd);
+	if(nome_str != NULL){
+		strncpy(str+strlen(cd),nome_str,strlen(nome_str));
+	}
 	printf("\n nome comando %s\n",str);
 	strcpy(pkt.pl,str);
 	pkt.finbit=0;
@@ -287,22 +280,20 @@ void command_send(char *cd,char *nome_str){
         perror("errore in sendto");
         exit(1);
       }
-
+			pkt.ack=-2;
+			while(pkt.ack != 0 && pkt.ack != -1){
       // Legge dal socket il pacchetto di risposta
-	
+			fflush(stdout);
       if (recvfrom(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&servaddr,&addrlen )<0) {   
         perror("errore in recvfrom");
         exit(1);
 			}
-			//se il numero è sbagliato del pkt ricevuto rientro in command_send e ritrasmetto il pkt 
-			/* non penso serva 
-     if(pkt.ack != temp ){
-	     printf("\n numero diverso da quello che mi aspettavo ritrasmetto \n");
-	     command_send(cd,nome_str);
-			 // se il num pkt è uguale e ritorna un codice di errore 
-		 }*/
+			}
+			printf("pkt.ack %d pkt.pl %s finbit %d \n",pkt.ack,pkt.pl,pkt.finbit);
+			fflush(stdout);
 		 if(pkt.ack == -1){
 			printf("\n Error Server = %s\n",pkt.pl);
+			fflush(stdout);
 			req();
 			loop=true;
 			//vedere se va bene cosi con il return sennò facciamo altro
@@ -310,6 +301,7 @@ void command_send(char *cd,char *nome_str){
 		 }
       else if(pkt.ack == temp){
 				printf("\n Server response : %s\n",pkt.pl);
+				fflush(stdout);
 				// qui possiamo implementare la perdita del pkt
 				//invio ack di conferma 
 				/*
@@ -325,6 +317,7 @@ void command_send(char *cd,char *nome_str){
 	  }
 	  //implento la get
 	  else if (!strcmp(cd,"get ")){
+			fflush(stdout);
 		  rcv_get(nome_str);
 	  }
 	  //implemento la put 
@@ -335,7 +328,8 @@ void command_send(char *cd,char *nome_str){
 }
 // gestisco la richiesta dell'utente
 void req() {
-  int a=0;
+  int a=0,temp=0;
+	char buff[MAXLINE];
   while (1) {
 		//se ho gestito un errore e si è creato un loop chiudo 
 		if(loop){
@@ -348,9 +342,12 @@ void req() {
 
     switch (a) {
       case 0:
-			char buff[MAXLINE];
 			printf("\nInserire nome file\n");
-			fscanf(stdin, "%s", buff);
+			if((temp=read(0,buff,sizeof(buff))) < 0){
+				perror("Error fread");
+				exit(1);
+			}
+			buff[temp-1]='\0';
       command_send("get ",buff);
       break;
 
@@ -359,15 +356,18 @@ void req() {
 				break;
 
       case 2:
-			char buff1[MAXLINE];
 			printf("\nInserire nome file\n");
-			fscanf(stdin, "%s", buff1);
-      command_send("put ",buff1);
+			if((temp=read(0,buff,sizeof(buff))) < 0){
+				perror("Error fread");
+				exit(1);
+			}
+			buff[temp-1]='\0';
+      command_send("put ",buff);
 
         break;
 
       case -1:
-	// chiusura connessione
+				// chiusura 
         return;
     }
   }
