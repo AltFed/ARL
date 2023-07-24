@@ -209,6 +209,7 @@ void send_get(char *str) {
   while(stay){
     //se last ack non è uguale al mio seqnum mi fermo altrimenti entro dentro e invio da 0 a CongWin pkt e poi mi aspetto di ricevere come lastack quello dell'ultimo pkt inviato poi continuo 
     if(lt_ack_rcvd == seqnum){ 
+    cwnd = 0;
     while(cwnd < CongWin && stay == true){
       cwnd++;
       fflush(stdout);
