@@ -294,7 +294,7 @@ void send_get(char *str) {
           stay=false;
 	//invio il terminatore 
 	if (sendto(sockfd,&pkt,sizeof(pkt), 0, (struct sockaddr *)&addr, addrlen ) <0 ) {
-       		 perror("errore in recvfrom");
+       		 perror("Error in sendto");
         	 exit(1);
 		}
     msgInviati++;
