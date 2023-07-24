@@ -94,7 +94,7 @@ void rcv_get(char *file){
 				}
         }
 	// se arriva un pkt fuori ordine invio subito ack non faccio la bufferizzazione lato rcv 
-	else if( n != pkt.ack && stay == true){
+	else if( n != pkt.ack && stay == true && pkt.ack > n){
 		//non incremento n pongo diff = true
 		different=true;
 		// invio al sender un ack comulativo fino a dove ho ricevuto

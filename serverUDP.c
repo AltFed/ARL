@@ -129,7 +129,7 @@ while(stay){
     //ritrasmetto se ultimo ack è < del mio numero 
     while( k < seqnum ){
       if( seqnum == 144){
-        printf("pkt retr---> ack %d finbit %d  k %d lt_ack %d \n",retr[k].ack,retr[k].finbit,k,lt_ack_rcvd);
+        //printf("pkt retr---> ack %d finbit %d  k %d lt_ack %d \n",retr[k].ack,retr[k].finbit,k,lt_ack_rcvd);
         }
 				  if ((sendto(sockfd,&retr[k],sizeof(pkt), 0, (struct sockaddr *)&addr,addrlen)) < 0)  {
 					  perror("errore in sendto");
@@ -146,14 +146,12 @@ while(stay){
     exit(1);
   }
 //se non ho errore allora leggo e vedo l ack che il receiver mi invia
-  if (recvfrom(sockfd, &pkt, sizeof(pkt),0,(struct sockaddr *)&addr, &addrlen ) <0 ){
-       			 perror("errore in recvfrom");
-        		 exit(1);
+if (recvfrom(sockfd, &pkt, sizeof(pkt),0,(struct sockaddr *)&addr, &addrlen ) <0 ){
+       			perror("errore in recvfrom");
+        		exit(1);
   }
-  //ultimo ack ricevuto(ricevo ack comulativi)
-  if(seqnum == 144){
-    printf("lt_ACK %d\n",lt_ack_rcvd);
-  } 
+  //ultimo ack ricevuto(ricevo ack comulativi
+    printf("lt_ACK %d\n",lt_ack_rcvd); 
   lt_ack_rcvd=pkt.ack;
   //printf("\nlt_ack %d   seqnum %d\n",pkt.ack,seqnum);
   //fflush(stdout);
@@ -167,7 +165,7 @@ while(stay){
     continue;
   }
   if(maxackrcv < lt_ack_rcvd){
-    CongWin=CongWin << 1;
+    CongWin++;
   }
   //mantengo il num di ack più alto ricevuto 
   if(maxackrcv < lt_ack_rcvd){
@@ -211,7 +209,6 @@ void send_get(char *str) {
   while(stay){
     //se last ack non è uguale al mio seqnum mi fermo altrimenti entro dentro e invio da 0 a CongWin pkt e poi mi aspetto di ricevere come lastack quello dell'ultimo pkt inviato poi continuo 
     if(lt_ack_rcvd == seqnum){ 
-    cwnd=0; 
     while(cwnd < CongWin && stay == true){
       cwnd++;
       fflush(stdout);
@@ -238,6 +235,7 @@ void send_get(char *str) {
         }
         */
         prob=(double)rand() / RAND_MAX;
+
         if(prob < p){
           //fflush(stdout);
             msgPerso++;
@@ -246,17 +244,17 @@ void send_get(char *str) {
           continue;
         }else{
           // Trasmetto con successo 
-          if(lt_ack_rcvd < seqnum-50){
+          if(lt_ack_rcvd < seqnum - 5){
             //rallento flow control
-            bytes_psecond=10;// 9,765 KBytes PER SECOND
-            printf("\n FLOW CONTROL TX %ld\n",bytes_psecond);
+            bytes_psecond=100;
+            //printf("\n FLOW CONTROL TX %ld\n",bytes_psecond);
             if(setsockopt(sockfd,SOL_SOCKET, SO_MAX_PACING_RATE,&bytes_psecond,sizeof(bytes_psecond)) < 0 ){
               perror("Error setsockopt");
               exit(1);
             }
           }else{
-            bytes_psecond=1000;// 97,65 KBytes PER SECOND
-            printf("\n FLOW CONTROL TX %ld\n",bytes_psecond); 
+            bytes_psecond=1000;
+            //printf("\n FLOW CONTROL TX %ld\n",bytes_psecond); 
             if(setsockopt(sockfd,SOL_SOCKET, SO_MAX_PACING_RATE,&bytes_psecond,sizeof(bytes_psecond)) < 0 ){
               perror("Error setsockopt");
               exit(1);
@@ -265,11 +263,11 @@ void send_get(char *str) {
 		if ((sendto(sockfd,&pkt,sizeof(pkt),0,(struct sockaddr *)&addr,addrlen)) < 0)  
 		{	
 			perror("errore in sendto");
-              		exit(1);
+      exit(1);
 		}		
     msgInviati++;
     msgTot++;
-        }
+    }
     //la lettura la fa il thread cosi non mi blocco io main thread 
 	}
   //fine lettura del file  
