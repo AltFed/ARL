@@ -119,10 +119,11 @@ tv.tv_sec = TOs; //s waiting
 // Wait until timeout or data received.
 bool stay=true;
 while(stay){
- n = select (sizeof(fds)*8,&fds, NULL, NULL, &tv);
+  
+   n = select (sizeof(fds)*8,&fds, NULL, NULL, &tv);
   if ( n == 0)
   { 
-     CongWin= CongWin >> 1; 
+     if(CongWin >1) CongWin = CongWin >> 1; 
    //perchè gli ack che ricevo corrispondono all pkt che il client si aspetta di ricevere 
    k=lt_ack_rcvd;
     //implemento la ritrasmissione di tutti i pkt dopo lt_ack_rcvd
@@ -207,13 +208,18 @@ void send_get(char *str) {
     exit(1);
   }
   while(stay){
+       
     //se last ack non è uguale al mio seqnum mi fermo altrimenti entro dentro e invio da 0 a CongWin pkt e poi mi aspetto di ricevere come lastack quello dell'ultimo pkt inviato poi continuo 
     if(lt_ack_rcvd == seqnum){ 
     cwnd = 0;
+    
     while(cwnd < CongWin && stay == true){
+   
       cwnd++;
       fflush(stdout);
       while((dimpl=fread(pkt.pl,1,sizeof(pkt.pl),file)) == MAXLINE){
+         fflush(stdout);
+    printf("conwin %d\n", CongWin);
         seqnum++;
         pkt.finbit=0;
         pkt.ack=seqnum;
@@ -274,6 +280,7 @@ void send_get(char *str) {
   //fine lettura del file  
 	if(feof(file)){
     while(lt_ack_rcvd != seqnum){
+      //Aspetto che il thread legga last ack
     }
     seqnum++;
 		pkt.ack=seqnum;
