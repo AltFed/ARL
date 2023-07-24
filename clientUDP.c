@@ -43,7 +43,7 @@ void rcv_get(char *file){
 	int n=0;
 	bool stay=true,different=false;
 
-	if((fptr = fopen("ciao","w+")) == NULL){
+	if((fptr = fopen(file,"w+")) == NULL){
 		perror("Error opening file");
 		exit(1);
 		}
@@ -63,7 +63,7 @@ void rcv_get(char *file){
 		pkt.ack=n;
 		pkt.finbit=1;
 		printf("\n Client : Confermo chiusura\n");
-		printf("\nACK --> %d   PL %s\n",pkt.ack,pkt.pl);
+		//printf("\nACK --> %d   PL %s  \nN %d\n",pkt.ack,pkt.pl,n);
     fflush(stdout);
 		if (sendto(sockfd,&pkt, sizeof(pkt), 0,(struct sockaddr *)&servaddr,addrlen) < 0) {
         			perror("errore in sendto");
@@ -78,7 +78,10 @@ void rcv_get(char *file){
 		//se il finbit è 0 e il numero di pkt è quello che mi aspettavo scrivo sul file il pkt ricevuto
         }else if(pkt.finbit == 0 && pkt.ack == n){
 					different=false;
+					//printf("SEQNUM %d \n NUM %d\n",pkt.ack,n);
 					// invio un ack ogni pkt che ricevo
+					printf(" ACK RCV %d ACK INV %d\n",pkt.ack,n);
+		fflush(stdout);
 					pkt.ack=n;
 					pkt.finbit=0;
 			if (sendto(sockfd,&pkt, sizeof(pkt), 0,(struct sockaddr *)&servaddr,addrlen) < 0) {
@@ -95,6 +98,8 @@ void rcv_get(char *file){
 		//non incremento n pongo diff = true
 		different=true;
 		// invio al sender un ack comulativo fino a dove ho ricevuto
+		printf("ERR ACK RCV %d ACK INV %d\n",pkt.ack,n-1);
+		fflush(stdout);
 		pkt.ack=n-1;
 		//gestire ack non in ordine ES: inviamo un ack al sender e gli diciamo di inviare tutto dopo quel numero 
 		//printf(" Client : Pkt fuori ordine ricevuto invio ack [%d]\n",pkt.ack);
@@ -283,7 +288,6 @@ void command_send(char *cd,char *nome_str){
 			pkt.ack=-2;
 			while(pkt.ack != 0 && pkt.ack != -1){
       // Legge dal socket il pacchetto di risposta
-			fflush(stdout);
       if (recvfrom(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&servaddr,&addrlen )<0) {   
         perror("errore in recvfrom");
         exit(1);

@@ -27,6 +27,7 @@ int CongWin=1;
 double p=0;
 int maxackrcv=-1;
 int dim=200;
+long int bytes_psecond=0;
 //preforking variable 
 static int nchildren;
 static pid_t *pids;
@@ -99,8 +100,6 @@ void my_lock_release() {
 }
 //thread per la gestione del ack cum ecc
 void * rcv_cong(){
-  printf("\n\nTHREAD ALIVE \n");
-  fflush(stdout);
 struct st_pkt pkt;
 int k = 0,msgRitr=0;
 // Set up the struct timeval for the timeout.
@@ -123,7 +122,6 @@ while(stay){
  n = select (sizeof(fds)*8,&fds, NULL, NULL, &tv);
   if ( n == 0)
   { 
-   //printf("\nTimeout ritrasmetto i pkt\n");
      CongWin= CongWin >> 1; 
    //perchè gli ack che ricevo corrispondono all pkt che il client si aspetta di ricevere 
    k=lt_ack_rcvd;
@@ -131,15 +129,15 @@ while(stay){
     //ritrasmetto se ultimo ack è < del mio numero 
     while( k < seqnum ){
       if( seqnum == 144){
-        printf("pkt retr---> ack %d finbit %d  k %d\n",retr[k].ack,retr[k].finbit,k);
-      }
+        printf("pkt retr---> ack %d finbit %d  k %d lt_ack %d \n",retr[k].ack,retr[k].finbit,k,lt_ack_rcvd);
+        }
 				  if ((sendto(sockfd,&retr[k],sizeof(pkt), 0, (struct sockaddr *)&addr,addrlen)) < 0)  {
 					  perror("errore in sendto");
               	  			exit(1);
 				  }
           msgRitr++;
 				  k++;
-          k = k % dim;
+          //k = k % dim;
 				  }
   }
   else if( n == -1 )
@@ -153,6 +151,9 @@ while(stay){
         		 exit(1);
   }
   //ultimo ack ricevuto(ricevo ack comulativi)
+  if(seqnum == 144){
+    printf("lt_ACK %d\n",lt_ack_rcvd);
+  } 
   lt_ack_rcvd=pkt.ack;
   //printf("\nlt_ack %d   seqnum %d\n",pkt.ack,seqnum);
   //fflush(stdout);
@@ -167,8 +168,6 @@ while(stay){
   }
   if(maxackrcv < lt_ack_rcvd){
     CongWin=CongWin << 1;
-    //printf("\n CongWin dim %d\n",CongWin);
-    //fflush(stdout);
   }
   //mantengo il num di ack più alto ricevuto 
   if(maxackrcv < lt_ack_rcvd){
@@ -220,7 +219,6 @@ void send_get(char *str) {
         seqnum++;
         pkt.finbit=0;
         pkt.ack=seqnum;
-        //printf("\nPKT PL %s",pkt.pl);
         //mantengo CongWin pkt
         retr[i]=pkt;
 		    i++;
@@ -248,6 +246,22 @@ void send_get(char *str) {
           continue;
         }else{
           // Trasmetto con successo 
+          if(lt_ack_rcvd < seqnum-50){
+            //rallento flow control
+            bytes_psecond=10;// 9,765 KBytes PER SECOND
+            printf("\n FLOW CONTROL TX %ld\n",bytes_psecond);
+            if(setsockopt(sockfd,SOL_SOCKET, SO_MAX_PACING_RATE,&bytes_psecond,sizeof(bytes_psecond)) < 0 ){
+              perror("Error setsockopt");
+              exit(1);
+            }
+          }else{
+            bytes_psecond=1000;// 97,65 KBytes PER SECOND
+            printf("\n FLOW CONTROL TX %ld\n",bytes_psecond); 
+            if(setsockopt(sockfd,SOL_SOCKET, SO_MAX_PACING_RATE,&bytes_psecond,sizeof(bytes_psecond)) < 0 ){
+              perror("Error setsockopt");
+              exit(1);
+            }
+          }
 		if ((sendto(sockfd,&pkt,sizeof(pkt),0,(struct sockaddr *)&addr,addrlen)) < 0)  
 		{	
 			perror("errore in sendto");
@@ -258,7 +272,6 @@ void send_get(char *str) {
         }
     //la lettura la fa il thread cosi non mi blocco io main thread 
 	}
-
   //fine lettura del file  
 	if(feof(file)){
     while(lt_ack_rcvd != seqnum){
