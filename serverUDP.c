@@ -118,6 +118,7 @@ void *rcv_cong() {
   // Wait until timeout or data received.
   bool stay = true;
   while (stay) {
+      // Set up the file descriptor set.
 
     n = select(sizeof(fds) * 8, &fds, NULL, NULL, &tv);
     if (n == 0) {
@@ -236,7 +237,7 @@ void send_get(char *str) {
 
         fflush(stdout);
         while ((dimpl = fread(pkt.pl, 1, sizeof(pkt.pl), file)) == MAXLINE) {
-
+          usleep(20);
           seqnum++;
           pkt.finbit = 0;
           pkt.ack = seqnum;
