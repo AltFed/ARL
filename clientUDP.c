@@ -16,6 +16,8 @@
 
 char pkt_send[MAXLINE];
 bool loop = false;
+int dim=0;
+int free_dim=0;
 int sockfd; // descrittore alla socket creata per comunicare con il server
 struct sockaddr_in servaddr;
 void command_send(char *, char *);
@@ -27,14 +29,14 @@ struct st_pkt {
   int ack;
   int finbit;
   char pl[MAXLINE];
+	int rwnd;
 };
-
+struct st_pkt *rcv_win[dim];
 void cget();
 void req();
 
 // implemento la rcv del comando get
 void rcv_get(char *file) {
-
   struct st_pkt pkt;
   printf("\n Client : Get function alive\n");
   fflush(stdout);
@@ -92,6 +94,7 @@ void rcv_get(char *file) {
       fflush(stdout);
       pkt.ack = n;
       pkt.finbit = 0;
+			pkt.rwnd=
       if (sendto(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&servaddr,
                  addrlen) < 0) {
         perror("errore in sendto");
@@ -401,10 +404,12 @@ void req() {
 
 int main(int argc, char *argv[]) {
   char recvline[MAXLINE + 1];
-  if (argc != 2) { // controlla numero degli argomenti
-    fprintf(stderr, "utilizzo: <indirizzo IP server>\n");
+  if (argc != 3) { // controlla numero degli argomenti
+    fprintf(stderr, "utilizzo: <indirizzo IP server>  <num_pkt> \n");
     exit(1);
   }
+	dim=atoi(argv[2]);
+	free_dim=dim;
   if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) { // crea il socket
     perror("errore in socket");
     exit(1);

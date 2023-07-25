@@ -48,6 +48,7 @@ struct st_pkt {
   int ack;
   int finbit;
   char pl[MAXLINE];
+  int rwnd;
 };
 // start dimensione 20
 struct st_pkt *retr;
