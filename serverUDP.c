@@ -101,7 +101,7 @@ void my_lock_release() {
 //thread per la gestione del ack cum ecc
 void * rcv_cong(){
 struct st_pkt pkt;
-int k = 0,msgRitr=0;
+int k = 0,msgRitr=0,temp=0;
 // Set up the struct timeval for the timeout.
 fd_set fds;
 int n;
@@ -126,20 +126,32 @@ while(stay){
      if(CongWin >1) CongWin = CongWin >> 1; 
    //perchè gli ack che ricevo corrispondono all pkt che il client si aspetta di ricevere 
    k=lt_ack_rcvd;
+   temp=lt_ack_rcvd;
     //implemento la ritrasmissione di tutti i pkt dopo lt_ack_rcvd
-    //ritrasmetto se ultimo ack è < del mio numero 
     while( k < seqnum ){
-      if( seqnum == 144){
-        //printf("pkt retr---> ack %d finbit %d  k %d lt_ack %d \n",retr[k].ack,retr[k].finbit,k,lt_ack_rcvd);
-        }
+      while(temp < CongWin){
 				  if ((sendto(sockfd,&retr[k],sizeof(pkt), 0, (struct sockaddr *)&addr,addrlen)) < 0)  {
 					  perror("errore in sendto");
               	  			exit(1);
 				  }
           msgRitr++;
 				  k++;
-          //k = k % dim;
+          temp++;
 				  }
+          //faccio una rcv 
+          if (recvfrom(sockfd, &pkt, sizeof(pkt),0,(struct sockaddr *)&addr, &addrlen ) <0 ){
+       			perror("errore in recvfrom");
+        		exit(1);
+            }
+            lt_ack_rcvd=pkt.ack;
+            if(maxackrcv < lt_ack_rcvd){
+          CongWin++;
+          }
+      //mantengo il num di ack più alto ricevuto 
+      if(maxackrcv < lt_ack_rcvd){
+          maxackrcv=lt_ack_rcvd;
+          }
+      }
   }
   else if( n == -1 )
   {
@@ -207,11 +219,10 @@ void send_get(char *str) {
     perror("error pthread_create");
     exit(1);
   }
-  while(stay){
-       
+  while(stay){ 
     //se last ack non è uguale al mio seqnum mi fermo altrimenti entro dentro e invio da 0 a CongWin pkt e poi mi aspetto di ricevere come lastack quello dell'ultimo pkt inviato poi continuo 
     if(lt_ack_rcvd == seqnum){ 
-    cwnd = 0;
+    cwnd = CongWin - lt_ack_rcvd; 
     
     while(cwnd < CongWin && stay == true){
    
