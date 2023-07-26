@@ -30,6 +30,7 @@ int maxackrcv = -1;
 int dim = 200;
 int to_rtx;
 long int bytes_psecond = 0;
+bool go=true,wt=false;
 // preforking variable
 static int nchildren;
 static pid_t *pids;
@@ -121,7 +122,6 @@ void *rcv_cong() {
   bool stay = true;
   while (stay) {
     // Set up the file descriptor set.
-
     n = select(sizeof(fds) * 8, &fds, NULL, NULL, &tv);
     if (n == 0) {
       if (CongWin > 1){
@@ -130,14 +130,14 @@ void *rcv_cong() {
       }
       // perchè gli ack che ricevo corrispondono all pkt che il client si
       // aspetta di ricevere
-      k = lt_ack_rcvd;
-
+        k = lt_ack_rcvd;
       // implemento la ritrasmissione di tutti i pkt dopo lt_ack_rcvd
       while (k < seqnum && stay == true ) {
-        printf("swnd %d CongWin %d lt_rwnd %d\n",swnd,CongWin,lt_rwnd);
+        printf("\nRCV_CONG TRASMETTE\n");
+        //printf("swnd %d CongWin %d lt_rwnd %d\n",swnd,CongWin,lt_rwnd);
         fflush(stdout);
         while (swnd < CongWin && swnd < lt_rwnd && stay == true) {
-          printf("conwin %d, swnd: %d k: %d retr ack :%d\n", CongWin, swnd, k,retr[k].ack);
+          printf("congwin %d, swnd: %d k: %d retr ack :%d lt_rwnd: %d\n", CongWin, swnd, k,retr[k].ack,lt_rwnd);
           fflush(stdout);
           if ((sendto(sockfd, &retr[k], sizeof(pkt), 0,(struct sockaddr *)&addr, addrlen)) < 0) {
               perror("errore in sendto");
@@ -154,8 +154,35 @@ void *rcv_cong() {
           exit(1);
         }
         lt_rwnd = pkt.rwnd;
+        //se il client sta scrivendo rallento sennò riempo i buff della socket 
+        if(!strcmp(pkt.pl,"slow")){
+          bytes_psecond = 10;
+              // printf("\n FLOW CONTROL TX %ld\n",bytes_psecond);
+              if (setsockopt(sockfd, SOL_SOCKET, SO_MAX_PACING_RATE,
+                             &bytes_psecond, sizeof(bytes_psecond)) < 0) {
+                perror("Error setsockopt");
+                exit(1);
+              }
+        }else{
+          bytes_psecond = 100;
+              // printf("\n FLOW CONTROL TX %ld\n",bytes_psecond);
+              if (setsockopt(sockfd, SOL_SOCKET, SO_MAX_PACING_RATE,
+                             &bytes_psecond, sizeof(bytes_psecond)) < 0) {
+                perror("Error setsockopt");
+                exit(1);
+              }
+        }
+        printf("\nfinbit = %d ack %d \n",pkt.finbit,pkt.ack);
+        fflush(stdout);
+      if (pkt.finbit == 1 && pkt.ack == seqnum){
+      printf("Server : Client disconesso  correttamente \n");
+      fflush(stdout);
+      stay = false;
+      return NULL;
+      }
+        lt_rwnd = pkt.rwnd;
         lt_ack_rcvd = pkt.ack;
-        if (maxackrcv < lt_ack_rcvd) {
+        if (maxackrcv < lt_ack_rcvd){
           CongWin++;
           swnd = swnd - (lt_ack_rcvd - maxackrcv);
 
@@ -165,32 +192,26 @@ void *rcv_cong() {
         }
         // mantengo il num di ack più alto ricevuto
       }
-    } else if (n == -1) {
+    }else if (n == -1){
       perror("Error in select wait");
       exit(1);
     }
     // se non ho errore allora leggo e vedo l ack che il receiver mi invia
-    if (recvfrom(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,
+    if(recvfrom(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,
                  &addrlen) < 0) {
       perror("errore in recvfrom");
       exit(1);
     }
-    // ultimo ack ricevuto(ricevo ack comulativi
-    //printf("lt_ACK %d\n", lt_ack_rcvd);
+    //ultimo ack ricevuto(ricevo ack comulativi
+    printf("\nfinbit = %d ack %d \n",pkt.finbit,pkt.ack);
+    fflush(stdout);
     lt_rwnd = pkt.rwnd;
     lt_ack_rcvd = pkt.ack;
-    // printf("\nlt_ack %d   seqnum %d\n",pkt.ack,seqnum);
-    // fflush(stdout);
-    if(pkt.finbit == 1){
-     printf("\nServer : FINBIT=1 Ack cum  %d\n",pkt.ack);
-    }
-    // fflush(stdout);
-    // incremento la finestra di trasmissione  ogni ack se arriva un ack nuovo
     if (pkt.finbit == 1 && pkt.ack == seqnum) {
       printf("Server : Client disconesso  correttamente \n");
       fflush(stdout);
       stay = false;
-      continue;
+      return NULL;
     }
     if (maxackrcv < lt_ack_rcvd) {
       CongWin++;
@@ -202,19 +223,17 @@ void *rcv_cong() {
     }
     // mantengo il num di ack più alto ricevuto
   }
-  printf("\nMSG Ritr %d\n", msgRitr);
 }
 
 // gestice nello specifico il comando get
 void send_get(char *str) {
-  // variabili da resettare
+  //variabili da resettare
   seqnum = 0;
   lt_ack_rcvd = 0;
   swnd = 0;
   CongWin = 1;
   maxackrcv = -1;
   dim = 200;
-
   printf("\nSend_get\n");
   fflush(stdout);
   if ((retr = malloc(sizeof(struct st_pkt) * dim)) == NULL) {
@@ -242,17 +261,17 @@ void send_get(char *str) {
     // se last ack non è uguale al mio seqnum mi fermo altrimenti entro dentro e
     // invio da 0 a CongWin pkt e poi mi aspetto di ricevere come lastack quello
     // dell'ultimo pkt inviato poi continuo
-    if (lt_ack_rcvd == seqnum) {
-      //printf("conwin %d, swnd: %d rwnd%d\n", CongWin, swnd, lt_rwnd);
-      while (swnd < CongWin && stay == true && (swnd) < lt_rwnd) {
-        
-        fflush(stdout);
+    if (lt_ack_rcvd == seqnum && stay == true) {
+      while (swnd < CongWin && stay == true && (swnd) < lt_rwnd){
+         printf("\nSEND_GET MANDA PKT\n");
+         fflush(stdout);
         while ((dimpl = fread(pkt.pl, 1, sizeof(pkt.pl), file)) == MAXLINE) {
           seqnum++;
           pkt.finbit = 0;
           pkt.ack = seqnum;
           // mantengo CongWin pkt
           retr[i] = pkt;
+          //printf("\nretr pkt mantenuti ack %d\n",retr[i].ack);
           i++;
           // cicliclo
           i = i % dim;
@@ -269,11 +288,7 @@ void send_get(char *str) {
             printf("\nDIM VALUE %d\n",dim);
           }
           */
-
-          printf("invio seq:%d\n", seqnum);
-          fflush(stdout);
           prob = (double)rand() / RAND_MAX;
-
           if (prob < p) {
             // fflush(stdout);
             msgPerso++;
@@ -300,8 +315,7 @@ void send_get(char *str) {
                 exit(1);
               }
             }
-            if ((sendto(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,
-                        addrlen)) < 0) {
+            if ((sendto(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,addrlen)) < 0) {
               perror("errore in sendto");
               exit(1);
             }
