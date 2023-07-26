@@ -30,6 +30,7 @@ struct st_pkt {
   int finbit;
   char pl[MAXLINE];
 	int rwnd;
+
 };
 struct st_pkt *rcv_win[dim];
 void cget();
@@ -42,7 +43,7 @@ void rcv_get(char *file) {
   fflush(stdout);
   FILE *fptr;
   // creo il file se già esiste lo cancello tanto voglio quello aggiornato
-  int n = 0;
+  int n = 0,i=0,maxseqnum=0;
   bool stay = true, different = false;
 
   if ((fptr = fopen(file, "w+")) == NULL) {
@@ -59,15 +60,25 @@ void rcv_get(char *file) {
       perror("errore in recvfrom");
       exit(1);
     }
+    //se mi arriva un ack che ho già salvato non lo mantengo nell'array
+    if(maxseqnum < pkt.ack){
+        rcv_win[i] = pkt;
+        i++;
+        // cicliclo
+        i = i % dim;
+        free_dim=dim-i;
+        maxseqnum=pkt.ack;
+    }
 	printf(" ACK RCV %d I WAIT FOR %d\n", pkt.ack, n);
 	fflush(stdout);
     // finbit == 1 allora chiudo la connessione
     if (pkt.finbit == 1 && pkt.ack == n) {
-	  
+      printf("\nPL %s\n",pkt.pl);
       printf("\n Client : Server close connection \n");
       // invio subito ack cum
       pkt.ack = n;
       pkt.finbit = 1;
+      pkt.rwnd=free_dim;
       printf("\n Client : Confermo chiusura\n");
       // printf("\nACK --> %d   PL %s  \nN %d\n",pkt.ack,pkt.pl,n);
       fflush(stdout);
@@ -91,20 +102,27 @@ void rcv_get(char *file) {
       // printf("SEQNUM %d \n NUM %d\n",pkt.ack,n);
       //  invio un ack ogni pkt che ricevo
     //  printf(" ACK RCV %d ACK INV %d\n", pkt.ack, n);
-      fflush(stdout);
+      //fflush(stdout);
       pkt.ack = n;
       pkt.finbit = 0;
-			pkt.rwnd=
+			pkt.rwnd=free_dim;
       if (sendto(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&servaddr,
                  addrlen) < 0) {
         perror("errore in sendto");
         exit(1);
       }
+      if( free_dim == 0){
+        int t=0
+        for( t=0;t < dim ; t++ ){
       if ((fwrite(pkt.pl, strlen(pkt.pl), 1, fptr) < 0)) {
         perror("Error in write rcv_get\n");
         exit(1);
+        }
       }
+      // t+1 perchè indice 
+      free_dim = t+1;
     }
+  }
     // se arriva un pkt fuori ordine invio subito ack non faccio la
     // bufferizzazione lato rcv
     else if (stay == true && pkt.ack != n ) {
@@ -114,6 +132,7 @@ void rcv_get(char *file) {
       printf("ERR ACK RCV %d ACK INV %d\n", pkt.ack, n - 1);
       fflush(stdout);
       pkt.ack = n - 1;
+      pkt.rwnd=free_dim;
       // gestire ack non in ordine ES: inviamo un ack al sender e gli diciamo di
       // inviare tutto dopo quel numero printf(" Client : Pkt fuori ordine
       // ricevuto invio ack [%d]\n",pkt.ack);
@@ -409,7 +428,6 @@ int main(int argc, char *argv[]) {
     exit(1);
   }
 	dim=atoi(argv[2]);
-	free_dim=dim;
   if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) { // crea il socket
     perror("errore in socket");
     exit(1);
