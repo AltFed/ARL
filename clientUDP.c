@@ -16,8 +16,8 @@
 
 char pkt_send[MAXLINE];
 bool loop = false;
-int dim=0;
-int free_dim=0;
+int dim = 0;
+int free_dim = 0;
 int sockfd; // descrittore alla socket creata per comunicare con il server
 struct sockaddr_in servaddr;
 void command_send(char *, char *);
@@ -29,21 +29,24 @@ struct st_pkt {
   int ack;
   int finbit;
   char pl[MAXLINE];
-	int rwnd;
-
+  int rwnd;
 };
-struct st_pkt *rcv_win[dim];
+struct st_pkt *rcv_win;
 void cget();
 void req();
 
 // implemento la rcv del comando get
 void rcv_get(char *file) {
   struct st_pkt pkt;
-  printf("\n Client : Get function alive\n");
+    if ((rcv_win = malloc(sizeof(struct st_pkt) * dim)) == NULL) {
+    perror("Error malloc");
+    exit(1);
+  }
+    printf("\n Client : Get function alive\n");
   fflush(stdout);
   FILE *fptr;
   // creo il file se già esiste lo cancello tanto voglio quello aggiornato
-  int n = 0,i=0,maxseqnum=0;
+  int n = 0, i = 0, maxseqnum = 0;
   bool stay = true, different = false;
 
   if ((fptr = fopen(file, "w+")) == NULL) {
@@ -60,25 +63,25 @@ void rcv_get(char *file) {
       perror("errore in recvfrom");
       exit(1);
     }
-    //se mi arriva un ack che ho già salvato non lo mantengo nell'array
-    if(maxseqnum < pkt.ack){
-        rcv_win[i] = pkt;
-        i++;
-        // cicliclo
-        i = i % dim;
-        free_dim=dim-i;
-        maxseqnum=pkt.ack;
+    // se mi arriva un ack che ho già salvato non lo mantengo nell'array
+    if (maxseqnum < pkt.ack) {
+      rcv_win[i] = pkt;
+      i++;
+      // cicliclo
+      i = i % dim;
+      free_dim = dim - i;
+      maxseqnum = pkt.ack;
     }
-	printf(" ACK RCV %d I WAIT FOR %d\n", pkt.ack, n);
-	fflush(stdout);
+    printf(" ACK RCV %d I WAIT FOR %d\n", pkt.ack, n);
+    fflush(stdout);
     // finbit == 1 allora chiudo la connessione
     if (pkt.finbit == 1 && pkt.ack == n) {
-      printf("\nPL %s\n",pkt.pl);
+      printf("\nPL %s\n", pkt.pl);
       printf("\n Client : Server close connection \n");
       // invio subito ack cum
       pkt.ack = n;
       pkt.finbit = 1;
-      pkt.rwnd=free_dim;
+      pkt.rwnd = free_dim;
       printf("\n Client : Confermo chiusura\n");
       // printf("\nACK --> %d   PL %s  \nN %d\n",pkt.ack,pkt.pl,n);
       fflush(stdout);
@@ -101,38 +104,38 @@ void rcv_get(char *file) {
       different = false;
       // printf("SEQNUM %d \n NUM %d\n",pkt.ack,n);
       //  invio un ack ogni pkt che ricevo
-    //  printf(" ACK RCV %d ACK INV %d\n", pkt.ack, n);
-      //fflush(stdout);
+      //  printf(" ACK RCV %d ACK INV %d\n", pkt.ack, n);
+      // fflush(stdout);
       pkt.ack = n;
       pkt.finbit = 0;
-			pkt.rwnd=free_dim;
+      pkt.rwnd = free_dim;
       if (sendto(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&servaddr,
                  addrlen) < 0) {
         perror("errore in sendto");
         exit(1);
       }
-      if( free_dim == 0){
-        int t=0
-        for( t=0;t < dim ; t++ ){
-      if ((fwrite(pkt.pl, strlen(pkt.pl), 1, fptr) < 0)) {
-        perror("Error in write rcv_get\n");
-        exit(1);
+      if (free_dim == 0) {
+        int t = 0;
+        for (t = 0; t < dim; t++) {
+          if ((fwrite(pkt.pl, strlen(pkt.pl), 1, fptr) < 0)) {
+            perror("Error in write rcv_get\n");
+            exit(1);
+          }
         }
+        // t+1 perchè indice
+        free_dim = t + 1;
       }
-      // t+1 perchè indice 
-      free_dim = t+1;
     }
-  }
     // se arriva un pkt fuori ordine invio subito ack non faccio la
     // bufferizzazione lato rcv
-    else if (stay == true && pkt.ack != n ) {
+    else if (stay == true && pkt.ack != n) {
       // non incremento n pongo diff = true
       different = true;
       // invio al sender un ack comulativo fino a dove ho ricevuto
       printf("ERR ACK RCV %d ACK INV %d\n", pkt.ack, n - 1);
       fflush(stdout);
       pkt.ack = n - 1;
-      pkt.rwnd=free_dim;
+      pkt.rwnd = free_dim;
       // gestire ack non in ordine ES: inviamo un ack al sender e gli diciamo di
       // inviare tutto dopo quel numero printf(" Client : Pkt fuori ordine
       // ricevuto invio ack [%d]\n",pkt.ack);
@@ -143,6 +146,7 @@ void rcv_get(char *file) {
       }
     }
   }
+  free(rcv_win);
 }
 
 // implemento la snd del comando put
@@ -427,7 +431,7 @@ int main(int argc, char *argv[]) {
     fprintf(stderr, "utilizzo: <indirizzo IP server>  <num_pkt> \n");
     exit(1);
   }
-	dim=atoi(argv[2]);
+  dim = atoi(argv[2]);
   if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) { // crea il socket
     perror("errore in socket");
     exit(1);

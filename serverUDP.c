@@ -119,12 +119,12 @@ void *rcv_cong() {
   // Wait until timeout or data received.
   bool stay = true;
   while (stay) {
-      // Set up the file descriptor set.
+    // Set up the file descriptor set.
 
     n = select(sizeof(fds) * 8, &fds, NULL, NULL, &tv);
     if (n == 0) {
       if (CongWin > 1)
-       CongWin = CongWin/2;
+        CongWin = CongWin / 2;
       // perchè gli ack che ricevo corrispondono all pkt che il client si
       // aspetta di ricevere
       k = lt_ack_rcvd;
@@ -133,7 +133,8 @@ void *rcv_cong() {
       while (k < seqnum) {
 
         while (swnd < CongWin) {
-          printf("conwin %d, swnd: %d k: %d retr[%d]:%d\n", CongWin, swnd, k,k,retr[k].ack);
+          printf("conwin %d, swnd: %d k: %d retr[%d]:%d\n", CongWin, swnd, k, k,
+                 retr[k].ack);
           fflush(stdout);
           if ((sendto(sockfd, &retr[k], sizeof(pkt), 0,
                       (struct sockaddr *)&addr, addrlen)) < 0) {
@@ -350,6 +351,7 @@ void send_get(char *str) {
   printf("\n Dim CongWin finale %d\n", CongWin);
   printf("\n PROB DI SCARTARE UN MSG %f\n", p);
   fflush(stdout);
+  free(retr);
 }
 
 // gestice nello specifico il comando put
