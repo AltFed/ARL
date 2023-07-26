@@ -38,11 +38,11 @@ void req();
 // implemento la rcv del comando get
 void rcv_get(char *file) {
   struct st_pkt pkt;
-    if ((rcv_win = malloc(sizeof(struct st_pkt) * dim)) == NULL) {
+  if ((rcv_win = malloc(sizeof(struct st_pkt) * dim)) == NULL) {
     perror("Error malloc");
     exit(1);
   }
-    printf("\n Client : Get function alive\n");
+  printf("\n Client : Get function alive\n");
   fflush(stdout);
   FILE *fptr;
   // creo il file se già esiste lo cancello tanto voglio quello aggiornato
@@ -72,18 +72,19 @@ void rcv_get(char *file) {
       free_dim = dim - i;
       maxseqnum = pkt.ack;
     }
-    printf(" ACK RCV %d I WAIT FOR %d\n", pkt.ack, n);
+    // printf(" ACK RCV %d I WAIT FOR %d\n", pkt.ack, n);
     fflush(stdout);
     // finbit == 1 allora chiudo la connessione
+
     if (pkt.finbit == 1 && pkt.ack == n) {
-      printf("\nPL %s\n", pkt.pl);
+
       printf("\n Client : Server close connection \n");
       // invio subito ack cum
       pkt.ack = n;
       pkt.finbit = 1;
       pkt.rwnd = free_dim;
       printf("\n Client : Confermo chiusura\n");
-      // printf("\nACK --> %d   PL %s  \nN %d\n",pkt.ack,pkt.pl,n);
+      //printf("\nACK --> %d   PL %s  \nN %d\n", pkt.ack, pkt.pl, n);
       fflush(stdout);
 
       if (sendto(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&servaddr,
@@ -93,9 +94,16 @@ void rcv_get(char *file) {
       }
       // se mi arriva come unico pkt un pkt di fine rapporto chiudo e scrivo sul
       // file però altrimenti non scrivo
-      if ((fwrite(pkt.pl, strlen(pkt.pl), 1, fptr) < 0)) {
-        perror("Error in write rcv_get\n");
-        exit(1);
+      if (free_dim != 0) {
+        int t = 0;
+        for (t = 0; t < dim - free_dim; t++) {
+          printf("Indice %d - PL : %s\n", t, rcv_win[t].pl);
+          usleep(10);
+          if ((fwrite(rcv_win[t].pl, strlen(rcv_win[t].pl), 1, fptr) < 0)) {
+            perror("Error in write rcv_get\n");
+            exit(1);
+          }
+        }
       }
       stay = false;
       // se il finbit è 0 e il numero di pkt è quello che mi aspettavo scrivo
@@ -117,7 +125,7 @@ void rcv_get(char *file) {
       if (free_dim == 0) {
         int t = 0;
         for (t = 0; t < dim; t++) {
-          if ((fwrite(pkt.pl, strlen(pkt.pl), 1, fptr) < 0)) {
+          if ((fwrite(rcv_win[t].pl, strlen(rcv_win[t].pl), 1, fptr) < 0)) {
             perror("Error in write rcv_get\n");
             exit(1);
           }
@@ -147,6 +155,7 @@ void rcv_get(char *file) {
     }
   }
   free(rcv_win);
+  fclose(fptr);
 }
 
 // implemento la snd del comando put

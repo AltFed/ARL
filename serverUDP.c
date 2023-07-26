@@ -22,8 +22,9 @@ int TOms = 0;
 int seqnum = 0;
 int sockfd;
 int lt_ack_rcvd = 0;
+int lt_rwnd = 1;
 int swnd = 0;
-int CongWin = 1;
+int CongWin = 2;
 double p = 0;
 int maxackrcv = -1;
 int dim = 200;
@@ -132,7 +133,7 @@ void *rcv_cong() {
       // implemento la ritrasmissione di tutti i pkt dopo lt_ack_rcvd
       while (k < seqnum) {
 
-        while (swnd < CongWin) {
+        while (swnd < CongWin && swnd < lt_rwnd) {
           printf("conwin %d, swnd: %d k: %d retr[%d]:%d\n", CongWin, swnd, k, k,
                  retr[k].ack);
           fflush(stdout);
@@ -151,6 +152,7 @@ void *rcv_cong() {
           perror("errore in recvfrom");
           exit(1);
         }
+        lt_rwnd = pkt.rwnd;
         lt_ack_rcvd = pkt.ack;
         if (maxackrcv < lt_ack_rcvd) {
           CongWin++;
@@ -173,6 +175,7 @@ void *rcv_cong() {
 
     // ultimo ack ricevuto(ricevo ack comulativi
     printf("lt_ACK %d\n", lt_ack_rcvd);
+    lt_rwnd = pkt.rwnd;
     lt_ack_rcvd = pkt.ack;
     // printf("\nlt_ack %d   seqnum %d\n",pkt.ack,seqnum);
     // fflush(stdout);
@@ -235,11 +238,11 @@ void send_get(char *str) {
     // invio da 0 a CongWin pkt e poi mi aspetto di ricevere come lastack quello
     // dell'ultimo pkt inviato poi continuo
     if (lt_ack_rcvd == seqnum) {
-      while (swnd < CongWin && stay == true) {
-
+      printf("conwin %d, swnd: %d rwnd%d\n", CongWin, swnd, lt_rwnd);
+      while (swnd < CongWin && stay == true && (CongWin - swnd) <= lt_rwnd) {
+        
         fflush(stdout);
         while ((dimpl = fread(pkt.pl, 1, sizeof(pkt.pl), file)) == MAXLINE) {
-          usleep(20);
           seqnum++;
           pkt.finbit = 0;
           pkt.ack = seqnum;
