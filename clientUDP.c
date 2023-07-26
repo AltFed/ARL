@@ -98,7 +98,6 @@ void rcv_get(char *file) {
         int t = 0;
         for (t = 0; t < dim - free_dim; t++) {
           printf("Indice %d - PL : %s\n", t, rcv_win[t].pl);
-          usleep(10);
           if ((fwrite(rcv_win[t].pl, strlen(rcv_win[t].pl), 1, fptr) < 0)) {
             perror("Error in write rcv_get\n");
             exit(1);
@@ -112,7 +111,7 @@ void rcv_get(char *file) {
       different = false;
       // printf("SEQNUM %d \n NUM %d\n",pkt.ack,n);
       //  invio un ack ogni pkt che ricevo
-      //  printf(" ACK RCV %d ACK INV %d\n", pkt.ack, n);
+        printf(" ACK RCV %d ACK INV %d\n", pkt.ack, n);
       // fflush(stdout);
       pkt.ack = n;
       pkt.finbit = 0;

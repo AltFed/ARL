@@ -124,23 +124,24 @@ void *rcv_cong() {
 
     n = select(sizeof(fds) * 8, &fds, NULL, NULL, &tv);
     if (n == 0) {
-      if (CongWin > 1)
+      if (CongWin > 1){
         CongWin = CongWin / 2;
+        swnd=0;
+      }
       // perchè gli ack che ricevo corrispondono all pkt che il client si
       // aspetta di ricevere
       k = lt_ack_rcvd;
 
       // implemento la ritrasmissione di tutti i pkt dopo lt_ack_rcvd
-      while (k < seqnum) {
-
-        while (swnd < CongWin && swnd < lt_rwnd) {
-          printf("conwin %d, swnd: %d k: %d retr[%d]:%d\n", CongWin, swnd, k, k,
-                 retr[k].ack);
+      while (k < seqnum && stay == true ) {
+        printf("swnd %d CongWin %d lt_rwnd %d\n",swnd,CongWin,lt_rwnd);
+        fflush(stdout);
+        while (swnd < CongWin && swnd < lt_rwnd && stay == true) {
+          printf("conwin %d, swnd: %d k: %d retr ack :%d\n", CongWin, swnd, k,retr[k].ack);
           fflush(stdout);
-          if ((sendto(sockfd, &retr[k], sizeof(pkt), 0,
-                      (struct sockaddr *)&addr, addrlen)) < 0) {
-            perror("errore in sendto");
-            exit(1);
+          if ((sendto(sockfd, &retr[k], sizeof(pkt), 0,(struct sockaddr *)&addr, addrlen)) < 0) {
+              perror("errore in sendto");
+              exit(1);
           }
           msgRitr++;
           k++;
@@ -159,6 +160,8 @@ void *rcv_cong() {
           swnd = swnd - (lt_ack_rcvd - maxackrcv);
 
           maxackrcv = lt_ack_rcvd;
+        }else if(swnd > 0){
+          swnd--;
         }
         // mantengo il num di ack più alto ricevuto
       }
@@ -172,14 +175,15 @@ void *rcv_cong() {
       perror("errore in recvfrom");
       exit(1);
     }
-
     // ultimo ack ricevuto(ricevo ack comulativi
-    printf("lt_ACK %d\n", lt_ack_rcvd);
+    //printf("lt_ACK %d\n", lt_ack_rcvd);
     lt_rwnd = pkt.rwnd;
     lt_ack_rcvd = pkt.ack;
     // printf("\nlt_ack %d   seqnum %d\n",pkt.ack,seqnum);
     // fflush(stdout);
-    // printf("\nServer : Ack cum  %d  seqnum att %d \n",pkt.ack,seqnum);
+    if(pkt.finbit == 1){
+     printf("\nServer : FINBIT=1 Ack cum  %d\n",pkt.ack);
+    }
     // fflush(stdout);
     // incremento la finestra di trasmissione  ogni ack se arriva un ack nuovo
     if (pkt.finbit == 1 && pkt.ack == seqnum) {
@@ -191,9 +195,10 @@ void *rcv_cong() {
     if (maxackrcv < lt_ack_rcvd) {
       CongWin++;
       swnd = swnd - (lt_ack_rcvd - maxackrcv);
-      fflush(stdout);
       //   printf("conwin %d, swnd: %d\n", CongWin, swnd);
       maxackrcv = lt_ack_rcvd;
+    }else if(swnd > 0){
+      swnd--;
     }
     // mantengo il num di ack più alto ricevuto
   }
@@ -238,8 +243,8 @@ void send_get(char *str) {
     // invio da 0 a CongWin pkt e poi mi aspetto di ricevere come lastack quello
     // dell'ultimo pkt inviato poi continuo
     if (lt_ack_rcvd == seqnum) {
-      printf("conwin %d, swnd: %d rwnd%d\n", CongWin, swnd, lt_rwnd);
-      while (swnd < CongWin && stay == true && (CongWin - swnd) <= lt_rwnd) {
+      //printf("conwin %d, swnd: %d rwnd%d\n", CongWin, swnd, lt_rwnd);
+      while (swnd < CongWin && stay == true && (swnd) < lt_rwnd) {
         
         fflush(stdout);
         while ((dimpl = fread(pkt.pl, 1, sizeof(pkt.pl), file)) == MAXLINE) {
