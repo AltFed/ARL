@@ -57,6 +57,7 @@
   "C_Cpp.errorSquiggles": "disabled",
   "C_Cpp_Runner.useLinkTimeOptimization": false,
   "files.associations": {
-    "wait.h": "c"
+    "wait.h": "c",
+    "ioctl.h": "c"
   }
 }
