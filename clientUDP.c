@@ -774,7 +774,7 @@ void req() {
 int main(int argc, char *argv[]) {
   char recvline[MAXLINE + 1];
   int temp=0;
-  if (argc != 3) { // controlla numero degli argomenti
+  if (argc != 2) { // controlla numero degli argomenti
     fprintf(stderr, "utilizzo: <indirizzo IP server>\n");
     exit(1);
   }

@@ -149,7 +149,7 @@ void *rcv_cong(void *sd) {
   fflush(stdout);
   int sockfd=sd;
   struct st_pkt pkt;
-  int k = 0, msgRitr = 0, temp = 0;
+  int k = 0, msgRitr = 0, temp = 0,i=0,t=0,d=20;
   // Set up the struct timeval for the timeout.
   fd_set fds;
   int n;
@@ -166,12 +166,16 @@ void *rcv_cong(void *sd) {
   // Wait until timeout or data received.
   bool stay = true;
   while (stay) {
+    if(CongWin <= d){
+      t--;
+      d=d >> 1;
+    }
     // Set up the file descriptor set.
     n = select(sizeof(fds) * 8, &fds, NULL, NULL, &tv);
-    if (n == 0) {
+    if (n == 0){
       if (CongWin > 1){
         CongWin = CongWin / 2;
-        swnd= 0; // forse cosi vedere meglio 
+        swnd= 0; // forse cosi vedere meglio !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       }
         k = lt_ack_rcvd;
         //fisso num al numero attuale di quando entro nel while
@@ -239,10 +243,18 @@ void *rcv_cong(void *sd) {
       exit(1);
     }else if (n != 0 && n != -1){  //se è un ack nuovo entro qui 
     // se non ho errore allora leggo e vedo l ack che il receiver mi invia
-    if(recvfrom(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,
-                 &addrlen) < 0) {
+    
+    if(recvfrom(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,&addrlen) < 0) {
       perror("errore in recvfrom");
       exit(1);
+    }
+
+    if(maxackrcv == lt_ack_rcvd){
+      i++;
+      if (CongWin > 1 && i == t ){
+        CongWin = CongWin / 2;
+        swnd= 0;
+      }
     }
     if(!strcmp(pkt.pl,"slow")){
           printf("\nSLOW RCVD\n");
