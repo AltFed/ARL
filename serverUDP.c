@@ -734,14 +734,14 @@ void sig_time(int signo) {
     // printf("k value %d seqnum value %d swnd value %d Congwin value %d \n", k,
     // seqnum, swnd, CongWin); fflush(stdout);
     while (swnd < CongWin && swnd < lt_rwnd) {
-      printf("resendo pkt %d last %d\n", retr[k].ack,k);
-      printf("swnd %d, congwin %d", swnd, CongWin);
+
       fflush(stdout);
       if ((sendto(fd, &retr[k], sizeof(pkt), 0, (struct sockaddr *)&addr,
                   addrlen)) < 0) {
         perror("errore in sendto");
         exit(1);
       }
+      
       // printf("\n\n RCV_CONG :: congwin %d, swnd: %d k: %d retr ack :%d
       // lt_rwnd: %d seqnum : %d\n\n", CongWin, swnd, k, retr[k].ack, lt_rwnd,
       // seqnum); fflush(stdout);
@@ -750,11 +750,13 @@ void sig_time(int signo) {
       swnd++;
     }
     // faccio una rcv
+    
     if (recvfrom(fd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr, &addrlen) <
         0) {
       perror("errore in recvfrom");
       exit(1);
     }
+    printf("%d",lt_ack_rcvd);
     lt_rwnd = pkt.rwnd;
     if (pkt.ack > lt_ack_rcvd) {
       CongWin++;
