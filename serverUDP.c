@@ -44,6 +44,7 @@ int nchildren;
 pid_t *pids;
 struct sockaddr_in addr;
 socklen_t addrlen = sizeof(struct sockaddr_in);
+bool rit=false;
 
 // implementa il controllo di segnali per gestire i thread
 typedef void Sigfunc(int);
@@ -61,25 +62,22 @@ struct st_pkt *retr;
 void *rcv_list(void *sd) {}
 // thread per la gestione del ack cum
 void *rcv_cong(void *sd) {
-  printf("RCV START\n");
-  fflush(stdout);
   int sockfd = sd;
+  fd=sd;
   struct st_pkt pkt;
   int k = 0, temp = 0, n;
   // Wait until timeout or data received.
   bool stay = true;
   while (stay) {
     if (lt_ack_rcvd == k) {
+      printf("pkt %d start TO\n",pkt.ack);
       alarm(2);
     }
-    if (recvfrom(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,
-                 &addrlen) < 0) {
-      if (errno == EINTR) {
-        puts("TO interrotto rcvfrom\n");
-      }
+    if (recvfrom(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,&addrlen) < 0) {
       perror("errore in recvfrom");
       exit(1);
     }
+    printf("RCV_CONG : rcvd ack %d \n",pkt.ack);
     if (pkt.ack > lt_ack_rcvd) {
       alarm(0);
       lt_ack_rcvd = pkt.ack;
@@ -160,8 +158,8 @@ void send_get(char *str, int sockfd) {
     // se last ack non è uguale al mio seqnum mi fermo altrimenti entro dentro e
     // invio da 0 a CongWin pkt e poi mi aspetto di ricevere come lastack quello
     // dell'ultimo pkt inviato poi continuo
-    if (lt_ack_rcvd == seqnum && stay == true) {
-      while (swnd < CongWin && stay == true && swnd < lt_rwnd) {
+    if (lt_ack_rcvd == seqnum && stay == true && !rit) {
+      while (swnd < CongWin && stay == true && swnd < lt_rwnd && !rit) {
         printf(" SEND_GET :: swnd = %d CongWin = %d  lt_rwnd = %d\n", swnd,
                CongWin, lt_rwnd);
         fflush(stdout);
@@ -172,8 +170,6 @@ void send_get(char *str, int sockfd) {
           pkt.ack = seqnum;
           // mantengo CongWin pkt
           retr[i] = pkt;
-          printf("\nack %d\n", pkt.ack);
-          fflush(stdout);
           i++;
           // cicliclo
           i = i % dim;
@@ -543,9 +539,16 @@ void send_control(int sockfd, int my_number) {
 
   n = select(sizeof(fds) * 8, &fds, NULL, NULL, &tv);
   if (n == 0) {
-
     printf("Server : Client non risponde\n");
     fflush(stdout);
+    //invio un pkt al Client esplicitando che ho chiuso la connessione 
+    pkt.finbit=3;
+    strcpy(pkt.pl,"Close");
+    if ((sendto(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,
+                        addrlen)) < 0) {
+              perror("errore in sendto");
+              exit(1);
+            }
   } else if (n == -1) {
     perror("Error send_control select");
     exit(1);
@@ -648,6 +651,14 @@ void send_control(int sockfd, int my_number) {
       rcv_put(name, sockfd);
     }
   }
+  //specifico al client che ho chiuso la connessione 
+   pkt.finbit=3;
+    strcpy(pkt.pl,"Close");
+    if ((sendto(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,
+                        addrlen)) < 0) {
+              perror("errore in sendto");
+              exit(1);
+            }
   stop[my_number - 1] = false;
   printf("\nWait for next request my_number ind %d \n", my_number - 1);
   fflush(stdout);
@@ -701,8 +712,7 @@ Sigfunc *signal(int signum, Sigfunc *func) {
 
   act.sa_handler = func;
   sigemptyset(&act.sa_mask); /* non occorre bloccare nessun altro segnale */
-  act.sa_flags = 0;
-  if (signum != SIGALRM)
+  //act.sa_flags = 0;
     act.sa_flags |= SA_RESTART;
   if (sigaction(signum, &act, &oact) < 0)
     return (SIG_ERR);
@@ -710,18 +720,25 @@ Sigfunc *signal(int signum, Sigfunc *func) {
 }
 // termina i figli non ho stato di zombie
 void sig_int(int signo) {
-  int i;
-  /* terminate all thread*/
-  for (i = 0; i < nchildren; i++) {
-    // kill all thread
-    syscall(SYS_exit_group, 0);
-    if (pthread_join(pids[i], NULL) != 0) {
-      perror("Error pthread_join");
-      exit(1);
-    }
+   int i;
+  /* terminate all children */
+  for (i = 0; i < nchildren; i++){
+    printf("\nkill child %d\n",pids[i]);
+    kill(pids[i], SIGTERM);
   }
+  while (wait(NULL) > 0)
+    ; /* wait for all children */
+
+  if (errno != ECHILD) {
+    fprintf(stderr, "errore in wait");
+    exit(1);
+  }
+  exit(0);
 }
 void sig_time(int signo) {
+  rit=true;
+  printf("TO pkt %d finish \n",lt_ack_rcvd+1);
+  //concorrente con rcv_cong per ricevere il pkt nella socket sistemare 
   struct st_pkt pkt;
   int k;
   if (CongWin > 1) {
@@ -731,32 +748,29 @@ void sig_time(int signo) {
   k = lt_ack_rcvd;
   //  implemento la ritrasmissione di tutti i pkt dopo lt_ack_rcvd
   while (k < seqnum) {
-    // printf("k value %d seqnum value %d swnd value %d Congwin value %d \n", k,
-    // seqnum, swnd, CongWin); fflush(stdout);
-    while (swnd < CongWin && swnd < lt_rwnd) {
-
+     //printf("k value %d seqnum value %d swnd value %d Congwin value %d  lt_rwnd = %d \n", k, num, swnd, CongWin,lt_rwnd); 
+     //fflush(stdout);
+    while (swnd < CongWin && swnd < lt_rwnd && k < seqnum ) {
+      printf("Sig_time : send pkt %d k = %d\n",retr[k].ack,k);
       fflush(stdout);
       if ((sendto(fd, &retr[k], sizeof(pkt), 0, (struct sockaddr *)&addr,
                   addrlen)) < 0) {
         perror("errore in sendto");
         exit(1);
       }
-      
-      // printf("\n\n RCV_CONG :: congwin %d, swnd: %d k: %d retr ack :%d
-      // lt_rwnd: %d seqnum : %d\n\n", CongWin, swnd, k, retr[k].ack, lt_rwnd,
-      // seqnum); fflush(stdout);
       msgRitr++;
       k++;
       swnd++;
     }
+    /*
     // faccio una rcv
-    
+    printf("Sig_time : wait rcvfrom \n");
     if (recvfrom(fd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr, &addrlen) <
         0) {
       perror("errore in recvfrom");
       exit(1);
     }
-    printf("%d",lt_ack_rcvd);
+    printf("Sig_time rcvd ack %d",pkt.ack);
     lt_rwnd = pkt.rwnd;
     if (pkt.ack > lt_ack_rcvd) {
       CongWin++;
@@ -788,7 +802,9 @@ void sig_time(int signo) {
       fflush(stdout);
       return;
     }
+    */
   }
+  rit=false;
 }
 int main(int argc, char **argv) {
   if (argc != 6) {
@@ -854,10 +870,6 @@ int main(int argc, char **argv) {
     perror("errore in bind");
     exit(1);
   }
-  if (signal(SIGINT, sig_int) == SIG_ERR) {
-    fprintf(stderr, "errore in signal INT ");
-    exit(1);
-  }
   if (signal(SIGALRM, sig_time) == SIG_ERR) {
     fprintf(stderr, "errore in signal INT ");
     exit(1);
@@ -877,6 +889,10 @@ int main(int argc, char **argv) {
     stop[i] = false;
     pids[i] = child_make(i + 1); /* parent returns */
   }
+    if (signal(SIGINT, sig_int) == SIG_ERR) {
+    fprintf(stderr, "errore in signal INT ");
+    exit(1);
+  }
   system("mkdir Server_Files");
   while (1) {
     fflush(stdout);
@@ -886,6 +902,8 @@ int main(int argc, char **argv) {
       exit(1);
     }
     printf("main rcvd pkt finbit %d \n", pkt.finbit);
+    fflush(stdout);
+
     if (pkt.finbit == 2) {
       n = 0;
       for (int i = 0; i < nchildren; i++) {
