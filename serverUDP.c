@@ -401,10 +401,13 @@ void send_list(int sockfd) {
   DIR *directory;
   struct dirent *file;
   bool stay = true;
-  int i = 0, msgInviati = 0, msgPerso = 0, msgTot = 0, dimpl = 0, k = 0,
-      temp = 0;
+  int i = 0, msgInviati = 0, msgPerso = 0, msgTot = 0, dimpl = 0, k = 0,temp = 0;
   double prob = 0;
-  pthread_t thread_id;
+  int y=10;
+  pthread_t thread_id;  
+  char **nomi = malloc(sizeof(char *)*y);
+  int c = 1;
+
   if ((retr = malloc(sizeof(struct st_pkt) * dim)) == NULL) {
     perror("Error malloc");
     exit(1);
@@ -426,46 +429,46 @@ void send_list(int sockfd) {
     printf("Impossibile aprire la cartella.\n");
     exit(1);
   }
-  char **nomi = malloc(sizeof(char *)*5);
-  int c = 1;
   while ((file = readdir(directory)) != NULL) {
-
     if (strcmp(file->d_name, ".") != 0 && strcmp(file->d_name, "..") != 0) {
-      nomi[c-1] = malloc(strlen(file->d_name) + 1);
+      printf("c value %d strlen value %d \n",c,strlen(file->d_name) + 1);
+      fflush(stdout);
+     if((nomi[c-1] = malloc(strlen(file ->d_name)+1 )) == NULL){
+      perror("error malloc ");
+      exit(1);
+     }
       strncpy(nomi[c-1], file->d_name, strlen(file->d_name) + 1);
-      c++;
-      printf("OOOOOO %d %s\n",c-1, nomi[c-2]);
-      if(c-1 % 5 == 0){
-      if (realloc(nomi, (sizeof(char*)*(c-1))*2) == NULL) { // errore realloc porcodio
-        perror("errore realloc\n");
+      printf(" y= %d :::: %s\n",y, nomi[c-1]);
+      if(c % y == 0){
+        y=y << 1;
+        printf("%d\n",y * sizeof(char *));
+      if ((nomi=realloc(nomi,y * sizeof(char *))) == NULL) { 
+        perror("error realloc");
         exit(1);
       }
+            printf("%ld\n",nomi);
       }
+      c++;
     }
   }
-  for (int x = 0; x < c; x++) {
-    printf("nome di  %s\n", nomi[x]);
+  for(int x=0;x<(c-1);x++){
+    printf("----->>> %s\n",nomi[x]);
+    fflush(stdout);
   }
-
-  for (;;) {
-    sleep(1);
-  }
-
   while (stay) {
     if (lt_ack_rcvd == seqnum && stay == true && !rit) {
       // Lettura dei file all'interno della cartella
-      while ((file = readdir(directory)) != NULL && swnd < CongWin &&
-             stay == true && swnd < lt_rwnd && !rit) {
-        // Ignora le voci "." e ".."
-        printf("nome : %s\n", file->d_name);
-        fflush(stdout);
-        if (strcmp(file->d_name, ".") != 0 && strcmp(file->d_name, "..") != 0) {
+      printf("c value %d , swnd = %d , Congwin= %d,lt_rwnd %d  stay = %d rit =%d \n",c,swnd,CongWin,lt_rwnd,stay,rit);
+      while ( c != 0 && swnd < CongWin && stay == true && swnd < lt_rwnd && !rit) {
           // memorizzo i nomi
-          temp = strlen(file->d_name);
-          strncpy(pkt.pl, file->d_name, temp);
+          temp = strlen(nomi[c-1]);
+          strncpy(pkt.pl, nomi[c-1], temp);
+          printf("pkt.pl %s \n",nomi[c-1]);
+          fflush(stdout);
           pkt.pl[temp] = '\0'; // risolvo il problema di scrivere sul buff pieno
           swnd++;
           seqnum++;
+          c--;//decremento c 
           pkt.ack = seqnum;
           pkt.finbit = 0;
           retr[i] = pkt;
@@ -484,7 +487,6 @@ void send_list(int sockfd) {
             msgInviati++;
             msgTot++;
           }
-        }
       }
       // mando l'ultimo pkt
       if (file == NULL) {
@@ -542,11 +544,6 @@ void send_control(int sockfd, int my_number) {
   FD_SET(sockfd, &fds);
   tv.tv_usec = 0; // ms waiting
   tv.tv_sec = 30; // s waiting
-                  // dopo 5 s per il server il client si è disconesso ritorno
-                  // disponibile
-
-  fflush(stdout);
-
   n = select(sizeof(fds) * 8, &fds, NULL, NULL, &tv);
   if (n == 0) {
     printf("Server : Client non risponde\n");

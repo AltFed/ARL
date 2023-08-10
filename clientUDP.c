@@ -550,6 +550,17 @@ void command_send(char *cd, char *nome_str) {
   int temp = 0;
   pkt.ack = 0;
   char str[MAXLINE];
+  int i = 0;
+  fd_set fds;
+  struct timeval tv;
+  int len = 0, u = 0;
+  bool r = true;
+  char buffer[MAXLINE];
+  // Set up the file descriptor set.
+  FD_ZERO(&fds);
+  FD_SET(sockfd, &fds);
+  tv.tv_usec = 0; // ms waiting
+  tv.tv_sec = 10; // s waiting
   strcpy(str, cd);
   if (nome_str != NULL) {
     strcat(str + strlen(cd), nome_str);
@@ -558,7 +569,6 @@ void command_send(char *cd, char *nome_str) {
   fflush(stdout);
   strcpy(pkt.pl, str);
   pkt.finbit = 0;
-  int i = 0;
   // Invia al server il pacchetto di richiesta
   if (sendto(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr, addrlen) <
       0) {
@@ -567,21 +577,27 @@ void command_send(char *cd, char *nome_str) {
   }
   pkt.ack = -2;
   while (pkt.ack != 0 && pkt.ack != -1) {
+  i = select(sizeof(fds) * 8, &fds, NULL, NULL, &tv);
+  if(i == 0 ){
+    printf("Client : Server disconesso riprovare \n");
+    exit(1);
+  }else if( i == -1){
+    perror("error select");
+    exit(1);
+  }else{
     // Legge dal socket il pacchetto di risposta
     if (recvfrom(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,
                  &addrlen) < 0) {
       perror("errore in recvfrom");
       exit(1);
     }
-  }
   printf("pkt.ack %d pkt.pl %s finbit %d \n", pkt.ack, pkt.pl, pkt.finbit);
   fflush(stdout);
   if (pkt.ack == -1) {
     printf("\n Error Server = %s\n", pkt.pl);
     fflush(stdout);
-    req();
+    req();//gestisco possibili errori 
     loop = true;
-    // vedere se va bene cosi con il return sennò facciamo altro
     return;
   } else if (pkt.ack == temp) {
     printf("\n Server response : %s\n", pkt.pl);
@@ -602,11 +618,7 @@ void command_send(char *cd, char *nome_str) {
   }
   // leggo tutti i byte nella socket mi serve nel caso in cui il client vuole
   // comunicare nuovamente con la stessa socket
-
-  int len = 0, u = 0;
-  bool r = true;
-  char buffer[MAXLINE];
-
+  }
   while (r) { // leggo tutto quello che è rimasto nella socket gestisco
               // eventuali ritrasmissioni ritardate di pkt
     if (u = read(sockfd, buffer, len) == -1) {
@@ -618,6 +630,7 @@ void command_send(char *cd, char *nome_str) {
       continue;
     }
   }
+}
 }
 // gestisco la richiesta dell'utente
 void req() {
