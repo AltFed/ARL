@@ -354,7 +354,6 @@ void snd_put(char *str, int sockfd) {
           if (prob < p) {
             msgPerso++;
             msgTot++;
-            swnd++;
             // Il messaggio è stato perso
             continue;
           } else {
