@@ -188,6 +188,7 @@ void rcv_get(char *file) {
       different = false;
       free_dim--;
       printf("OK ack = %d free_dim %d\n", pkt.ack, free_dim);
+      printf("RCV_GET port number %d\n",addr.sin_addr.s_addr);
       fflush(stdout);
       pkt.ack = n;
       pkt.finbit = 0;
@@ -199,6 +200,8 @@ void rcv_get(char *file) {
         pkt.rwnd = dim; // scrivo tutto sul file allora mando come nuova rwnd la
                         // dim(il server rallenta la send)
       }
+      printf("Client : send pkt ack = %d\n",pkt.ack);
+      fflush(stdout);
       if (sendto(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,
                  addrlen) < 0) {
         perror("errore in sendto");
@@ -254,7 +257,7 @@ void *rcv_cong(void *sd) {
       perror("errore in recvfrom");
       exit(1);
     }
-    printf("RCV_CONG : rcvd ack %d \n", pkt.ack);
+    printf("RCV_CONG : rcvd ack %d lt_rcvd %d\n", pkt.ack,lt_ack_rcvd);
     if (pkt.ack > lt_ack_rcvd) {
       alarm(0);
       lt_ack_rcvd = pkt.ack;
@@ -774,8 +777,8 @@ Sigfunc *signal(int signum, Sigfunc *func) {
 
   act.sa_handler = func;
   sigemptyset(&act.sa_mask); /* non occorre bloccare nessun altro segnale */
-  act.sa_flags |= SA_RESTART;
-  if (sigaction(signum, &act, &oact) < 0)
+    act.sa_flags |= SA_RESTART;  
+    if (sigaction(signum, &act, &oact) < 0)
     return (SIG_ERR);
   return (oact.sa_handler);
 }
