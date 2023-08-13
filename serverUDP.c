@@ -15,6 +15,7 @@
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>
+#include <sys/time.h>
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
@@ -62,20 +63,28 @@ struct st_pkt *retr;
 // thread per la gestione del ack cum
 void *rcv_cong(void *sd) {
   int sockfd = sd;
+
+  struct itimerval timer;
+  timer.it_interval.tv_usec = 0;
+  timer.it_interval.tv_sec = 0;
+  timer.it_value.tv_sec = 0;
+
   fd = sd;
   struct st_pkt pkt;
   int t = 0;
+
   int temp = 0, n;
   lt_ack_rcvd = 0;
   // Wait until timeout or data received.
   bool stay = true;
   while (stay) {
-  // puts("prima");
-rcv:
+    // puts("prima");
+  rcv:
     if (recvfrom(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,
                  &addrlen) < 0) {
       perror("errore in recvfrom");
-      if (errno = EINTR)         goto rcv;
+      if (errno = EINTR)
+        goto rcv;
       exit(1);
     }
     printf("RCV_CONG : rcvd ack %d lt_rcvd %d\n", pkt.ack, lt_ack_rcvd);
@@ -86,7 +95,12 @@ rcv:
       printf("timer pkt %d\n", pkt.ack + 1);
       num = pkt.ack + 1;
       fflush(stdout);
-     t= ualarm(timeout, 0); // ogni volta che ricevo un ack nuovo avvio il timer
+
+      timer.it_value.tv_usec = timeout;
+      setitimer(ITIMER_REAL, &timer, NULL);
+
+      // ogni volta che ricevo un ack nuovo avvio il timer
+      printf("timer avviato : %ld\n", timer.it_value.tv_usec);
       lt_ack_rcvd = pkt.ack;
       CongWin = CongWin << 1; // double
       swnd = seqnum - lt_ack_rcvd;
@@ -94,7 +108,7 @@ rcv:
       // puts("CIAO1");
       // se è un ack nuovo entro qui
       //  se non ho errore allora leggo e vedo l ack che il receiver mi invia
-      if (!strcmp(pkt.pl, "slow")) {
+     /* if (!strcmp(pkt.pl, "slow")) {
         printf("\nSLOW RCVD\n");
         fflush(stdout);
         bytes_psecond = 100;
@@ -110,17 +124,18 @@ rcv:
           perror("Error setsockopt");
           exit(1);
         }
-      }
+      }*/
       // puts("CIAO");
       if (pkt.finbit == 1 && pkt.ack == seqnum) {
-        ualarm(0, 0); // quit timer
+        timer.it_value.tv_usec = 0;
+        setitimer(ITIMER_REAL, &timer, NULL); // quit timer
         printf("Server : Client disconesso  correttamente \n");
         fflush(stdout);
         stay = false;
         return NULL;
       }
     }
-    printf("timer : %d\n", t);
+
     // printf("inizio nuova lettura\n");
     fflush(stdout);
   }
@@ -171,9 +186,10 @@ void send_get(char *str, int sockfd) {
     // printf(" fuori if  SEND_GET :: lt_ack %d seqnum %d
     // \n",lt_ack_rcvd,seqnum);
 
-//    printf(" fuori while SEND_GET :: swnd = %d CongWin = %d  lt_rwnd = %d\n",swnd, CongWin, lt_rwnd);
+    //    printf(" fuori while SEND_GET :: swnd = %d CongWin = %d  lt_rwnd =
+    //    %d\n",swnd, CongWin, lt_rwnd);
     fflush(stdout);
-    while (swnd < CongWin && stay == true && swnd < lt_rwnd && !rit || problem) {
+    while (swnd < CongWin && stay == true && swnd < lt_rwnd && !rit) {
       if ((dimpl = fread(pkt.pl, 1, sizeof(pkt.pl), file)) == MAXLINE) {
         seqnum++;
         swnd++;
@@ -192,25 +208,25 @@ void send_get(char *str, int sockfd) {
           msgPerso++;
           msgTot++;
           // Il messaggio è stato perso
-          continue;
+          printf(" LOST :: ACK = %d  swnd = %d CongWin = %d  lt_rwnd = %d\n", pkt.ack, swnd, CongWin, lt_rwnd);
         } else {
           // Trasmetto con successo
-       /*   if (lt_ack_rcvd < seqnum - 5) {
-            // rallento flow control
-            bytes_psecond = 10;
-            if (setsockopt(sockfd, SOL_SOCKET, SO_MAX_PACING_RATE,
-                           &bytes_psecond, sizeof(bytes_psecond)) < 0) {
-              perror("Error setsockopt");
-              exit(1);
-            }
-          } else {
-            bytes_psecond = 100;
-            if (setsockopt(sockfd, SOL_SOCKET, SO_MAX_PACING_RATE,
-                           &bytes_psecond, sizeof(bytes_psecond)) < 0) {
-              perror("Error setsockopt");
-              exit(1);
-            }
-          }*/
+          /*   if (lt_ack_rcvd < seqnum - 5) {
+               // rallento flow control
+               bytes_psecond = 10;
+               if (setsockopt(sockfd, SOL_SOCKET, SO_MAX_PACING_RATE,
+                              &bytes_psecond, sizeof(bytes_psecond)) < 0) {
+                 perror("Error setsockopt");
+                 exit(1);
+               }
+             } else {
+               bytes_psecond = 100;
+               if (setsockopt(sockfd, SOL_SOCKET, SO_MAX_PACING_RATE,
+                              &bytes_psecond, sizeof(bytes_psecond)) < 0) {
+                 perror("Error setsockopt");
+                 exit(1);
+               }
+             }*/
           printf(
               " SEND_GET :: ACK = %d  swnd = %d CongWin = %d  lt_rwnd = %d\n",
               pkt.ack, swnd, CongWin, lt_rwnd);
@@ -225,10 +241,7 @@ void send_get(char *str, int sockfd) {
         }
         // la lettura la fa il thread cosi non mi blocco io main thread
       } else if (feof(file)) {
-        while (lt_ack_rcvd != seqnum) {
-          // Aspetto che il thread legga last ack
-          usleep(5);
-        }
+ 
         printf("fine file\n");
         fflush(stdout);
         seqnum++;
@@ -785,11 +798,12 @@ void sig_time(int signo) {
   printf("k = %d seqnum = %d \n", k, seqnum);
   fflush(stdout);
   //  implemento la ritrasmissione di tutti i pkt dopo lt_ack_rcvd
-  
+
   while (k < seqnum) {
-  //  printf("k value %d seqnum value %d swnd value %d Congwin value %d lt_rwnd "
-     //      "= %d  lt_ack %d \n",
-       //    k, seqnum, swnd, CongWin, lt_rwnd, lt_ack_rcvd);
+    //  printf("k value %d seqnum value %d swnd value %d Congwin value %d
+    //  lt_rwnd "
+    //      "= %d  lt_ack %d \n",
+    //    k, seqnum, swnd, CongWin, lt_rwnd, lt_ack_rcvd);
     fflush(stdout);
     while (swnd < CongWin && swnd < lt_ack_rcvd && k < seqnum) {
       printf("Sig_time : send pkt %d k = %d swnd %d Conwing %d seqnum %d\n",
