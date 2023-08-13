@@ -1,4 +1,5 @@
 #include <arpa/inet.h>
+#include <asm-generic/errno-base.h>
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -19,14 +20,17 @@
 #include <unistd.h>
 #include <wait.h>
 #define MAXLINE 4096
-//problema quando perdo un pkt e swnd = Conwing - 1 quindi non trasmetto un pkt successivo e quindi non mi arriva un ack duplicato non mi arriva proprio l ack
-// variabili globali
+// problema quando perdo un pkt e swnd = Conwing - 1 quindi non trasmetto un pkt
+// successivo e quindi non mi arriva un ack duplicato non mi arriva proprio l
+// ack
+//  variabili globali ORA NO SENTO UN 0.1SECONDI DI VOCE OGNI 2 SECONDI
 int seqnum = 0;
 int timeout = 0;
 int lt_ack_rcvd = 0;
 int lt_rwnd = 1;
 int swnd = 0;
 int CongWin = 1;
+bool problem;
 double p = 0;
 int dim = 10;
 int free_dim = 0;
@@ -40,8 +44,8 @@ pid_t *pids;
 struct sockaddr_in addr;
 socklen_t addrlen = sizeof(struct sockaddr_in);
 bool rit = false;
-int num=0;
-bool w=false;
+int num = 0;
+bool w = false;
 
 // implementa il controllo di segnali per gestire i thread
 typedef void Sigfunc(int);
@@ -58,37 +62,36 @@ struct st_pkt *retr;
 // thread per la gestione del ack cum
 void *rcv_cong(void *sd) {
   int sockfd = sd;
-  fd=sd;
+  fd = sd;
   struct st_pkt pkt;
+  int t = 0;
   int temp = 0, n;
   lt_ack_rcvd = 0;
   // Wait until timeout or data received.
   bool stay = true;
   while (stay) {
-    //puts("prima");
-  if (recvfrom(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,
+  // puts("prima");
+rcv:
+    if (recvfrom(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,
                  &addrlen) < 0) {
       perror("errore in recvfrom");
+      if (errno = EINTR)         goto rcv;
       exit(1);
-      }
-    printf("RCV_CONG : rcvd ack %d lt_rcvd %d\n", pkt.ack,lt_ack_rcvd);
+    }
+    printf("RCV_CONG : rcvd ack %d lt_rcvd %d\n", pkt.ack, lt_ack_rcvd);
     fflush(stdout);
-    //puts("dopo");
+    // puts("dopo");
     fflush(stdout);
     if (pkt.ack > lt_ack_rcvd) {
-      while(w){
-
-      }
-      printf("timer pkt %d\n",pkt.ack+1);
-      num=pkt.ack+1;;
+      printf("timer pkt %d\n", pkt.ack + 1);
+      num = pkt.ack + 1;
       fflush(stdout);
-      ualarm(timeout, 0);//ogni volta che ricevo un ack nuovo avvio il timer
-      w=false;
+     t= ualarm(timeout, 0); // ogni volta che ricevo un ack nuovo avvio il timer
       lt_ack_rcvd = pkt.ack;
-      CongWin=CongWin << 1;//double 
+      CongWin = CongWin << 1; // double
       swnd = seqnum - lt_ack_rcvd;
       lt_rwnd = pkt.rwnd;
-     // puts("CIAO1");
+      // puts("CIAO1");
       // se è un ack nuovo entro qui
       //  se non ho errore allora leggo e vedo l ack che il receiver mi invia
       if (!strcmp(pkt.pl, "slow")) {
@@ -108,17 +111,18 @@ void *rcv_cong(void *sd) {
           exit(1);
         }
       }
-     // puts("CIAO");
+      // puts("CIAO");
       if (pkt.finbit == 1 && pkt.ack == seqnum) {
-        ualarm(0,0);// quit timer 
+        ualarm(0, 0); // quit timer
         printf("Server : Client disconesso  correttamente \n");
         fflush(stdout);
         stay = false;
         return NULL;
       }
-  }
-  //printf("inizio nuova lettura\n");
-  fflush(stdout);
+    }
+    printf("timer : %d\n", t);
+    // printf("inizio nuova lettura\n");
+    fflush(stdout);
   }
 }
 
@@ -162,103 +166,103 @@ void send_get(char *str, int sockfd) {
   }
   while (stay) {
     // se last ack non è uguale al mio seqnum mi fermo altrimenti entro dentro e
-    // invio da 0 a CongWin pkt e poi mi aspetto di ricevere come last ack quello
-    // dell'ultimo pkt inviato poi continuo
-   // printf(" fuori if  SEND_GET :: lt_ack %d seqnum %d \n",lt_ack_rcvd,seqnum);
+    // invio da 0 a CongWin pkt e poi mi aspetto di ricevere come last ack
+    // quello dell'ultimo pkt inviato poi continuo
+    // printf(" fuori if  SEND_GET :: lt_ack %d seqnum %d
+    // \n",lt_ack_rcvd,seqnum);
+
+//    printf(" fuori while SEND_GET :: swnd = %d CongWin = %d  lt_rwnd = %d\n",swnd, CongWin, lt_rwnd);
     fflush(stdout);
-      printf(" fuori while SEND_GET :: swnd = %d CongWin = %d  lt_rwnd = %d\n",swnd,CongWin, lt_rwnd);
-        fflush(stdout);
-        sleep(3);
-      while (swnd < CongWin && stay == true && swnd < lt_rwnd && !rit){
-        if ((dimpl = fread(pkt.pl, 1, sizeof(pkt.pl), file)) == MAXLINE) {
-          seqnum++;
-          swnd++;
-          if(seqnum == num){
-            w=true;
-          }
-          pkt.finbit = 0;
-          pkt.ack = seqnum;
-          //mantengo CongWin pkt
-          retr[i] = pkt;
-          i++;
-          //cicliclo
-          i = i % dim;
-          // aumento la dim del vettore che mi salva i pkt
-          prob = (double)rand() / RAND_MAX;
-          if (prob < p) {
-           // printf(" SEND_GET ::  lost ACK = %d  swnd = %d CongWin = %d  lt_rwnd = %d\n", pkt.ack,swnd,CongWin, lt_rwnd);
-            msgPerso++;
-            msgTot++;
-            // Il messaggio è stato perso
-            continue;
-          } else {
-            //Trasmetto con successo
-            if (lt_ack_rcvd < seqnum - 5) {
-              // rallento flow control
-              bytes_psecond = 10;
-              if (setsockopt(sockfd, SOL_SOCKET, SO_MAX_PACING_RATE,
-                             &bytes_psecond, sizeof(bytes_psecond)) < 0) {
-                perror("Error setsockopt");
-                exit(1);
-              }
-            } else {
-              bytes_psecond = 100;
-              if (setsockopt(sockfd, SOL_SOCKET, SO_MAX_PACING_RATE,
-                             &bytes_psecond, sizeof(bytes_psecond)) < 0) {
-                perror("Error setsockopt");
-                exit(1);
-              }
-            }
-            printf(" SEND_GET :: ACK = %d  swnd = %d CongWin = %d  lt_rwnd = %d\n", pkt.ack,swnd,CongWin, lt_rwnd);
-        fflush(stdout);
-            if ((sendto(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,
-                        addrlen)) < 0) {
-              perror("errore in sendto");
+    while (swnd < CongWin && stay == true && swnd < lt_rwnd && !rit || problem) {
+      if ((dimpl = fread(pkt.pl, 1, sizeof(pkt.pl), file)) == MAXLINE) {
+        seqnum++;
+        swnd++;
+        pkt.finbit = 0;
+        pkt.ack = seqnum;
+        // mantengo CongWin pkt
+        retr[i] = pkt;
+        i++;
+        // cicliclo
+        i = i % dim;
+        // aumento la dim del vettore che mi salva i pkt
+        prob = (double)rand() / RAND_MAX;
+        if (prob < p) {
+          // printf(" SEND_GET ::  lost ACK = %d  swnd = %d CongWin = %d lt_rwnd
+          // = %d\n", pkt.ack,swnd,CongWin, lt_rwnd);
+          msgPerso++;
+          msgTot++;
+          // Il messaggio è stato perso
+          continue;
+        } else {
+          // Trasmetto con successo
+       /*   if (lt_ack_rcvd < seqnum - 5) {
+            // rallento flow control
+            bytes_psecond = 10;
+            if (setsockopt(sockfd, SOL_SOCKET, SO_MAX_PACING_RATE,
+                           &bytes_psecond, sizeof(bytes_psecond)) < 0) {
+              perror("Error setsockopt");
               exit(1);
             }
-            msgInviati++;
-            msgTot++;
-          }
-          // la lettura la fa il thread cosi non mi blocco io main thread
-        } else if (feof(file)) {
-          while (lt_ack_rcvd != seqnum) {
-            // Aspetto che il thread legga last ack
-            usleep(5);
-          }
-          printf("fine file\n");
-          fflush(stdout);
-          seqnum++;
-          pkt.ack = seqnum;
-          pkt.finbit = 1;
-          pkt.pl[dimpl] = '\0';
-          retr[i] = pkt;
-          stay = false;
-          printf("\n\n\nSERVER : send last pkt %d %s  ", seqnum, pkt.pl);
-          prob = (double)rand() / RAND_MAX;
-          printf("\n Server : Close connection \n");
-          fflush(stdout);
-          if (prob < p) {
-            // Il messaggio è stato perso
-            msgPerso++;
-            msgTot++;
-            swnd++;
-            continue;
           } else {
-            // invio il terminatore
-            if (sendto(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,
-                       addrlen) < 0) {
-              perror("Error in sendto");
+            bytes_psecond = 100;
+            if (setsockopt(sockfd, SOL_SOCKET, SO_MAX_PACING_RATE,
+                           &bytes_psecond, sizeof(bytes_psecond)) < 0) {
+              perror("Error setsockopt");
               exit(1);
             }
-            msgInviati++;
-            msgTot++;
-            swnd++;
+          }*/
+          printf(
+              " SEND_GET :: ACK = %d  swnd = %d CongWin = %d  lt_rwnd = %d\n",
+              pkt.ack, swnd, CongWin, lt_rwnd);
+          fflush(stdout);
+          if ((sendto(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,
+                      addrlen)) < 0) {
+            perror("errore in sendto");
+            exit(1);
           }
-        } else if (ferror(file)) {
-          perror("Error fread ");
-          exit(1);
+          msgInviati++;
+          msgTot++;
         }
+        // la lettura la fa il thread cosi non mi blocco io main thread
+      } else if (feof(file)) {
+        while (lt_ack_rcvd != seqnum) {
+          // Aspetto che il thread legga last ack
+          usleep(5);
+        }
+        printf("fine file\n");
+        fflush(stdout);
+        seqnum++;
+        pkt.ack = seqnum;
+        pkt.finbit = 1;
+        pkt.pl[dimpl] = '\0';
+        retr[i] = pkt;
+        stay = false;
+        printf("\n\n\nSERVER : send last pkt %d %s  ", seqnum, pkt.pl);
+        prob = (double)rand() / RAND_MAX;
+        printf("\n Server : Close connection \n");
+        fflush(stdout);
+        if (prob < p) {
+          // Il messaggio è stato perso
+          msgPerso++;
+          msgTot++;
+          swnd++;
+          continue;
+        } else {
+          // invio il terminatore
+          if (sendto(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,
+                     addrlen) < 0) {
+            perror("Error in sendto");
+            exit(1);
+          }
+          msgInviati++;
+          msgTot++;
+          swnd++;
+        }
+      } else if (ferror(file)) {
+        perror("Error fread ");
+        exit(1);
       }
+    }
   }
   // aspetto la terminazione del thread che legge
   if (pthread_join(thread_id, NULL) != 0) {
@@ -523,7 +527,7 @@ void send_list(int sockfd) {
       if (c == 0) {
         while (lt_ack_rcvd != seqnum) {
           // Aspetto che il thread legga last ack
-                  }
+        }
         swnd++;
         // Invio l'ultimo pkt chiudo la connessione
         stay = false;
@@ -745,7 +749,7 @@ Sigfunc *signal(int signum, Sigfunc *func) {
 
   act.sa_handler = func;
   sigemptyset(&act.sa_mask); /* non occorre bloccare nessun altro segnale */
-    act.sa_flags |= SA_RESTART;  
+  act.sa_flags |= SA_RESTART;
   if (sigaction(signum, &act, &oact) < 0)
     return (SIG_ERR);
   return (oact.sa_handler);
@@ -774,34 +778,39 @@ void sig_time(int signo) {
   struct st_pkt pkt;
   int k;
   if (CongWin > 1) {
-    CongWin = CongWin >> 1;
+    CongWin = CongWin + 2;
   }
   swnd = 0;
-  k=lt_ack_rcvd;
-  printf("k = %d seqnum = %d \n",k,seqnum);
+  k = lt_ack_rcvd;
+  printf("k = %d seqnum = %d \n", k, seqnum);
   fflush(stdout);
   //  implemento la ritrasmissione di tutti i pkt dopo lt_ack_rcvd
+  
   while (k < seqnum) {
-    printf("k value %d seqnum value %d swnd value %d Congwin value %d lt_rwnd = %d  lt_ack %d \n", k, seqnum, swnd, CongWin,lt_rwnd,lt_ack_rcvd);
+  //  printf("k value %d seqnum value %d swnd value %d Congwin value %d lt_rwnd "
+     //      "= %d  lt_ack %d \n",
+       //    k, seqnum, swnd, CongWin, lt_rwnd, lt_ack_rcvd);
     fflush(stdout);
-  while( swnd < CongWin && swnd < lt_ack_rcvd && k < seqnum){
-          printf("Sig_time : send pkt %d k = %d swnd %d Conwing %d seqnum %d\n", retr[k].ack, k,swnd,CongWin,seqnum);
+    while (swnd < CongWin && swnd < lt_ack_rcvd && k < seqnum) {
+      printf("Sig_time : send pkt %d k = %d swnd %d Conwing %d seqnum %d\n",
+             retr[k].ack, k, swnd, CongWin, seqnum);
       fflush(stdout);
       if ((sendto(fd, &retr[k], sizeof(pkt), 0, (struct sockaddr *)&addr,
                   addrlen)) < 0) {
         perror("errore in sendto");
         exit(1);
       }
+      swnd++;
       msgRitr++;
       k++;
+    }
   }
-  }
-  printf("swnd value %d \n",swnd);
+  printf("swnd value %d \n", swnd);
   printf("QUIT Sig_time\n");
   fflush(stdout);
   rit = false;
-  }
-  
+}
+
 int main(int argc, char **argv) {
   if (argc != 5) {
     fprintf(stderr, " utilizzo:<pkt loss probab P , SERV_Port, Inserire numero "
