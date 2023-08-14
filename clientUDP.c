@@ -188,7 +188,6 @@ void rcv_get(char *file) {
       different = false;
       free_dim--;
       printf("OK ack = %d free_dim %d\n", pkt.ack, free_dim);
-      printf("RCV_GET port number %d\n",addr.sin_addr.s_addr);
       fflush(stdout);
       pkt.ack = n;
       pkt.finbit = 0;
