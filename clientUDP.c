@@ -136,7 +136,7 @@ void rcv_get(char *file) {
       perror("errore in recvfrom");
       exit(1);
     }
-    printf("ack rcvd  %d\n\n ",pkt.ack);
+    printf("ack rcvd  %d\n\n ", pkt.ack);
     //  se mi arriva un ack che ho già salvato non lo mantengo nell'array
     //  finbit == 1 allora chiudo la connessione
     if (pkt.finbit == 1 && pkt.ack == n) {
@@ -196,7 +196,7 @@ void rcv_get(char *file) {
         pkt.rwnd = dim; // scrivo tutto sul file allora mando come nuova rwnd la
                         // dim(il server rallenta la send)
       }
-      printf("Client : send pkt ack = %d\n",pkt.ack);
+      printf("Client : send pkt ack = %d\n", pkt.ack);
       fflush(stdout);
       if (sendto(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,
                  addrlen) < 0) {
@@ -253,7 +253,7 @@ void *rcv_cong(void *sd) {
       perror("errore in recvfrom");
       exit(1);
     }
-    printf("RCV_CONG : rcvd ack %d lt_rcvd %d\n", pkt.ack,lt_ack_rcvd);
+    printf("RCV_CONG : rcvd ack %d lt_rcvd %d\n", pkt.ack, lt_ack_rcvd);
     if (pkt.ack > lt_ack_rcvd) {
       alarm(0);
       lt_ack_rcvd = pkt.ack;
@@ -575,60 +575,60 @@ void command_send(char *cd, char *nome_str) {
   }
   pkt.ack = -2;
   while (pkt.ack != 0 && pkt.ack != -1) {
-  i = select(sizeof(fds) * 8, &fds, NULL, NULL, &tv);
-  if(i == 0 ){
-    printf("Client : Server disconesso riprovare \n");
-    exit(1);
-  }else if( i == -1){
-    perror("error select");
-    exit(1);
-  }else{
-    // Legge dal socket il pacchetto di risposta
-    if (recvfrom(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,
-                 &addrlen) < 0) {
-      perror("errore in recvfrom");
+    i = select(sizeof(fds) * 8, &fds, NULL, NULL, &tv);
+    if (i == 0) {
+      printf("Client : Server disconesso riprovare \n");
       exit(1);
-    }
-  printf("pkt.ack %d pkt.pl %s finbit %d \n", pkt.ack, pkt.pl, pkt.finbit);
-  fflush(stdout);
-  if (pkt.ack == -1) {
-    printf("\n Error Server = %s\n", pkt.pl);
-    fflush(stdout);
-    req();//gestisco possibili errori 
-    loop = true;
-    return;
-  } else if (pkt.ack == temp) {
-    printf("\n Server response : %s\n", pkt.pl);
-    fflush(stdout);
-    // implento la list
-    if (!strcmp(cd, "list")) {
-      rcv_list();
-    }
-    // implento la get
-    else if (!strcmp(cd, "get ")) {
+    } else if (i == -1) {
+      perror("error select");
+      exit(1);
+    } else {
+      // Legge dal socket il pacchetto di risposta
+      if (recvfrom(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,
+                   &addrlen) < 0) {
+        perror("errore in recvfrom");
+        exit(1);
+      }
+      printf("pkt.ack %d pkt.pl %s finbit %d \n", pkt.ack, pkt.pl, pkt.finbit);
       fflush(stdout);
-      rcv_get(nome_str);
+      if (pkt.ack == -1) {
+        printf("\n Error Server = %s\n", pkt.pl);
+        fflush(stdout);
+        req(); // gestisco possibili errori
+        loop = true;
+        return;
+      } else if (pkt.ack == temp) {
+        printf("\n Server response : %s\n", pkt.pl);
+        fflush(stdout);
+        // implento la list
+        if (!strcmp(cd, "list")) {
+          rcv_list();
+        }
+        // implento la get
+        else if (!strcmp(cd, "get ")) {
+          fflush(stdout);
+          rcv_get(nome_str);
+        }
+        // implemento la put
+        else if (!strcmp(cd, "put ")) {
+          snd_put(nome_str, sockfd);
+        }
+      }
+      // leggo tutti i byte nella socket mi serve nel caso in cui il client
+      // vuole comunicare nuovamente con la stessa socket
     }
-    // implemento la put
-    else if (!strcmp(cd, "put ")) {
-      snd_put(nome_str, sockfd);
+    while (r) { // leggo tutto quello che è rimasto nella socket gestisco
+                // eventuali ritrasmissioni ritardate di pkt
+      if (u = read(sockfd, buffer, len) == -1) {
+        perror("Error read");
+        exit(1);
+      }
+      if (u == 0) {
+        r = false;
+        continue;
+      }
     }
   }
-  // leggo tutti i byte nella socket mi serve nel caso in cui il client vuole
-  // comunicare nuovamente con la stessa socket
-  }
-  while (r) { // leggo tutto quello che è rimasto nella socket gestisco
-              // eventuali ritrasmissioni ritardate di pkt
-    if (u = read(sockfd, buffer, len) == -1) {
-      perror("Error read");
-      exit(1);
-    }
-    if (u == 0) {
-      r = false;
-      continue;
-    }
-  }
-}
 }
 // gestisco la richiesta dell'utente
 void req() {
@@ -652,16 +652,17 @@ void req() {
     if (a == -1) { // chiudo subito senza che invio il pkt al server
       return;
     }
-    printf("addr sin port wait %d\n",addr.sin_port);
-    if ((recvfrom(sockfd, &pkt, sizeof(pkt), MSG_DONTWAIT,(struct sockaddr *)&addr, &addrlen)) < 0) {
-      if(errno == EAGAIN){
+    printf("addr sin port wait %d\n", addr.sin_port);
+    if ((recvfrom(sockfd, &pkt, sizeof(pkt), MSG_DONTWAIT,
+                  (struct sockaddr *)&addr, &addrlen)) < 0) {
+      if (errno == EAGAIN) {
 
-      }else{
+      } else {
         perror("errore in recvfrom");
         exit(-1);
-    }
       }
-    printf("finbit %d PL: %s",pkt.finbit,pkt.pl);
+    }
+    printf("finbit %d PL: %s", pkt.finbit, pkt.pl);
     fflush(stdout);
     if (pkt.finbit == 3 && !strcmp(pkt.pl, "Close")) {
       printf("Client : Server close connection\n");
@@ -670,7 +671,7 @@ void req() {
       fflush(stdout);
       addr.sin_port = htons(temp); // assegna la porta presa dal server
     }
-    printf("finbit %d PL: %s",pkt.finbit,pkt.pl);
+    printf("finbit %d PL: %s", pkt.finbit, pkt.pl);
     fflush(stdout);
     // gestisco il caso in cui il client inserisce un numero diverso da quello
     // desiderato
@@ -678,9 +679,9 @@ void req() {
       t++;
       printf("\nInserire numero:\nget = 0\nlist = 1\nput = 2\nexit = -1\n");
       if (fscanf(stdin, "%d", &a) == EOF) {
-      perror("Error fscanf");
-      exit(1);
-    }
+        perror("Error fscanf");
+        exit(1);
+      }
       fflush(stdout);
       if (t > 5) {
         exit(1);
@@ -758,8 +759,8 @@ Sigfunc *signal(int signum, Sigfunc *func) {
 
   act.sa_handler = func;
   sigemptyset(&act.sa_mask); /* non occorre bloccare nessun altro segnale */
-    act.sa_flags |= SA_RESTART;  
-    if (sigaction(signum, &act, &oact) < 0)
+  act.sa_flags |= SA_RESTART;
+  if (sigaction(signum, &act, &oact) < 0)
     return (SIG_ERR);
   return (oact.sa_handler);
 }

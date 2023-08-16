@@ -48,7 +48,7 @@ socklen_t addrlen = sizeof(struct sockaddr_in);
 bool rit = false;
 int num = 0;
 bool w = false;
-int fast_rit=0;
+int fast_rit = 0;
 // implementa il controllo di segnali per gestire i thread
 typedef void Sigfunc(int);
 
@@ -61,47 +61,51 @@ struct st_pkt {
 };
 // array per mantenere i pkt
 struct st_pkt *retr;
-void *mretr(){
-  bool s=true;
-  while(s){
-  usleep(timeout);
-  if(w){
-  w=false;
-  rit=true;
-  printf("MRETR\n\n");
-  fflush(stdout);
-  struct st_pkt pkt;
-  int k;
-  if (CongWin > 1) {
-    CongWin= CongWin >> 1;
-  }
-  swnd = 0;
-  k = lt_ack_rcvd;
-  printf("k = %d seqnum = %d \n", k, seqnum);
-  fflush(stdout);
-  //  implemento la ritrasmissione di tutti i pkt dopo lt_ack_rcvd
-
-  while (k < seqnum) {
-    while (swnd < CongWin && swnd < lt_rwnd && k < seqnum) {
-      printf("MRETR : send pkt %d k = %d swnd %d Conwing %d seqnum %d lt_rwnd %d \n", retr[k].ack, k, swnd, CongWin, seqnum,lt_rwnd);
+void *mretr() {
+  bool s = true;
+  while (s) {
+    usleep(timeout);
+    if (w) {
+      w = false;
+      rit = true;
+      printf("MRETR\n\n");
       fflush(stdout);
-      if ((sendto(fd, &retr[k], sizeof(pkt), 0, (struct sockaddr *)&addr,
-                  addrlen)) < 0) {
-        perror("errore in sendto");
-        exit(1);
+      struct st_pkt pkt;
+      int k;
+      if (CongWin > 1) {
+        CongWin = CongWin >> 1;
       }
-      swnd++;
-      msgRitr++;
-      k++;
+      swnd = 0;
+      k = lt_ack_rcvd;
+      printf("k = %d seqnum = %d \n", k, seqnum);
+      fflush(stdout);
+      //  implemento la ritrasmissione di tutti i pkt dopo lt_ack_rcvd
+
+      while (k < seqnum) {
+        sleep(1);
+        puts("ciuao");
+        while (swnd < CongWin && swnd < lt_rwnd && k < seqnum) {
+          printf("MRETR : send pkt %d k = %d swnd %d Conwing %d seqnum %d "
+                 "lt_rwnd %d \n",
+                 retr[k].ack, k, swnd, CongWin, seqnum, lt_rwnd);
+          fflush(stdout);
+          if ((sendto(fd, &retr[k], sizeof(pkt), 0, (struct sockaddr *)&addr,
+                      addrlen)) < 0) {
+            perror("errore in sendto");
+            exit(1);
+          }
+          swnd++;
+          msgRitr++;
+          k++;
+        }
+      }
+      if (k == dim) {
+        s = false; // prova poi si cambia
+      }
+      printf("swnd value %d \n", swnd);
+      fflush(stdout);
+      rit = false;
     }
-  }
-  if(k==dim){
-    s=false;//prova poi si cambia 
-  }
-  printf("swnd value %d \n", swnd);
-  fflush(stdout);
-  rit = false;
-  }
   }
 }
 
@@ -116,7 +120,7 @@ void *rcv_cong(void *sd) {
   lt_ack_rcvd = 0;
   // Wait until timeout or data received.
   bool stay = true;
-   if (pthread_create(&thread_id, NULL,mretr, NULL) != 0) {
+  if (pthread_create(&thread_id, NULL, mretr, NULL) != 0) {
     perror("error pthread_create");
     exit(1);
   }
@@ -132,19 +136,19 @@ void *rcv_cong(void *sd) {
     }
     printf("RCV_CONG : rcvd ack %d lt_rcvd %d\n", pkt.ack, lt_ack_rcvd);
     if (pkt.ack > lt_ack_rcvd) {
-      w=false;
+      w = false;
       printf("timer pkt %d\n", pkt.ack + 1);
       num = pkt.ack + 1;
-       lt_ack_rcvd = pkt.ack;
+      lt_ack_rcvd = pkt.ack;
       fflush(stdout);
       // ogni volta che ricevo un ack nuovo avvio il timer
       CongWin++;
-      swnd = seqnum - lt_ack_rcvd;
+      swnd = seqnum-lt_ack_rcvd;
       lt_rwnd = pkt.rwnd;
       // puts("CIAO1");
       // se è un ack nuovo entro qui
       //  se non ho errore allora leggo e vedo l ack che il receiver mi invia
-     if (!strcmp(pkt.pl, "slow")) {
+      /*if (!strcmp(pkt.pl, "slow")) {
         printf("\nSLOW RCVD\n");
         fflush(stdout);
         bytes_psecond = 100;
@@ -160,7 +164,7 @@ void *rcv_cong(void *sd) {
           perror("Error setsockopt");
           exit(1);
         }
-      }
+      }*/
       // puts("CIAO");
       if (pkt.finbit == 1 && pkt.ack == seqnum) {
         printf("Server : Client disconesso  correttamente \n");
@@ -168,10 +172,10 @@ void *rcv_cong(void *sd) {
         stay = false;
         return NULL;
       }
-    }else{
-      w=true;
+    } else {
+      w = true;
     }
-  }  // aspetto la terminazione del thread che legge
+  } // aspetto la terminazione del thread che legge
   if (pthread_join(thread_id, NULL) != 0) {
     perror("Error pthread_join");
     exit(1);
@@ -237,26 +241,28 @@ void send_get(char *str, int sockfd) {
           msgPerso++;
           msgTot++;
           // Il messaggio è stato perso
-          printf(" LOST :: ACK = %d  swnd = %d CongWin = %d  lt_rwnd = %d\n", pkt.ack, swnd, CongWin, lt_rwnd);
+          printf(" LOST :: ACK = %d  swnd = %d CongWin = %d  lt_rwnd = %d\n",
+                 pkt.ack, swnd, CongWin, lt_rwnd);
         } else {
           // Trasmetto con successo
-             if (lt_ack_rcvd < seqnum - 5) {
-               // rallento flow control
-               bytes_psecond = 10;
-               if (setsockopt(sockfd, SOL_SOCKET, SO_MAX_PACING_RATE,
-                              &bytes_psecond, sizeof(bytes_psecond)) < 0) {
-                 perror("Error setsockopt");
-                 exit(1);
-               }
-             }else {
-               bytes_psecond = 100;
-               if (setsockopt(sockfd, SOL_SOCKET, SO_MAX_PACING_RATE,
-                              &bytes_psecond, sizeof(bytes_psecond)) < 0) {
-                 perror("Error setsockopt");
-                 exit(1);
-               }
-             }
-          printf("SEND_GET :: ACK = %d  swnd = %d CongWin = %d  lt_rwnd = %d\n",pkt.ack, swnd, CongWin, lt_rwnd);
+          if (lt_ack_rcvd < seqnum - 5) {
+            // rallento flow control
+            bytes_psecond = 10;
+            if (setsockopt(sockfd, SOL_SOCKET, SO_MAX_PACING_RATE,
+                           &bytes_psecond, sizeof(bytes_psecond)) < 0) {
+              perror("Error setsockopt");
+              exit(1);
+            }
+          } else {
+            bytes_psecond = 100;
+            if (setsockopt(sockfd, SOL_SOCKET, SO_MAX_PACING_RATE,
+                           &bytes_psecond, sizeof(bytes_psecond)) < 0) {
+              perror("Error setsockopt");
+              exit(1);
+            }
+          }
+          printf("SEND_GET :: ACK = %d  swnd = %d CongWin = %d  lt_rwnd = %d\n",
+                 pkt.ack, swnd, CongWin, lt_rwnd);
           fflush(stdout);
           if ((sendto(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,
                       addrlen)) < 0) {
@@ -267,8 +273,8 @@ void send_get(char *str, int sockfd) {
           msgTot++;
         }
         // la lettura la fa il thread cosi non mi blocco io main thread
-      }else if (feof(file)) {
-        while(lt_ack_rcvd != seqnum){
+      } else if (feof(file)) {
+        while (lt_ack_rcvd != seqnum) {
         }
         printf("fine file\n");
         fflush(stdout);
@@ -298,7 +304,7 @@ void send_get(char *str, int sockfd) {
           msgInviati++;
           msgTot++;
         }
-      }else if (ferror(file)) {
+      } else if (ferror(file)) {
         perror("Error fread ");
         exit(1);
       }
@@ -313,6 +319,7 @@ void send_get(char *str, int sockfd) {
   printf("\nMSG PERSI %d\n", msgPerso);
   printf("\nMSG INVIATI %d\n", msgInviati);
   printf("\n Dim CongWin finale %d\n", CongWin);
+  printf("\n Swnd finale : %d\n",swnd);
   printf("\n PROB DI SCARTARE UN MSG %f\n", p);
   fflush(stdout);
   free(retr);
@@ -617,20 +624,21 @@ void send_control(int sockfd, int my_number) {
   FD_ZERO(&fds);
   FD_SET(sockfd, &fds);
   tv.tv_usec = 0; // ms waiting
-  tv.tv_sec = 10; // s waiting
+  tv.tv_sec = 30; // s waiting
   n = select(sizeof(fds) * 8, &fds, NULL, NULL, &tv);
   if (n == 0) {
     printf("Server : Client non risponde\n");
     fflush(stdout);
-      // specifico al client che ho chiuso la connessione
-  pkt.finbit = 3;
-  strcpy(pkt.pl, "Close");
-  printf("Send finbit %d PL %s\n",pkt.finbit,pkt.pl);
-  if ((sendto(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,addrlen)) < 0) {
-          perror("errore in sendto");
-          exit(1);
-        }
-  }else if (n == -1) {
+    // specifico al client che ho chiuso la connessione
+    pkt.finbit = 3;
+    strcpy(pkt.pl, "Close");
+    printf("Send finbit %d PL %s\n", pkt.finbit, pkt.pl);
+    if ((sendto(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,
+                addrlen)) < 0) {
+      perror("errore in sendto");
+      exit(1);
+    }
+  } else if (n == -1) {
     perror("Error send_control select");
     exit(1);
   } else if (n != 0 && n != -1) {
@@ -639,7 +647,7 @@ void send_control(int sockfd, int my_number) {
       perror("errore in recvfrom");
       exit(-1);
     }
-       printf("SEND_CONTROL ::\n");
+    printf("SEND_CONTROL ::\n");
     fflush(stdout);
     while (pkt.pl[i] != ' ') {
       i++;
@@ -735,7 +743,8 @@ void send_control(int sockfd, int my_number) {
     }
   }
   stop[my_number - 1] = false;
-  printf("\nWait for next request my_number ind %d my bool value %d \n", my_number - 1,stop[my_number-1]);
+  printf("\nWait for next request my_number ind %d my bool value %d \n",
+         my_number - 1, stop[my_number - 1]);
   fflush(stdout);
 }
 
@@ -754,8 +763,8 @@ void child_main(int k) {
   fd = listenfd;
   memset((void *)&addr, 0, sizeof(addr));
   addr.sin_family = AF_INET;
-  addr.sin_addr.s_addr = htonl(INADDR_ANY); /* il server accetta pacchetti su una qualunque delle
-                            sue interfacce di rete */
+  addr.sin_addr.s_addr = htonl(INADDR_ANY); /* il server accetta pacchetti su
+                            una qualunque delle sue interfacce di rete */
   addr.sin_port = htons(n_port); /* numero di porta data dal server la uso per
   accettare una richiesta
 
@@ -918,8 +927,8 @@ int main(int argc, char **argv) {
           stop[i] = true;
           printf(" i = %d value bool = %d\n", i, stop[i]);
           printf("Server: invio pkt di go port number %d \n ", pkt.ack);
-          if ((sendto(listenfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addrmain,
-                      addrlen)) < 0) {
+          if ((sendto(listenfd, &pkt, sizeof(pkt), 0,
+                      (struct sockaddr *)&addrmain, addrlen)) < 0) {
             perror("errore in sendto");
             exit(1);
           }
