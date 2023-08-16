@@ -60,7 +60,7 @@ int port_number(int sockfd) {
   pkt.pl[0] = '\0';
   pkt.ack = 0;
   bool rcv_winy = true;
-  printf("Invio pkt port\n");
+  printf("Port_number : send request to Server\n");
   fflush(stdout);
   if (sendto(sockfd, &pkt, sizeof(pkt), 0, (struct addr *)&addr, addrlen) < 0) {
     perror("errore in sendto");
@@ -72,8 +72,6 @@ int port_number(int sockfd) {
       perror("errore in recvfrom");
       exit(1);
     }
-    printf("ack rcvd %d\n", pkt.ack);
-    fflush(stdout);
   }
   printf("Client : pl %s port number %d\n", pkt.pl, pkt.ack);
   fflush(stdout);
@@ -84,8 +82,7 @@ int port_number(int sockfd) {
     while (rcv_winy) {
       sleep(1);
       pkt.finbit = 2;
-      if (temp ==
-          5) { // dopo 5 volte di fila che provo a connettermi aspetto un bel po
+      if (temp == 5) { // dopo 5 volte di fila che provo a connettermi esco
         printf("Client : Impossibile connettersi con il Server attualmente \n");
         exit(1);
       }
@@ -139,7 +136,7 @@ void rcv_get(char *file) {
       perror("errore in recvfrom");
       exit(1);
     }
-    // printf("ack rcvd  %d\n\n ",pkt.ack);
+    printf("ack rcvd  %d\n\n ",pkt.ack);
     //  se mi arriva un ack che ho già salvato non lo mantengo nell'array
     //  finbit == 1 allora chiudo la connessione
     if (pkt.finbit == 1 && pkt.ack == n) {
@@ -645,27 +642,8 @@ void req() {
     if (loop) {
       break;
     }
-    if ((recvfrom(sockfd, &pkt, sizeof(pkt), MSG_DONTWAIT,
-                  (struct sockaddr *)&addr, &addrlen)) < 0) {
-      if (errno == EAGAIN) {
-
-      } else {
-        perror("errore in recvfrom");
-        exit(-1);
-      }
-    }
-    if (pkt.finbit == 3 && !strcmp(pkt.pl, "Close")) {
-      printf("Client : Server close connection   \n");
-      temp = port_number(sockfd);
-      printf("port number %d\n", temp);
-      fflush(stdout);
-      addr.sin_port = htons(temp); // assegna la porta presa dal server
-    } else {
-      temp = port_number(sockfd);
-      printf("port number %d\n", temp);
-      fflush(stdout);
-      addr.sin_port = htons(temp); // assegna la porta presa dal server
-    }
+    temp = port_number(sockfd);
+    addr.sin_port = htons(temp); // assegna la porta presa dal server
     printf("\nInserire numero:\nget = 0\nlist = 1\nput = 2\nexit = -1\n");
     if (fscanf(stdin, "%d", &a) == EOF) {
       perror("Error fscanf");
@@ -674,31 +652,35 @@ void req() {
     if (a == -1) { // chiudo subito senza che invio il pkt al server
       return;
     }
-    // modificare la porta della sockfd
-    addr.sin_port = htons(SERV_PORT);
-    if ((recvfrom(sockfd, &pkt, sizeof(pkt), MSG_DONTWAIT,
-                  (struct sockaddr *)&addr, &addrlen)) < 0) {
-      if (errno == EAGAIN) {
-      } else {
+    printf("addr sin port wait %d\n",addr.sin_port);
+    if ((recvfrom(sockfd, &pkt, sizeof(pkt), MSG_DONTWAIT,(struct sockaddr *)&addr, &addrlen)) < 0) {
+      if(errno == EAGAIN){
+
+      }else{
         perror("errore in recvfrom");
         exit(-1);
-      }
     }
+      }
+    printf("finbit %d PL: %s",pkt.finbit,pkt.pl);
+    fflush(stdout);
     if (pkt.finbit == 3 && !strcmp(pkt.pl, "Close")) {
-      printf("Client : Server close connection last retry  \n");
+      printf("Client : Server close connection\n");
       temp = port_number(sockfd);
       printf("port number %d\n", temp);
       fflush(stdout);
       addr.sin_port = htons(temp); // assegna la porta presa dal server
-    } else {
-      addr.sin_port = htons(temp);
     }
+    printf("finbit %d PL: %s",pkt.finbit,pkt.pl);
+    fflush(stdout);
     // gestisco il caso in cui il client inserisce un numero diverso da quello
     // desiderato
     while (a != 0 && a != 1 && a != 2 && a != -1) {
       t++;
       printf("\nInserire numero:\nget = 0\nlist = 1\nput = 2\nexit = -1\n");
-      fscanf(stdin, "%d", &a);
+      if (fscanf(stdin, "%d", &a) == EOF) {
+      perror("Error fscanf");
+      exit(1);
+    }
       fflush(stdout);
       if (t > 5) {
         exit(1);
