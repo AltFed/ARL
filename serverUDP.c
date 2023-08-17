@@ -61,7 +61,6 @@ struct st_pkt *retr;
 void *mretr() {
   s = true;
   while (s) {
-    usleep(timeout);
     if (w) {
       w = false;
       rit = true;
@@ -112,6 +111,12 @@ void *rcv_cong(void *sd) {
   int temp = 0, n;
   lt_ack_rcvd = 0;
 
+  struct itimerval timer;
+  timer.it_interval.tv_usec = 0;
+  timer.it_interval.tv_sec = 0;
+  timer.it_value.tv_sec = 0;
+
+
   // Wait until timeout or data received.
   bool stay = true;
   if (pthread_create(&thread_id, NULL, mretr, NULL) != 0) {
@@ -132,10 +137,12 @@ void *rcv_cong(void *sd) {
            swnd);
 
     if (pkt.ack > lt_ack_rcvd) {
-      while(rit){
-      
-      }
-      w = false;
+      timer.it_value.tv_usec = timeout;
+      setitimer(ITIMER_REAL, &timer, NULL);
+
+      // ogni volta che ricevo un ack nuovo avvio il timer
+      printf("timer avviato : %ld\n", timer.it_value.tv_usec);
+      // INSERIRE RESET TIMER A TIMEOUT COSI CHE QUANDO RICEVO ACK RIAVVIO TIMER 
       printf("timer pkt %d\n", pkt.ack + 1);
       num = pkt.ack + 1;
       lt_ack_rcvd = pkt.ack;
@@ -163,6 +170,9 @@ void *rcv_cong(void *sd) {
         }
       }*/
       if (pkt.finbit == 1 && pkt.ack == seqnum) {
+        timer.it_value.tv_usec = 0;
+        setitimer(ITIMER_REAL, &timer, NULL); // quit timer
+        
         printf("Server : Client disconesso  correttamente \n");
         fflush(stdout);
         stay = false;
