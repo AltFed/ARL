@@ -31,7 +31,6 @@ int lt_ack_rcvd = 0;
 int lt_rwnd = 1;
 int swnd = 0;
 int CongWin = 1;
-bool problem;
 double p = 0;
 int dim = 10;
 int free_dim = 0;
@@ -43,15 +42,12 @@ int SERV_PORT;
 int nchildren;
 pid_t *pids;
 struct sockaddr_in addr;
-struct sockaddr_in addrmain;
 socklen_t addrlen = sizeof(struct sockaddr_in);
 bool rit = false;
 int num = 0;
 bool w = false;
-int fast_rit = 0;
 // implementa il controllo di segnali per gestire i thread
 typedef void Sigfunc(int);
-
 // pkt struct
 struct st_pkt {
   int ack;
@@ -80,14 +76,9 @@ void *mretr() {
       printf("k = %d seqnum = %d \n", k, seqnum);
       fflush(stdout);
       //  implemento la ritrasmissione di tutti i pkt dopo lt_ack_rcvd
-
       while (k < seqnum) {
-        sleep(1);
-        puts("ciuao");
         while (swnd < CongWin && swnd < lt_rwnd && k < seqnum) {
-          printf("MRETR : send pkt %d k = %d swnd %d Conwing %d seqnum %d "
-                 "lt_rwnd %d \n",
-                 retr[k].ack, k, swnd, CongWin, seqnum, lt_rwnd);
+          printf("MRETR : send pkt %d k = %d swnd %d Conwing %d seqnum %d lt_rwnd %d \n",retr[k].ack, k, swnd, CongWin, seqnum, lt_rwnd);
           fflush(stdout);
           if ((sendto(fd, &retr[k], sizeof(pkt), 0, (struct sockaddr *)&addr,
                       addrlen)) < 0) {
@@ -108,7 +99,6 @@ void *mretr() {
     }
   }
 }
-
 // thread per la gestione del ack cum
 void *rcv_cong(void *sd) {
   int sockfd = sd;
@@ -125,7 +115,6 @@ void *rcv_cong(void *sd) {
     exit(1);
   }
   while (stay) {
-    // puts("prima");
   rcv:
     if (recvfrom(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,
                  &addrlen) < 0) {
@@ -143,9 +132,8 @@ void *rcv_cong(void *sd) {
       fflush(stdout);
       // ogni volta che ricevo un ack nuovo avvio il timer
       CongWin++;
-      swnd = seqnum-lt_ack_rcvd;
+      swnd = seqnum-lt_ack_rcvd;//da rivedere 
       lt_rwnd = pkt.rwnd;
-      // puts("CIAO1");
       // se è un ack nuovo entro qui
       //  se non ho errore allora leggo e vedo l ack che il receiver mi invia
       /*if (!strcmp(pkt.pl, "slow")) {
@@ -165,14 +153,13 @@ void *rcv_cong(void *sd) {
           exit(1);
         }
       }*/
-      // puts("CIAO");
       if (pkt.finbit == 1 && pkt.ack == seqnum) {
         printf("Server : Client disconesso  correttamente \n");
         fflush(stdout);
         stay = false;
         return NULL;
       }
-    } else {
+    }else{
       w = true;
     }
   } // aspetto la terminazione del thread che legge
@@ -241,8 +228,7 @@ void send_get(char *str, int sockfd) {
           msgPerso++;
           msgTot++;
           // Il messaggio è stato perso
-          printf(" LOST :: ACK = %d  swnd = %d CongWin = %d  lt_rwnd = %d\n",
-                 pkt.ack, swnd, CongWin, lt_rwnd);
+          printf(" LOST :: ACK = %d  swnd = %d CongWin = %d  lt_rwnd = %d\n",pkt.ack, swnd, CongWin, lt_rwnd);
         } else {
           // Trasmetto con successo
           if (lt_ack_rcvd < seqnum - 5) {
@@ -253,7 +239,7 @@ void send_get(char *str, int sockfd) {
               perror("Error setsockopt");
               exit(1);
             }
-          } else {
+          }else{
             bytes_psecond = 100;
             if (setsockopt(sockfd, SOL_SOCKET, SO_MAX_PACING_RATE,
                            &bytes_psecond, sizeof(bytes_psecond)) < 0) {
@@ -261,11 +247,9 @@ void send_get(char *str, int sockfd) {
               exit(1);
             }
           }
-          printf("SEND_GET :: ACK = %d  swnd = %d CongWin = %d  lt_rwnd = %d\n",
-                 pkt.ack, swnd, CongWin, lt_rwnd);
+          printf("SEND_GET :: ACK = %d  swnd = %d CongWin = %d  lt_rwnd = %d\n",pkt.ack, swnd, CongWin, lt_rwnd);
           fflush(stdout);
-          if ((sendto(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,
-                      addrlen)) < 0) {
+          if ((sendto(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,addrlen)) < 0) {
             perror("errore in sendto");
             exit(1);
           }
@@ -275,6 +259,7 @@ void send_get(char *str, int sockfd) {
         // la lettura la fa il thread cosi non mi blocco io main thread
       } else if (feof(file)) {
         while (lt_ack_rcvd != seqnum) {
+
         }
         printf("fine file\n");
         fflush(stdout);
@@ -326,7 +311,7 @@ void send_get(char *str, int sockfd) {
   fclose(file);
 }
 // gestice nello specifico il comando put
-void rcv_put(char *file, int sockfd) {
+void rcv_put(char *file, int sockfd){
   dim = 100;
   free_dim = dim;
   struct st_pkt pkt;
@@ -340,7 +325,6 @@ void rcv_put(char *file, int sockfd) {
   // creo il file se già esiste lo cancello tanto voglio quello aggiornato
   int n = 0, i = 0, maxseqnum = 0;
   bool stay = true, different = false;
-
   if ((fptr = fopen(file, "w+")) == NULL) {
     perror("Error opening file");
     exit(1);
@@ -355,7 +339,6 @@ void rcv_put(char *file, int sockfd) {
       perror("errore in recvfrom");
       exit(1);
     }
-    // printf("ack rcvd  %d\n\n ",pkt.ack);
     //  se mi arriva un ack che ho già salvato non lo mantengo nell'array
     //  finbit == 1 allora chiudo la connessione
     if (pkt.finbit == 1 && pkt.ack == n) {
@@ -375,8 +358,7 @@ void rcv_put(char *file, int sockfd) {
       // printf("\nACK --> %d N %d\n", pkt.ack,n);
       fflush(stdout);
 
-      if (sendto(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,
-                 addrlen) < 0) {
+      if (sendto(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,addrlen) < 0) {
         perror("errore in sendto");
         exit(1);
       }
@@ -413,8 +395,7 @@ void rcv_put(char *file, int sockfd) {
         pkt.rwnd = dim; // scrivo tutto sul file allora mando come nuova rwnd la
                         // dim(il server rallenta la send)
       }
-      if (sendto(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,
-                 addrlen) < 0) {
+      if (sendto(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,addrlen) < 0) {
         perror("errore in sendto");
         exit(1);
       }
@@ -433,7 +414,7 @@ void rcv_put(char *file, int sockfd) {
     }
     // se arriva un pkt fuori ordine invio subito ack non faccio la
     // bufferizzazione lato rcv
-    else if (stay == true && pkt.ack != n) {
+    else if (stay == true && pkt.ack != n){
       // non incremento n pongo diff = true
       different = true;
       // invio al sender un ack comulativo fino a dove ho ricevuto
@@ -451,7 +432,6 @@ void rcv_put(char *file, int sockfd) {
   fclose(fptr);
   free(retr);
 }
-
 // gestice nello specifico il comando list
 void send_list(int sockfd) {
   seqnum = 0;
@@ -464,14 +444,12 @@ void send_list(int sockfd) {
   DIR *directory;
   struct dirent *file;
   bool stay = true;
-  int i = 0, msgInviati = 0, msgPerso = 0, msgTot = 0, dimpl = 0, k = 0,
-      temp = 0;
+  int i = 0, msgInviati = 0, msgPerso = 0, msgTot = 0, dimpl = 0, k = 0,temp = 0;
   double prob = 0;
   int y = 10;
   pthread_t thread_id;
   char **nomi = malloc(sizeof(char *) * y);
   int c = 1;
-
   if ((retr = malloc(sizeof(struct st_pkt) * dim)) == NULL) {
     perror("Error malloc");
     exit(1);
@@ -487,7 +465,6 @@ void send_list(int sockfd) {
   }
   // Apertura della cartella
   directory = opendir("Server_Files");
-
   // Verifico se la cartella è stata aperta correttamente
   if (directory == NULL) {
     printf("Impossibile aprire la cartella.\n");
@@ -520,28 +497,26 @@ void send_list(int sockfd) {
     fflush(stdout);
   }
   if (c == 1) {
+
     puts("nessun file nella dir\n");
 
     pkt.ack = -1;
+
     strcpy(pkt.pl, "nessun file in dir");
+
     if ((sendto(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,
                 addrlen)) < 0) {
       perror("errore in sendto");
       exit(1);
     }
-
     return;
   }
   while (stay) {
     if (lt_ack_rcvd == seqnum && stay == true && !rit) {
       // Lettura dei file all'interno della cartella
-
-      while (c > 0 && swnd < CongWin && stay == true && swnd < lt_rwnd &&
-             !rit) {
+      while (c > 0 && swnd < CongWin && stay == true && swnd < lt_rwnd && !rit) {
         // memorizzo i nomi
-        printf("c value %d , swnd = %d , Congwin= %d,lt_rwnd %d  stay = %d rit "
-               "=%d \n",
-               c, swnd, CongWin, lt_rwnd, stay, rit);
+        printf("c value %d , swnd = %d , Congwin= %d lt_rwnd %d  stay = %d rit =%d \n",c, swnd, CongWin, lt_rwnd, stay, rit);
         fflush(stdout);
         temp = strlen(nomi[c - 1]);
         strncpy(pkt.pl, nomi[c - 1], temp);
@@ -561,8 +536,7 @@ void send_list(int sockfd) {
           msgPerso++;
           msgTot++;
         } else {
-          if ((sendto(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,
-                      addrlen)) < 0) {
+          if ((sendto(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,addrlen)) < 0) {
             perror("errore in sendto");
             exit(1);
           }
@@ -589,8 +563,7 @@ void send_list(int sockfd) {
           msgPerso++;
           msgTot++;
         } else {
-          if ((sendto(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,
-                      addrlen)) < 0) {
+          if ((sendto(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,addrlen)) < 0) {
             perror("errore in sendto");
             exit(1);
           }
@@ -612,7 +585,7 @@ void send_list(int sockfd) {
   free(retr);
 }
 // gestisce il comando che il client richiede
-void send_control(int sockfd, int my_number) {
+void send_control(int sockfd, int my_number){
   int i = 0, n = 0;
   bool stay = true;
   char cd[100];
@@ -624,7 +597,7 @@ void send_control(int sockfd, int my_number) {
   FD_ZERO(&fds);
   FD_SET(sockfd, &fds);
   tv.tv_usec = 0; // ms waiting
-  tv.tv_sec = 30; // s waiting
+  tv.tv_sec = 15; // s waiting
   n = select(sizeof(fds) * 8, &fds, NULL, NULL, &tv);
   if (n == 0) {
     printf("Server : Client non risponde\n");
@@ -642,8 +615,7 @@ void send_control(int sockfd, int my_number) {
     perror("Error send_control select");
     exit(1);
   } else if (n != 0 && n != -1) {
-    if ((recvfrom(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,
-                  &addrlen)) < 0) {
+    if ((recvfrom(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,&addrlen)) < 0) {
       perror("errore in recvfrom");
       exit(-1);
     }
@@ -655,12 +627,9 @@ void send_control(int sockfd, int my_number) {
     strncpy(cd, pkt.pl, i);
     // +1 perchè non voglio lo spazio
     strcpy(name, pkt.pl + i + 1);
-
     printf(" Server : Msg ricevuto %s\n", pkt.pl);
     fflush(stdout);
-    /* ---------------------- gestisco caso get *
-     * ----------------------------------------------*/
-
+    /* ---------------------- gestisco caso get  ----------------------------------------------*/
     if (!strcmp("get", cd)) {
       bool found = false;
       DIR *dir;
@@ -711,10 +680,8 @@ void send_control(int sockfd, int my_number) {
       closedir(dir);
       // continue;
     }
-
     /* ---------------------------------- gestisco caso *
      * list------------------------------------------------*/
-
     if (!strcmp("list", cd)) {
       strcpy(pkt.pl, "List in esecuzione \n");
       pkt.ack = 0;
@@ -726,7 +693,6 @@ void send_control(int sockfd, int my_number) {
       }
       send_list(sockfd);
     }
-
     /* ------------------------ gestisco caso put *
      * --------------------------------------*/
     if (!strcmp("put", cd)) {
@@ -747,7 +713,6 @@ void send_control(int sockfd, int my_number) {
          my_number - 1, stop[my_number - 1]);
   fflush(stdout);
 }
-
 void child_main(int k) {
   int listenfd;
   int n_port = SERV_PORT + k;
@@ -807,9 +772,7 @@ void sig_int(int signo) {
     printf("\nkill child %d\n", pids[i]);
     kill(pids[i], SIGTERM);
   }
-  while (wait(NULL) > 0)
-    ; /* wait for all children */
-
+  while (wait(NULL) > 0); /* wait for all children */
   if (errno != ECHILD) {
     fprintf(stderr, "errore in wait");
     exit(1);
@@ -831,8 +794,7 @@ int main(int argc, char **argv) {
   printf("\nSERV_PORT inserito %d\n", SERV_PORT);
   printf("\nNumero childs %d\n ", nchildren);
   printf("\ntimeout in usec %d\n", timeout);
-  stop = (bool *)mmap(NULL, sizeof(_Bool) * 25, PROT_READ | PROT_WRITE,
-                      MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+  stop = (bool *)mmap(NULL, sizeof(_Bool) * 25, PROT_READ | PROT_WRITE,MAP_SHARED | MAP_ANONYMOUS, -1, 0);
   // creo un array di booleani per tenere traccia se il processo figlio è in
   // ascolto nella socket o è occupato
   int u = 0, n = 0;
@@ -847,7 +809,6 @@ int main(int argc, char **argv) {
       exit(1);
     }
   }
-
   u = 0;
   if (SERV_PORT < 255) {
     char temp[100];
@@ -862,26 +823,20 @@ int main(int argc, char **argv) {
   int listenfd;
   struct st_pkt pkt;
   void sig_int(int);
-
   if ((listenfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) { /* crea il socket */
     perror("errore in socket");
     exit(1);
   }
-  memset((void *)&addrmain, 0, sizeof(addrmain));
   addrmain.sin_family = AF_INET;
-  addrmain.sin_addr.s_addr =
-      htonl(INADDR_ANY); /* il server accetta pacchetti su una qualunque delle
+  addrmain.sin_addr.s_addr = htonl(INADDR_ANY); /* il server accetta pacchetti su una qualunque delle
                             sue interfacce di rete */
   addrmain.sin_port = htons(SERV_PORT); /* numero di porta del server la uso per
   accettare una richiesta
-
   /* assegna l'indirizzo al socket */
   if (bind(listenfd, (struct sockaddr *)&addrmain, sizeof(addrmain)) < 0) {
     perror("errore in bind");
     exit(1);
   }
-  ////////////////////////////////
-  /////////////////////////////////
   // implemento la logica della prefork con file locking
   // qui alloco un area di memoria per mantenere i pid dei child
   pids = (pid_t *)calloc(nchildren, sizeof(pid_t));
@@ -889,36 +844,32 @@ int main(int argc, char **argv) {
     fprintf(stderr, "errore in calloc");
     exit(1);
   }
-
-  for (int i = 0; i < nchildren; i++) {
+  for (int i = 0; i < nchildren; i++){
     // inserisco nell array pids i pid dei figli che mi ritornano dalla
     // child_make
     // numero di porta che assegno ai child
     stop[i] = false;
     pids[i] = child_make(i + 1); /* parent returns */
   }
-  if (signal(SIGINT, sig_int) == SIG_ERR) {
+  if (signal(SIGINT, sig_int) == SIG_ERR){
     fprintf(stderr, "errore in signal INT ");
     exit(1);
   }
   system("mkdir Server_Files");
-  while (1) {
+  while (1){
     fflush(stdout);
-    if ((recvfrom(listenfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addrmain,
-                  &addrlen)) < 0) {
+    if ((recvfrom(listenfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addrmain,&addrlen)) < 0) {
       perror("errore in recvfrom");
       exit(1);
     }
     printf("main rcvd pkt finbit %d \n", pkt.finbit);
     fflush(stdout);
-
-    if (pkt.finbit == 2) {
+    if (pkt.finbit == 2){
       e = true; // serve per associare un solo child ad un solo client
       n = 0;
-      for (int i = 0; i < nchildren; i++) {
-
+      for (int i = 0; i < nchildren; i++){
         fflush(stdout);
-        if (!stop[i] && e) {
+        if (!stop[i] && e){
           n = 1;
           e = false;
           pkt.ack = SERV_PORT + i + 1;
@@ -934,7 +885,7 @@ int main(int argc, char **argv) {
           }
         }
       }
-    } else {
+    }else{
       printf("\nerrore di connessione\n");
       exit(1);
     }
@@ -945,8 +896,7 @@ int main(int argc, char **argv) {
       fflush(stdout);
       sprintf(pkt.pl, "wait");
       pkt.pl[4] = '\0';
-      if ((sendto(listenfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addrmain,
-                  addrlen)) < 0) {
+      if ((sendto(listenfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addrmain,addrlen)) < 0) {
         perror("errore in sendto");
         exit(1);
       }
