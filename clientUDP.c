@@ -490,6 +490,7 @@ void rcv_list() {
         perror("errore in sendto");
         exit(1);
       }
+      puts("ack sent");
       // se rcv_win è pieno stampo a schermo
       if (free_dim == 0) {
         k = 0;

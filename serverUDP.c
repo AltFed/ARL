@@ -69,7 +69,7 @@ void *mretr() {
       struct st_pkt pkt;
       int k;
       if (CongWin > 1) {
-        CongWin = CongWin - (CongWin/2);
+        CongWin = CongWin - (CongWin / 2);
       }
       swnd = 0;
       k = lt_ack_rcvd;
@@ -116,7 +116,6 @@ void *rcv_cong(void *sd) {
   timer.it_interval.tv_sec = 0;
   timer.it_value.tv_sec = 0;
 
-
   // Wait until timeout or data received.
   bool stay = true;
   if (pthread_create(&thread_id, NULL, mretr, NULL) != 0) {
@@ -142,13 +141,13 @@ void *rcv_cong(void *sd) {
 
       // ogni volta che ricevo un ack nuovo avvio il timer
       printf("timer avviato : %ld\n", timer.it_value.tv_usec);
-      // INSERIRE RESET TIMER A TIMEOUT COSI CHE QUANDO RICEVO ACK RIAVVIO TIMER 
+      // INSERIRE RESET TIMER A TIMEOUT COSI CHE QUANDO RICEVO ACK RIAVVIO TIMER
       printf("timer pkt %d\n", pkt.ack + 1);
       num = pkt.ack + 1;
       lt_ack_rcvd = pkt.ack;
       fflush(stdout);
       // ogni volta che ricevo un ack nuovo avvio il timer
-      CongWin  = CongWin + (CongWin/2);
+      CongWin = CongWin + (CongWin / 2);
       lt_rwnd = pkt.rwnd;
       // se è un ack nuovo entro qui
       //  se non ho errore allora leggo e vedo l ack che il receiver mi invia
@@ -172,14 +171,14 @@ void *rcv_cong(void *sd) {
       if (pkt.finbit == 1 && pkt.ack == seqnum) {
         timer.it_value.tv_usec = 0;
         setitimer(ITIMER_REAL, &timer, NULL); // quit timer
-        
+
         printf("Server : Client disconesso  correttamente \n");
         fflush(stdout);
         stay = false;
         return NULL;
       }
 
-    }else{
+    } else {
       w = true;
     }
   } // aspetto la terminazione del thread che legge
@@ -468,8 +467,8 @@ void send_list(int sockfd) {
   DIR *directory;
   struct dirent *file;
   bool stay = true;
-  int i = 0, msgInviati = 0, msgPerso = 0, msgTot = 0, dimpl = 0, k = 0,
-      temp = 0;
+  int i = 0, msgInviati = 0, msgPerso = 0, msgTot = 0, dimpl = 0, k = 0;
+  int temp;
   double prob = 0;
   int y = 10;
   pthread_t thread_id;
@@ -517,7 +516,7 @@ void send_list(int sockfd) {
   if (!file) {
     c--;
   }
-  for (int x = 0; x < (c - 1); x++) {
+  for (int x = 0; x < c; x++) {
     printf("----->>> %s\n", nomi[x]);
     fflush(stdout);
   }
@@ -546,9 +545,9 @@ void send_list(int sockfd) {
                "=%d \n",
                c, swnd, CongWin, lt_rwnd, stay, rit);
         fflush(stdout);
-        temp = strlen(nomi[c - 1]);
-        strncpy(pkt.pl, nomi[c - 1], temp);
-        printf("pkt.pl %s \n", nomi[c - 1]);
+        temp = strlen(nomi[c-1]);
+        strncpy(pkt.pl, nomi[c-1], temp);
+        printf("pkt.pl %s \n", nomi[c-1]);
         fflush(stdout);
         pkt.pl[temp] = '\0'; // risolvo il problema di scrivere sul buff pieno
         swnd++;
@@ -561,6 +560,7 @@ void send_list(int sockfd) {
         i = i % dim;
         prob = (double)rand() / RAND_MAX;
         if (prob < p) {
+          printf("LIST :: pkt lost");
           msgPerso++;
           msgTot++;
         } else {
@@ -569,6 +569,9 @@ void send_list(int sockfd) {
             perror("errore in sendto");
             exit(1);
           }
+          printf("SEND_LIST :: ACK = %d  swnd = %d CongWin = %d  lt_rwnd = %d\n",
+                 pkt.ack, swnd, CongWin, lt_rwnd);
+          fflush(stdout);
           msgInviati++;
           msgTot++;
         }
@@ -614,6 +617,7 @@ void send_list(int sockfd) {
   printf("Server : Chiudo la directory\n");
   free(retr);
 }
+
 // gestisce il comando che il client richiede
 void send_control(int sockfd, int my_number) {
   int i = 0, n = 0;
