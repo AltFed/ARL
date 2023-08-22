@@ -62,6 +62,7 @@ void *mretr() {
   s = true;
   while (s) {
     if (w) {
+     
       w = false;
       rit = true;
       printf("MRETR\n\n");
@@ -110,7 +111,6 @@ void *rcv_cong(void *sd) {
   pthread_t thread_id;
   int temp = 0, n;
   lt_ack_rcvd = 0;
-
   struct itimerval timer;
   timer.it_interval.tv_usec = 0;
   timer.it_interval.tv_sec = 0;
@@ -122,7 +122,13 @@ void *rcv_cong(void *sd) {
     perror("error pthread_create");
     exit(1);
   }
+  puts("rcv_cong alive");
+  timer.it_value.tv_usec = timeout;
+  setitimer(ITIMER_REAL, &timer, NULL);
+  puts("primo timer avviato");
+
   while (stay) {
+    
   rcv:
     if (recvfrom(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,
                  &addrlen) < 0) {
@@ -181,6 +187,7 @@ void *rcv_cong(void *sd) {
     } else {
       w = true;
     }
+  
   } // aspetto la terminazione del thread che legge
   if (pthread_join(thread_id, NULL) != 0) {
     perror("Error pthread_join");
@@ -463,12 +470,12 @@ void send_list(int sockfd) {
   CongWin = 1;
   lt_rwnd = 1;
   dim = 100;
+ 
   struct st_pkt pkt;
   DIR *directory;
   struct dirent *file;
   bool stay = true;
   int i = 0, msgInviati = 0, msgPerso = 0, msgTot = 0, dimpl = 0, k = 0;
-  int temp;
   double prob = 0;
   int y = 10;
   pthread_t thread_id;
@@ -487,6 +494,7 @@ void send_list(int sockfd) {
     perror("error pthread_create");
     exit(1);
   }
+  usleep(50);
   // Apertura della cartella
   directory = opendir("Server_Files");
   // Verifico se la cartella è stata aperta correttamente
@@ -535,6 +543,8 @@ void send_list(int sockfd) {
     }
     return;
   }
+  int temp = 0;
+
   while (stay) {
     if (lt_ack_rcvd == seqnum && stay == true && !rit) {
       // Lettura dei file all'interno della cartella
@@ -545,9 +555,9 @@ void send_list(int sockfd) {
                "=%d \n",
                c, swnd, CongWin, lt_rwnd, stay, rit);
         fflush(stdout);
-        temp = strlen(nomi[c-1]);
-        strncpy(pkt.pl, nomi[c-1], temp);
-        printf("pkt.pl %s \n", nomi[c-1]);
+        temp = strlen(nomi[c - 1]);
+        strncpy(pkt.pl, nomi[c - 1], temp);
+        printf("pkt.pl %s \n", nomi[c - 1]);
         fflush(stdout);
         pkt.pl[temp] = '\0'; // risolvo il problema di scrivere sul buff pieno
         swnd++;
@@ -558,9 +568,11 @@ void send_list(int sockfd) {
         retr[i] = pkt;
         i++;
         i = i % dim;
+
         prob = (double)rand() / RAND_MAX;
         if (prob < p) {
           printf("LIST :: pkt lost");
+          fflush(stdout);
           msgPerso++;
           msgTot++;
         } else {
@@ -569,13 +581,16 @@ void send_list(int sockfd) {
             perror("errore in sendto");
             exit(1);
           }
-          printf("SEND_LIST :: ACK = %d  swnd = %d CongWin = %d  lt_rwnd = %d\n",
-                 pkt.ack, swnd, CongWin, lt_rwnd);
+          
+          printf(
+              "SEND_LIST :: ACK = %d  swnd = %d CongWin = %d  lt_rwnd = %d\n",
+              pkt.ack, swnd, CongWin, lt_rwnd);
           fflush(stdout);
           msgInviati++;
           msgTot++;
         }
       }
+
       // mando l'ultimo pkt
       if (c == 0) {
         while (lt_ack_rcvd != seqnum) {
@@ -816,6 +831,14 @@ void sig_int(int signo) {
   }
   exit(0);
 }
+
+void sig_time(int signo) {
+  
+  w = true;
+  puts("alarm captured!");
+  
+}
+
 int main(int argc, char **argv) {
   if (argc != 5) {
     fprintf(stderr, " utilizzo:<pkt loss probab P , SERV_Port, Inserire numero "
@@ -873,6 +896,10 @@ int main(int argc, char **argv) {
   /* assegna l'indirizzo al socket */
   if (bind(listenfd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
     perror("errore in bind");
+    exit(1);
+  }
+  if (signal(SIGALRM, sig_time) == SIG_ERR) {
+    fprintf(stderr, "errore in signal INT ");
     exit(1);
   }
   // implemento la logica della prefork con file locking
