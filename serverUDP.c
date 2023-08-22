@@ -62,7 +62,6 @@ void *mretr() {
   s = true;
   while (s) {
     if (w) {
-     
       w = false;
       rit = true;
       printf("MRETR\n\n");
@@ -70,14 +69,15 @@ void *mretr() {
       struct st_pkt pkt;
       int k;
       if (CongWin > 1) {
-        CongWin = CongWin - (CongWin / 2);
+        CongWin--;
       }
-      swnd = 0;
       k = lt_ack_rcvd;
       printf("k = %d seqnum = %d \n", k, seqnum);
       fflush(stdout);
       //  implemento la ritrasmissione di tutti i pkt dopo lt_ack_rcvd
+      swnd = 0;
       while (k < seqnum) {
+      
         while (swnd < CongWin && swnd < lt_rwnd && k < seqnum) {
           printf("MRETR : send pkt %d k = %d swnd %d Conwing %d seqnum %d "
                  "lt_rwnd %d \n",
@@ -111,7 +111,16 @@ void *rcv_cong(void *sd) {
   pthread_t thread_id;
   int temp = 0, n;
   lt_ack_rcvd = 0;
+  long int curr_timer = 0;
+  fd_set fds;
+  struct timeval tv;
+  // Set up the file descriptor set.
+  FD_ZERO(&fds);
+  FD_SET(sockfd, &fds);
+  tv.tv_usec = 0; // ms waiting
+  tv.tv_sec = 2*timeout; // s waiting
   struct itimerval timer;
+  struct itimerval print_timer;
   timer.it_interval.tv_usec = 0;
   timer.it_interval.tv_sec = 0;
   timer.it_value.tv_sec = 0;
@@ -122,13 +131,22 @@ void *rcv_cong(void *sd) {
     perror("error pthread_create");
     exit(1);
   }
+
   puts("rcv_cong alive");
   timer.it_value.tv_usec = timeout;
   setitimer(ITIMER_REAL, &timer, NULL);
-  puts("primo timer avviato");
-
   while (stay) {
-    
+     /*     
+      printf("timer %ld\n",print_timer.it_value.tv_usec);*/
+  n = select(sizeof(fds) * 8, &fds, NULL, NULL, &tv);
+  if(n == 0){
+    getitimer(ITIMER_REAL, &print_timer);
+    puts("thread locked, rtx\n");
+    printf("swnd: %d, congwin: %d, timer: %ld\n .. unlocking thread\n",swnd, CongWin, print_timer.it_value.tv_usec);
+    setitimer(ITIMER_REAL, &timer, &print_timer);
+  }
+
+
   rcv:
     if (recvfrom(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,
                  &addrlen) < 0) {
@@ -138,13 +156,14 @@ void *rcv_cong(void *sd) {
       exit(1);
     }
     swnd--;
+
     printf("RCV_CONG : rcvd ack %d lt_rcvd %d swnd:%d\n", pkt.ack, lt_ack_rcvd,
            swnd);
 
     if (pkt.ack > lt_ack_rcvd) {
       timer.it_value.tv_usec = timeout;
       setitimer(ITIMER_REAL, &timer, NULL);
-
+      CongWin++;
       // ogni volta che ricevo un ack nuovo avvio il timer
       printf("timer avviato : %ld\n", timer.it_value.tv_usec);
       // INSERIRE RESET TIMER A TIMEOUT COSI CHE QUANDO RICEVO ACK RIAVVIO TIMER
@@ -153,7 +172,6 @@ void *rcv_cong(void *sd) {
       lt_ack_rcvd = pkt.ack;
       fflush(stdout);
       // ogni volta che ricevo un ack nuovo avvio il timer
-      CongWin = CongWin + (CongWin / 2);
       lt_rwnd = pkt.rwnd;
       // se è un ack nuovo entro qui
       //  se non ho errore allora leggo e vedo l ack che il receiver mi invia
@@ -185,9 +203,7 @@ void *rcv_cong(void *sd) {
       }
 
     } else {
-      w = true;
     }
-  
   } // aspetto la terminazione del thread che legge
   if (pthread_join(thread_id, NULL) != 0) {
     perror("Error pthread_join");
@@ -205,6 +221,7 @@ void send_get(char *str, int sockfd) {
   CongWin = 1;
   int size = 0;
   lt_rwnd = 1;
+
   printf("\nSend_get\n");
   fflush(stdout);
   struct st_pkt pkt;
@@ -546,7 +563,7 @@ void send_list(int sockfd) {
   int temp = 0;
 
   while (stay) {
-    if (lt_ack_rcvd == seqnum && stay == true && !rit) {
+    
       // Lettura dei file all'interno della cartella
       while (c > 0 && swnd < CongWin && stay == true && swnd < lt_rwnd &&
              !rit) {
@@ -574,6 +591,7 @@ void send_list(int sockfd) {
           printf("LIST :: pkt lost");
           fflush(stdout);
           msgPerso++;
+          
           msgTot++;
         } else {
           if ((sendto(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,
@@ -589,7 +607,7 @@ void send_list(int sockfd) {
           msgInviati++;
           msgTot++;
         }
-      }
+      
 
       // mando l'ultimo pkt
       if (c == 0) {
@@ -620,6 +638,7 @@ void send_list(int sockfd) {
         }
       }
     }
+    //printf("swnd %d  ccongiw %d",swnd, CongWin);
   }
   // aspetto terminazione del thread
   if (pthread_join(thread_id, NULL) != 0) {
@@ -833,7 +852,6 @@ void sig_int(int signo) {
 }
 
 void sig_time(int signo) {
-  
   w = true;
   puts("alarm captured!");
   
