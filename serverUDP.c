@@ -45,7 +45,7 @@ struct sockaddr_in addr;
 socklen_t addrlen = sizeof(struct sockaddr_in);
 bool rit = false;
 int num = 0;
-bool w = true;
+
 bool s = true;
 // implementa il controllo di segnali per gestire i thread
 typedef void Sigfunc(int);
@@ -61,15 +61,16 @@ struct st_pkt *retr;
 void *mretr() {
   s = true;
   while (s) {
-    if (w) {
-      w = false;
+    usleep(timeout);
+    if (lt_ack_rcvd != seqnum) {
       rit = true;
-      printf("MRETR\n\n");
+      puts("timeout\n");
+      printf("MRETR ; Seqnum : %d, LastAck : %d\n",seqnum, lt_ack_rcvd);
       fflush(stdout);
       struct st_pkt pkt;
       int k;
       if (CongWin > 1) {
-        CongWin--;
+        CongWin = CongWin>>1;
       }
       k = lt_ack_rcvd;
       printf("k = %d seqnum = %d \n", k, seqnum);
@@ -112,19 +113,7 @@ void *rcv_cong(void *sd) {
   pthread_t thread_id;
   int temp = 0, n;
   lt_ack_rcvd = 0;
-  long int curr_timer = 0;
-  fd_set fds;
-  struct timeval tv;
-  // Set up the file descriptor set.
-  FD_ZERO(&fds);
-  FD_SET(sockfd, &fds);
-  tv.tv_usec = 0;          // ms waiting
-  tv.tv_sec = 2 * timeout; // s waiting
-  struct itimerval timer;
-  struct itimerval print_timer;
-  timer.it_interval.tv_usec = 0;
-  timer.it_interval.tv_sec = 0;
-  timer.it_value.tv_sec = 0;
+
 
   // Wait until timeout or data received.
   bool stay = true;
@@ -134,11 +123,8 @@ void *rcv_cong(void *sd) {
   }
 
   puts("rcv_cong alive");
-  timer.it_value.tv_usec = timeout;
-  setitimer(ITIMER_REAL, &timer, NULL);
+  
   while (stay) {
-    /*
-     printf("timer %ld\n",print_timer.it_value.tv_usec);*/
 
   rcv:
     if (recvfrom(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,
@@ -154,14 +140,8 @@ void *rcv_cong(void *sd) {
            swnd);
 
     if (pkt.ack > lt_ack_rcvd ) {
-      if(!rit){
-      timer.it_value.tv_usec = timeout;
-      setitimer(ITIMER_REAL, &timer, NULL);
-      printf("timer pkt %d\n", pkt.ack + 1);
-      }
       CongWin++;
       // INSERIRE RESET TIMER A TIMEOUT COSI CHE QUANDO RICEVO ACK RIAVVIO TIMER
-      
       num = pkt.ack + 1;
       lt_ack_rcvd = pkt.ack;
       fflush(stdout);
@@ -187,9 +167,6 @@ void *rcv_cong(void *sd) {
         }
       }*/
       if (pkt.finbit == 1 && pkt.ack == seqnum) {
-        timer.it_value.tv_usec = 0;
-        setitimer(ITIMER_REAL, &timer, NULL); // quit timer
-
         printf("Server : Client disconesso  correttamente \n");
         fflush(stdout);
         stay = false;
@@ -197,9 +174,10 @@ void *rcv_cong(void *sd) {
       }
 
     } else {
+      }
       
     }
-  } // aspetto la terminazione del thread che legge
+   // aspetto la terminazione del thread che legge
   if (pthread_join(thread_id, NULL) != 0) {
     perror("Error pthread_join");
     exit(1);
@@ -844,10 +822,7 @@ void sig_int(int signo) {
   exit(0);
 }
 
-void sig_time(int signo) {
-  w = true;
-  puts("alarm captured!");
-}
+
 
 int main(int argc, char **argv) {
   if (argc != 5) {
@@ -908,10 +883,7 @@ int main(int argc, char **argv) {
     perror("errore in bind");
     exit(1);
   }
-  if (signal(SIGALRM, sig_time) == SIG_ERR) {
-    fprintf(stderr, "errore in signal INT ");
-    exit(1);
-  }
+
   // implemento la logica della prefork con file locking
   // qui alloco un area di memoria per mantenere i pid dei child
   pids = (pid_t *)calloc(nchildren, sizeof(pid_t));

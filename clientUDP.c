@@ -25,13 +25,17 @@ int dim = 0;
 int free_dim = 0;
 int seqnum = 0;
 int lt_ack_rcvd = 0;
+int num = 0;
 int lt_rwnd = 1;
+int fd;
 int swnd = 0;
 int msgRitr = 0;
 int CongWin = 1;
+int timeout = 0;
 int TOms = 0;
 int TOs = 0;
 double p = 0;
+bool s = true;
 long int bytes_psecond = 0;
 bool rit = false;
 int sockfd; // descrittore alla socket creata per comunicare con il server
@@ -220,34 +224,99 @@ void rcv_get(char *file) {
   fclose(fptr);
   free(rcv_win);
 }
+
+void *mretr() {
+  s = true;
+  while (s) {
+    usleep(timeout);
+    if (lt_ack_rcvd != seqnum) {
+      rit = true;
+      puts("timeout\n");
+      printf("MRETR ; Seqnum : %d, LastAck : %d\n",seqnum, lt_ack_rcvd);
+      fflush(stdout);
+      struct st_pkt pkt;
+      int k;
+      if (CongWin > 1) {
+        CongWin = CongWin>>1;
+      }
+      k = lt_ack_rcvd;
+      printf("k = %d seqnum = %d \n", k, seqnum);
+      fflush(stdout);
+      //  implemento la ritrasmissione di tutti i pkt dopo lt_ack_rcvd
+      swnd = 0;
+      while (k < seqnum) {
+
+        while (swnd < CongWin && swnd < lt_rwnd && k < seqnum) {
+          printf("MRETR : send pkt %d k = %d swnd %d Conwing %d seqnum %d "
+                 "lt_rwnd %d \n",
+                 rcv_win[k].ack, k, swnd, CongWin, seqnum, lt_rwnd);
+          fflush(stdout);
+          if ((sendto(fd, &rcv_win[k], sizeof(pkt), 0, (struct sockaddr *)&addr,
+                      addrlen)) < 0) {
+            perror("errore in sendto");
+            exit(1);
+          }
+          swnd++;
+          msgRitr++;
+          k++;
+        }
+        
+      }
+      if (k == dim) {
+        s = false; // prova poi si cambia
+      }
+      printf("swnd value %d \n", swnd);
+      fflush(stdout);
+      rit = false;
+    }
+  }
+}
+
 void *rcv_cong(void *sd) {
-  int sockfd = sd;
+   int sockfd = sd;
+  fd = sd;
   struct st_pkt pkt;
-  int k = 0, temp = 0, n;
+  int t = 0;
+  pthread_t thread_id;
+  int temp = 0, n;
   lt_ack_rcvd = 0;
+
+
   // Wait until timeout or data received.
   bool stay = true;
+  if (pthread_create(&thread_id, NULL, mretr, NULL) != 0) {
+    perror("error pthread_create");
+    exit(1);
+  }
+
+  puts("rcv_cong alive");
+  
   while (stay) {
-    if (lt_ack_rcvd == k) {
-      printf("pkt %d start TO\n", pkt.ack);
-    }
+
+  rcv:
     if (recvfrom(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,
                  &addrlen) < 0) {
       perror("errore in recvfrom");
+      if (errno = EINTR)
+        goto rcv;
       exit(1);
     }
-    printf("RCV_CONG : rcvd ack %d lt_rcvd %d\n", pkt.ack, lt_ack_rcvd);
-    if (pkt.ack > lt_ack_rcvd) {
-      alarm(0);
-      lt_ack_rcvd = pkt.ack;
-      k = lt_ack_rcvd;
+    swnd--;
+
+    printf("RCV_CONG : rcvd ack %d lt_rcvd %d swnd:%d\n", pkt.ack, lt_ack_rcvd,
+           swnd);
+
+    if (pkt.ack > lt_ack_rcvd ) {
       CongWin++;
-      swnd = seqnum - lt_ack_rcvd;
-      lt_rwnd = pkt.rwnd;
+      // INSERIRE RESET TIMER A TIMEOUT COSI CHE QUANDO RICEVO ACK RIAVVIO TIMER
+      num = pkt.ack + 1;
       lt_ack_rcvd = pkt.ack;
+      fflush(stdout);
+      // ogni volta che ricevo un ack nuovo avvio il timer
+      lt_rwnd = pkt.rwnd;
       // se è un ack nuovo entro qui
       //  se non ho errore allora leggo e vedo l ack che il receiver mi invia
-      if (!strcmp(pkt.pl, "slow")) {
+      /*if (!strcmp(pkt.pl, "slow")) {
         printf("\nSLOW RCVD\n");
         fflush(stdout);
         bytes_psecond = 100;
@@ -263,15 +332,25 @@ void *rcv_cong(void *sd) {
           perror("Error setsockopt");
           exit(1);
         }
-      }
+      }*/
       if (pkt.finbit == 1 && pkt.ack == seqnum) {
         printf("Server : Client disconesso  correttamente \n");
         fflush(stdout);
         stay = false;
         return NULL;
       }
+
+    } else {
+      }
+      
     }
+   // aspetto la terminazione del thread che legge
+  if (pthread_join(thread_id, NULL) != 0) {
+    perror("Error pthread_join");
+    exit(1);
   }
+  printf("RCV_CONG EXIT\n");
+  fflush(stdout);
 }
 // implemento la snd del comando put
 void snd_put(char *str, int sockfd) {
@@ -684,13 +763,8 @@ void req() {
       break;
     case 2:
       system("mkdir Client_Files");
-      printf("\nInserire TO in ms\n");
-      if (fscanf(stdin, "%d", &TOms) == EOF) {
-        perror("Error fscanf");
-        exit(1);
-      }
-      printf("\nInserire TO in s\n");
-      if (fscanf(stdin, "%d", &TOs) == EOF) {
+      printf("\nInserire TO in us\n");
+      if (fscanf(stdin, "%d", &timeout) == EOF) {
         perror("Error fscanf");
         exit(1);
       }
