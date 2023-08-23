@@ -77,7 +77,7 @@ void *mretr() {
       //  implemento la ritrasmissione di tutti i pkt dopo lt_ack_rcvd
       swnd = 0;
       while (k < seqnum) {
-      
+
         while (swnd < CongWin && swnd < lt_rwnd && k < seqnum) {
           printf("MRETR : send pkt %d k = %d swnd %d Conwing %d seqnum %d "
                  "lt_rwnd %d \n",
@@ -92,6 +92,7 @@ void *mretr() {
           msgRitr++;
           k++;
         }
+        
       }
       if (k == dim) {
         s = false; // prova poi si cambia
@@ -117,8 +118,8 @@ void *rcv_cong(void *sd) {
   // Set up the file descriptor set.
   FD_ZERO(&fds);
   FD_SET(sockfd, &fds);
-  tv.tv_usec = 0; // ms waiting
-  tv.tv_sec = 2*timeout; // s waiting
+  tv.tv_usec = 0;          // ms waiting
+  tv.tv_sec = 2 * timeout; // s waiting
   struct itimerval timer;
   struct itimerval print_timer;
   timer.it_interval.tv_usec = 0;
@@ -136,16 +137,8 @@ void *rcv_cong(void *sd) {
   timer.it_value.tv_usec = timeout;
   setitimer(ITIMER_REAL, &timer, NULL);
   while (stay) {
-     /*     
-      printf("timer %ld\n",print_timer.it_value.tv_usec);*/
-  n = select(sizeof(fds) * 8, &fds, NULL, NULL, &tv);
-  if(n == 0){
-    getitimer(ITIMER_REAL, &print_timer);
-    puts("thread locked, rtx\n");
-    printf("swnd: %d, congwin: %d, timer: %ld\n .. unlocking thread\n",swnd, CongWin, print_timer.it_value.tv_usec);
-    setitimer(ITIMER_REAL, &timer, &print_timer);
-  }
-
+    /*
+     printf("timer %ld\n",print_timer.it_value.tv_usec);*/
 
   rcv:
     if (recvfrom(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,
@@ -160,14 +153,15 @@ void *rcv_cong(void *sd) {
     printf("RCV_CONG : rcvd ack %d lt_rcvd %d swnd:%d\n", pkt.ack, lt_ack_rcvd,
            swnd);
 
-    if (pkt.ack > lt_ack_rcvd) {
+    if (pkt.ack > lt_ack_rcvd ) {
+      if(!rit){
       timer.it_value.tv_usec = timeout;
       setitimer(ITIMER_REAL, &timer, NULL);
-      CongWin++;
-      // ogni volta che ricevo un ack nuovo avvio il timer
-      printf("timer avviato : %ld\n", timer.it_value.tv_usec);
-      // INSERIRE RESET TIMER A TIMEOUT COSI CHE QUANDO RICEVO ACK RIAVVIO TIMER
       printf("timer pkt %d\n", pkt.ack + 1);
+      }
+      CongWin++;
+      // INSERIRE RESET TIMER A TIMEOUT COSI CHE QUANDO RICEVO ACK RIAVVIO TIMER
+      
       num = pkt.ack + 1;
       lt_ack_rcvd = pkt.ack;
       fflush(stdout);
@@ -203,6 +197,7 @@ void *rcv_cong(void *sd) {
       }
 
     } else {
+      
     }
   } // aspetto la terminazione del thread che legge
   if (pthread_join(thread_id, NULL) != 0) {
@@ -252,6 +247,7 @@ void send_get(char *str, int sockfd) {
     exit(1);
   }
   while (stay) {
+    
     while (swnd < CongWin && stay == true && swnd < lt_rwnd && !rit) {
       if ((dimpl = fread(pkt.pl, 1, sizeof(pkt.pl), file)) == MAXLINE) {
         seqnum++;
@@ -487,7 +483,7 @@ void send_list(int sockfd) {
   CongWin = 1;
   lt_rwnd = 1;
   dim = 100;
- 
+
   struct st_pkt pkt;
   DIR *directory;
   struct dirent *file;
@@ -563,51 +559,48 @@ void send_list(int sockfd) {
   int temp = 0;
 
   while (stay) {
-    
-      // Lettura dei file all'interno della cartella
-      while (c > 0 && swnd < CongWin && stay == true && swnd < lt_rwnd &&
-             !rit) {
-        // memorizzo i nomi
-        printf("c value %d , swnd = %d , Congwin= %d lt_rwnd %d  stay = %d rit "
-               "=%d \n",
-               c, swnd, CongWin, lt_rwnd, stay, rit);
-        fflush(stdout);
-        temp = strlen(nomi[c - 1]);
-        strncpy(pkt.pl, nomi[c - 1], temp);
-        printf("pkt.pl %s \n", nomi[c - 1]);
-        fflush(stdout);
-        pkt.pl[temp] = '\0'; // risolvo il problema di scrivere sul buff pieno
-        swnd++;
-        seqnum++;
-        c--; // decremento
-        pkt.ack = seqnum;
-        pkt.finbit = 0;
-        retr[i] = pkt;
-        i++;
-        i = i % dim;
 
-        prob = (double)rand() / RAND_MAX;
-        if (prob < p) {
-          printf("LIST :: pkt lost");
-          fflush(stdout);
-          msgPerso++;
-          
-          msgTot++;
-        } else {
-          if ((sendto(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,
-                      addrlen)) < 0) {
-            perror("errore in sendto");
-            exit(1);
-          }
-          
-          printf(
-              "SEND_LIST :: ACK = %d  swnd = %d CongWin = %d  lt_rwnd = %d\n",
-              pkt.ack, swnd, CongWin, lt_rwnd);
-          fflush(stdout);
-          msgInviati++;
-          msgTot++;
+    // Lettura dei file all'interno della cartella
+    while (c > 0 && swnd < CongWin && stay == true && swnd < lt_rwnd && !rit) {
+      // memorizzo i nomi
+      printf("c value %d , swnd = %d , Congwin= %d lt_rwnd %d  stay = %d rit "
+             "=%d \n",
+             c, swnd, CongWin, lt_rwnd, stay, rit);
+      fflush(stdout);
+      temp = strlen(nomi[c - 1]);
+      strncpy(pkt.pl, nomi[c - 1], temp);
+      printf("pkt.pl %s \n", nomi[c - 1]);
+      fflush(stdout);
+      pkt.pl[temp] = '\0'; // risolvo il problema di scrivere sul buff pieno
+      swnd++;
+      seqnum++;
+      c--; // decremento
+      pkt.ack = seqnum;
+      pkt.finbit = 0;
+      retr[i] = pkt;
+      i++;
+      i = i % dim;
+
+      prob = (double)rand() / RAND_MAX;
+      if (prob < p) {
+        printf("LIST :: pkt lost");
+        fflush(stdout);
+        msgPerso++;
+
+        msgTot++;
+      } else {
+        if ((sendto(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,
+                    addrlen)) < 0) {
+          perror("errore in sendto");
+          exit(1);
         }
-      
+
+        printf("SEND_LIST :: ACK = %d  swnd = %d CongWin = %d  lt_rwnd = %d\n",
+               pkt.ack, swnd, CongWin, lt_rwnd);
+        fflush(stdout);
+        msgInviati++;
+        msgTot++;
+      }
 
       // mando l'ultimo pkt
       if (c == 0) {
@@ -638,7 +631,7 @@ void send_list(int sockfd) {
         }
       }
     }
-    //printf("swnd %d  ccongiw %d",swnd, CongWin);
+    // printf("swnd %d  ccongiw %d",swnd, CongWin);
   }
   // aspetto terminazione del thread
   if (pthread_join(thread_id, NULL) != 0) {
@@ -854,7 +847,6 @@ void sig_int(int signo) {
 void sig_time(int signo) {
   w = true;
   puts("alarm captured!");
-  
 }
 
 int main(int argc, char **argv) {
