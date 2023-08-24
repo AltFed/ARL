@@ -767,10 +767,14 @@ si tratta di un pacchetto informativo(code = 0) ed è il primo. (id)*/
         perror("errore in sendto");
         exit(1);
       }
+
+
+/*Avvio la funzione send_list che si occuperà di inviare la lista degli elementi presenti nella cartella server_files. */      
       send_list(sockfd);
     }
-    /* ------------------------ gestisco caso put *
-     * --------------------------------------*/
+
+
+/*CASO PUT : Gestisco il caso in cui ricevo un comando PUT. Invio un ack come nel caso LIST. */
     if (!strcmp("put", command_received)) {
       printf("\nStart command put\n");
       strcpy(pkt.pl, "Put  in esecuzione");
@@ -781,9 +785,14 @@ si tratta di un pacchetto informativo(code = 0) ed è il primo. (id)*/
         perror("errore in sendto");
         exit(1);
       }
+
+//Chiamo la funzione rcv_put che si occupa di gestire la ricezione dei pacchetti inviati dal client.
       rcv_put(file_name, sockfd);
     }
   }
+
+
+/*Una volta terminata la send_control, imposto il vettore stop = false, in corrispondenza del numero del processo. E torno nella child_main*/
   stop[my_number - 1] = false;
   printf("\nWait for next request my_number ind %d my bool value %d \n",
          my_number - 1, stop[my_number - 1]);
