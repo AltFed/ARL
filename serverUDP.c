@@ -60,9 +60,11 @@ struct st_pkt {
 struct st_pkt *retr;
 void *mretr() {
   s = true;
+  int check = 0;
   while (s) {
+    check = seqnum;
     usleep(timeout);
-    if (lt_ack_rcvd != seqnum) {
+    if (lt_ack_rcvd != check) {
       rit = true;
       puts("timeout\n");
       printf("MRETR ; Seqnum : %d, LastAck : %d\n",seqnum, lt_ack_rcvd);
@@ -450,8 +452,8 @@ void rcv_put(char *file, int sockfd) {
       }
     }
   }
-  fclose(fptr);
-  free(retr);
+ fclose(fptr);
+ free(retr);
 }
 // gestice nello specifico il comando list
 void send_list(int sockfd) {
@@ -515,10 +517,10 @@ void send_list(int sockfd) {
   if (!file) {
     c--;
   }
-  for (int x = 0; x < c; x++) {
+ /* for (int x = 0; x < c; x++) {
     printf("----->>> %s\n", nomi[x]);
     fflush(stdout);
-  }
+  }*/
   if (c == 1) {
 
     puts("nessun file nella dir\n");
@@ -564,7 +566,6 @@ void send_list(int sockfd) {
         printf("LIST :: pkt lost");
         fflush(stdout);
         msgPerso++;
-
         msgTot++;
       } else {
         if ((sendto(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,
@@ -680,7 +681,9 @@ il nome del file (se presente), e gestisco i vari casi. */
       i++;
     }
     strncpy(command_received, pkt.pl, i);
+    command_received[i]='\0';
     strcpy(file_name, pkt.pl + i + 1);
+    file_name[strlen(pkt.pl +i + 1)]='\0';
     printf("Server : Msg ricevuto %s\n", pkt.pl);
     fflush(stdout);
 
@@ -993,6 +996,8 @@ a farsi assegnare un processo.*/
       for (int i = 0; i < nchildren; i++) {
         fflush(stdout);
         if (!stop[i] && e) {
+          printf("Child with number %d free assign request\n",i);
+          fflush(stdout);
           n = 1;
           e = false;
           pkt.id = SERV_PORT + i + 1;
