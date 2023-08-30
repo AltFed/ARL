@@ -80,7 +80,6 @@ void *mretr() {
       //  implemento la ritrasmissione di tutti i pkt dopo lt_ack_rcvd
       swnd = 0;
       while (k < seqnum) {
-
         while (swnd < CongWin && swnd < lt_rwnd && k < seqnum) {
           printf("MRETR : send pkt %d k = %d swnd %d Conwing %d seqnum %d "
                  "lt_rwnd %d \n",
@@ -94,8 +93,7 @@ void *mretr() {
           swnd++;
           msgRitr++;
           k++;
-        }
-        
+        } 
       }
       if (k == dim) {
         s = false; // prova poi si cambia
