@@ -79,7 +79,7 @@ int port_number(int sockfd) {
     while (rcv_winy) {
       sleep(1);
       pkt.finbit = 2;
-      if (temp == 5) { // dopo 5 volte di fila che provo a connettermi esco
+      if (temp == 100) { // dopo 5 volte di fila che provo a connettermi esco
         printf("Client : Impossibile connettersi con il Server attualmente \n");
         exit(1);
       }
@@ -92,15 +92,20 @@ int port_number(int sockfd) {
         perror("errore in recvfrom");
         exit(1);
       }
+      printf("Client : pl %s port number %d\n", pkt.pl, pkt.ack);
+      fflush(stdout);
       if (!strcmp(pkt.pl, "go")) {
         rcv_winy = false;
       }
     }
-  } else if (!strcmp(pkt.pl, "go")) {
+    printf("Client : pl %s", pkt.pl);
+      fflush(stdout);
+    }if (!strcmp(pkt.pl,"go")){
+      return pkt.ack;
+    }
     printf("Port number  assegnato %d \n", pkt.ack);
-    return pkt.ack;
+    fflush(stdout);
   }
-}
 // implemento la rcv del comando get
 void rcv_get(char *file) {
   free_dim = dim;
@@ -622,6 +627,8 @@ void command_send(char *cd, char *nome_str) {
     perror("errore in sendto");
     exit(1);
   }
+  printf("\n RCV_LIST PKT PL: %s\n", pkt.pl);
+  fflush(stdout);
   pkt.ack = -2;
   while (pkt.ack != 0 && pkt.ack != -1) {
     i = select(sizeof(fds) * 8, &fds, NULL, NULL, &tv);
@@ -684,6 +691,7 @@ void req() {
   pkt.finbit = 0;
   int a = 0, temp = 0, t = 0;
   while (1) {
+    sleep(1);
     a = 0, temp = 0, t = 0;
     // se ho gestito un errore e si è creato un loop chiudo
     if (loop) {
@@ -699,7 +707,7 @@ void req() {
     if (a == -1) { // chiudo subito senza che invio il pkt al server
       return;
     }
-    printf("addr sin port wait %d\n", addr.sin_port);
+    printf("TEMP value %d  htons(temp) = %d\n",temp,htons(temp));
     if ((recvfrom(sockfd, &pkt, sizeof(pkt), MSG_DONTWAIT,(struct sockaddr *)&addr, &addrlen)) < 0) {
       if (errno == EAGAIN) {
       } else {

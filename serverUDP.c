@@ -626,7 +626,8 @@ void send_list(int sockfd) {
 /*Gestitsco la richiesta a livello applicativo inviata dal client. */
 void send_control(int sockfd, int my_number) {
 
-
+printf("Processo child numero: %ld \n", (long)getpid());
+fflush(stdout);
   int i = 0, n = 0; /* Variabili contatori. */
   bool stay = true; /*Booleano per indicare se rimanere nel while principale o uscire. */
   char command_received[100]; /*Buffer per inserire il comando ricevuto dal payload. */
