@@ -65,13 +65,11 @@ int port_number(int sockfd) {
   if (sendto(sockfd, &pkt, sizeof(pkt), 0, (struct addr *)&addr, addrlen) < 0) {
     perror("errore in sendto");
     exit(1);
-  }
-  while (pkt.ack < SERV_PORT) {
+  } 
     if (recvfrom(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,&addrlen) < 0) {
       perror("errore in recvfrom");
       exit(1);
     }
-  }
   printf("Client : pl %s port number %d\n", pkt.pl, pkt.ack);
   fflush(stdout);
   // se c'è wait ritrasmetto subito una nuova richiesta aspetto un tempo sleep
