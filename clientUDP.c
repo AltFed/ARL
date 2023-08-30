@@ -854,10 +854,7 @@ int main(int argc, char *argv[]) {
     fprintf(stderr, "errore in signal INT ");
     exit(1);
   }
-  if (signal(SIGALRM, sig_time) == SIG_ERR) {
-    fprintf(stderr, "errore in signal INT ");
-    exit(1);
-  }
+
   // invoco la funzione per gestire le richieste dell'utente
   req();
 }
