@@ -177,7 +177,8 @@ void *rcv_cong(void *sd) {
       }
       
     }
-   // aspetto la terminazione del thread che legge
+  s = false;
+   // aspetto la terminazione del thread che rinvia
   if (pthread_join(thread_id, NULL) != 0) {
     perror("Error pthread_join");
     exit(1);
@@ -587,6 +588,7 @@ void send_list(int sockfd) {
         swnd++;
         // Invio l'ultimo pkt chiudo la connessione
         stay = false;
+        s = false;
         pkt.code = 1;
         seqnum++;
         pkt.id = seqnum;
@@ -620,6 +622,8 @@ void send_list(int sockfd) {
   closedir(directory);
   printf("Server : Chiudo la directory\n");
   free(retr);
+  free(nomi);
+  fclose(file);
 }
 
 
@@ -702,6 +706,7 @@ il nome del file (se presente), e gestisco i vari casi. */
         perror("Impossibile aprire la cartella");
         exit(1);
       }
+      
 
 
 /*Leggo nella cartella ogni entry, e scrivo nella variabile fullPath il percorso del file appena letto e faccio un controllo prima di 
@@ -803,7 +808,7 @@ si tratta di un pacchetto informativo(code = 0) ed è il primo. (id)*/
 void child_main(int k) {
 
 
-  /*Assegno ad ogni child process una socket con lo stesso procedimento fatto nel main. */
+/*Assegno ad ogni child process una socket con lo stesso procedimento fatto nel main. */
   int listenfd;
   int n_port = SERV_PORT + k;
   printf("Processo child numero: %ld. Numero di porta: %d\n", (long)getpid(), n_port);
