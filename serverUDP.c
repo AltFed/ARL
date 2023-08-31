@@ -3,6 +3,7 @@
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <locale.h>
 #include <pthread.h>
 #include <signal.h>
 #include <stdbool.h>
@@ -469,14 +470,14 @@ void send_list(int sockfd) {
   bool stay = true;
   int i = 0, msgInviati = 0, msgPerso = 0, msgTot = 0, dimpl = 0, k = 0;
   double prob = 0;
-  int y = 10;
   pthread_t thread_id;
-  char **nomi = malloc(sizeof(char *) * y);
+  char **nomi = malloc(sizeof(char *) * 256);
   int c = 1;
   if ((retr = malloc(sizeof(struct st_pkt) * dim)) == NULL) {
     perror("Error malloc");
     exit(1);
   }
+  
   printf("Server : Send_list Alive\n");
   printf("swnd %d lt %d seq %d rwnd %d congwin %d\n", swnd, lt_ack_rcvd, seqnum,
          lt_rwnd, CongWin);
@@ -501,26 +502,18 @@ void send_list(int sockfd) {
         exit(1);
       }
       strncpy(nomi[c - 1], file->d_name, strlen(file->d_name) + 1);
-      if (c % y == 0) {
-        y = y << 1;
-        printf("%d\n", y * sizeof(char *));
-        if ((nomi = realloc(nomi, y * sizeof(char *))) == NULL) {
-          perror("error realloc");
-          exit(1);
-        }
-        printf("%ld\n", nomi);
-      }
+        printf("%s\n", nomi[c-1]);
+
       c++;
     }
   }
+  closedir(directory);
   if (!file) {
     c--;
   }
- /* for (int x = 0; x < c; x++) {
-    printf("----->>> %s\n", nomi[x]);
-    fflush(stdout);
-  }*/
-  if (c == 1) {
+  printf("VALORE DI C : %d\n",c);
+
+  if (c == 0) {
 
     puts("nessun file nella dir\n");
 
@@ -532,6 +525,7 @@ void send_list(int sockfd) {
                 addrlen)) < 0) {
       perror("errore in sendto");
       exit(1);
+      free(nomi);
     }
     return;
   }
@@ -540,15 +534,17 @@ void send_list(int sockfd) {
   while (stay) {
 
     // Lettura dei file all'interno della cartella
-    while (c > 0 && swnd < CongWin && stay == true && swnd < lt_rwnd && !rit) {
+    while (swnd < CongWin && stay == true && swnd < lt_rwnd && !rit) {
       // memorizzo i nomi
+      if(c>0){
       printf("c value %d , swnd = %d , Congwin= %d lt_rwnd %d  stay = %d rit "
              "=%d \n",
              c, swnd, CongWin, lt_rwnd, stay, rit);
       fflush(stdout);
       temp = strlen(nomi[c - 1]);
       strncpy(pkt.pl, nomi[c - 1], temp);
-      printf("pkt.pl %s \n", nomi[c - 1]);
+      free(nomi[c-1]);
+      printf("pkt.pl %s \n", pkt.pl);
       fflush(stdout);
       pkt.pl[temp] = '\0'; // risolvo il problema di scrivere sul buff pieno
       swnd++;
@@ -579,12 +575,10 @@ void send_list(int sockfd) {
         msgInviati++;
         msgTot++;
       }
-
+      }
       // mando l'ultimo pkt
-      if (c == 0) {
-        while (lt_ack_rcvd != seqnum) {
-          // Aspetto che il thread legga last id
-        }
+      else if (c == 0) {
+        
         swnd++;
         // Invio l'ultimo pkt chiudo la connessione
         stay = false;
@@ -604,6 +598,7 @@ void send_list(int sockfd) {
                       addrlen)) < 0) {
             perror("errore in sendto");
             exit(1);
+            
           }
           msgInviati++;
           msgTot++;
@@ -619,11 +614,11 @@ void send_list(int sockfd) {
   }
   printf("Server : Connessione terminata corretamente\n");
   // Chiusura della cartella
-  closedir(directory);
+  
   printf("Server : Chiudo la directory\n");
-  free(retr);
+  free(retr);  
   free(nomi);
-  fclose(file);
+    return;
 }
 
 
@@ -647,7 +642,7 @@ allora il client non ha risposto in tempo, e verrà inviato un pacchetto di CLOS
   FD_ZERO(&fds);
   FD_SET(sockfd, &fds);
   tv.tv_usec = 0;
-  tv.tv_sec = 60;
+  tv.tv_sec = 30;
   n = select(sizeof(fds) * 8, &fds, NULL, NULL, &tv);
   if (n == 0) {
     printf("Server : Client non risponde\n");
@@ -725,6 +720,7 @@ comparare il file letto con file_name. Se risultano uguali allora found è TRUE,
 /*Se ho trovato il nome del file, invio un pacchetto con id = 0, e code = 0, per indicare che
 si tratta di un pacchetto informativo(code = 0) ed è il primo. (id)*/
       if (found) {
+        closedir(dir);
         pkt.id = 0;
         pkt.code = 0;
         strcpy(pkt.pl, "File trovato.");
@@ -743,6 +739,7 @@ si tratta di un pacchetto informativo(code = 0) ed è il primo. (id)*/
       
 /*Nel caso in cui il file non venga trovato, invio un paccheto con id = -1, ovvero indica un errore ed esco.*/
       else if (!found) {
+        closedir(dir);
         strcpy(pkt.pl, "File non trovato, riprova.");
         pkt.id = -1;
         pkt.code = 0;
@@ -755,13 +752,11 @@ si tratta di un pacchetto informativo(code = 0) ed è il primo. (id)*/
         }
       }
 
-
-/*Chiudo la cartella. */
-      closedir(dir);
+      
     }
 
 
-/*CASO LIST : Se ricevo un comando LIST probbedo a inviare un pacchetto con id = 0, e code = 0 per indicare un ACK. */
+/*CASO LIST : Se ricevo un comando LIST provvedo a inviare un pacchetto con id = 0, e code = 0 per indicare un ACK. */
     if (!strcmp("list", command_received)) {
       strcpy(pkt.pl, "List in esecuzione \n");
       pkt.id = 0;
@@ -798,9 +793,11 @@ si tratta di un pacchetto informativo(code = 0) ed è il primo. (id)*/
 
 /*Una volta terminata la send_control, imposto il vettore stop = false, in corrispondenza del numero del processo. E torno nella child_main*/
   stop[my_number - 1] = false;
+  fflush(stdout);
   printf("\nWait for next request my_number ind %d my bool value %d \n",
          my_number - 1, stop[my_number - 1]);
   fflush(stdout);
+  puts("ciaosfioasifoaisfoa");
 }
 
 
@@ -830,8 +827,10 @@ void child_main(int k) {
 /*Se nel main viene accettata ed assegnata una richiesta al processo, il vettore STOP viene impostato a TRUE per l'indice 
 interessato. Se il processo ha sul suo relativo indice TRUE, entrerà nella funzione send_control, che gestisce le richieste 
 applicative del client. */
-  for (;;) {
-    if (stop[k - 1]) {
+  while(1){
+    usleep(10000); 
+    puts("waiting");
+    if (stop[k - 1]) { 
       send_control(listenfd, k); /* processa la richiesta */
     }
   }
