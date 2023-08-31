@@ -764,7 +764,7 @@ void req() {
         exit(1);
       }
       free_dim = dim;
-      command_send("list",NULL); // passo direttamento la list alla command_send senza usare una funzione ausiliaria
+      command_send("list ",NULL); // passo direttamento la list alla command_send senza usare una funzione ausiliaria
       break;
     case 2:
       system("mkdir Client_Files");

@@ -680,8 +680,10 @@ il nome del file (se presente), e gestisco i vari casi. */
     }
     strncpy(command_received, pkt.pl, i);
     command_received[i]='\0';
-    strcpy(file_name, pkt.pl + i + 1);
+    if(strcmp("list", command_received)) {
+      strcpy(file_name, pkt.pl + i + 1);
     file_name[strlen(pkt.pl +i + 1)]='\0';
+    }
     printf("Server : Msg ricevuto %s\n", pkt.pl);
     fflush(stdout);
 
@@ -753,7 +755,7 @@ si tratta di un pacchetto informativo(code = 0) ed è il primo. (id)*/
       }
 
        
-       
+
     }
 
 
@@ -829,8 +831,6 @@ void child_main(int k) {
 interessato. Se il processo ha sul suo relativo indice TRUE, entrerà nella funzione send_control, che gestisce le richieste 
 applicative del client. */
   while(1){
-    usleep(10000); 
-    puts("waiting");
     if (stop[k - 1]) { 
       send_control(listenfd, k); /* processa la richiesta */
     }
