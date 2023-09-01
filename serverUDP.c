@@ -346,7 +346,9 @@ void rcv_put(char *file, int sockfd) {
   // creo il file se già esiste lo cancello tanto voglio quello aggiornato
   int n = 0, i = 0, maxseqnum = 0;
   bool stay = true, different = false;
-  if ((fptr = fopen(file, "w+")) == NULL) {
+  char path_file[MAXLINE];
+  sprintf(path_file, "Server_Files/%s", file);
+  if ((fptr = fopen(path_file, "w+")) == NULL) {
     perror("Error opening file");
     exit(1);
   }
@@ -558,7 +560,7 @@ void send_list(int sockfd) {
 
       prob = (double)rand() / RAND_MAX;
       if (prob < p) {
-        printf("LIST :: pkt lost");
+        printf("LIST :: pkt lost\n");
         fflush(stdout);
         msgPerso++;
         msgTot++;
@@ -589,7 +591,7 @@ void send_list(int sockfd) {
         pkt.pl[0] = '\0';
         retr[i] = pkt;
         prob = (double)rand() / RAND_MAX;
-        printf("Server : Chiusura connessione\n");
+        printf("Server : Invio ultimo pacchetto. \n");
         if (prob < p) {
           msgPerso++;
           msgTot++;

@@ -120,7 +120,9 @@ void rcv_get(char *file) {
   // creo il file se già esiste lo cancello tanto voglio quello aggiornato
   int n = 0, i = 0, maxseqnum = 0;
   bool stay = true, different = false;
-  if ((fptr = fopen(file, "w+")) == NULL) {
+  char path_file[MAXLINE];
+  sprintf(path_file, "Client_Files/%s", file);
+  if ((fptr= fopen(path_file, "w+")) == NULL) {
     perror("Error opening file");
     exit(1);
   }
