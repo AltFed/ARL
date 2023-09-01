@@ -687,7 +687,11 @@ il nome del file (se presente), e gestisco i vari casi. */
     }
     printf("Server : Msg ricevuto %s\n", pkt.pl);
     fflush(stdout);
+/*CASO QUIT : Client scollegato chiudo la connesione */
 
+if (!strcmp("quit",command_received)) {
+  printf("Server : Client close connection\n");
+}
 
 /* CASO GET : Se ricevo un comando di get, dichiaro una variabile found, che mi servirà per tenere traccia se il file è stato trovato o 
     no. Una variabile dir e altre strutture dati che servono per navigare nel file system e cercare il file. */
@@ -703,8 +707,7 @@ il nome del file (se presente), e gestisco i vari casi. */
       if (dir == NULL) {
         perror("Impossibile aprire la cartella");
         exit(1);
-      }
-      
+      }    
 
 
 /*Leggo nella cartella ogni entry, e scrivo nella variabile fullPath il percorso del file appena letto e faccio un controllo prima di 
@@ -719,7 +722,6 @@ comparare il file letto con file_name. Se risultano uguali allora found è TRUE,
         }
       }
 
-
 /*Se ho trovato il nome del file, invio un pacchetto con id = 0, e code = 0, per indicare che
 si tratta di un pacchetto informativo(code = 0) ed è il primo. (id)*/
       if (found) {
@@ -733,7 +735,6 @@ si tratta di un pacchetto informativo(code = 0) ed è il primo. (id)*/
           perror("Errore in sendto");
           exit(1);
         }
-
 
 /*La funzione send_get è la funziona che si occupa di inviare il file,  e come parametri avrà file_name e la socket. */
         send_get(file_name, sockfd);
@@ -754,9 +755,6 @@ si tratta di un pacchetto informativo(code = 0) ed è il primo. (id)*/
           exit(1);
         }
       }
-
-       
-
     }
 
 
@@ -798,15 +796,13 @@ si tratta di un pacchetto informativo(code = 0) ed è il primo. (id)*/
 /*Una volta terminata la send_control, imposto il vettore stop = false, in corrispondenza del numero del processo. E torno nella child_main*/
   stop[my_number - 1] = false;
   fflush(stdout);
-  printf("\nWait for next request my_number ind %d my bool value %d \n",
-         my_number - 1, stop[my_number - 1]);
+  printf("\n Child %ld wait for next request\n", (long)getpid() );
   fflush(stdout);
 }
 
 
 /*Funzione che verrà eseguita all'inizio da ogni child process.*/
 void child_main(int k) {
-
 
 /*Assegno ad ogni child process una socket con lo stesso procedimento fatto nel main. */
   int listenfd;
@@ -905,8 +901,7 @@ int main(int argc, char **argv) {
 
 /* Il vettore stop sottostante, è un vettore di booleani in memoria condivisa. Questo vettore tiene traccia di quali processi sono attivi
 ed in ascolto su una determinata socket. E' in memoria condivisa cosicchè tutti i processi possano tenerne traccia.*/
-  stop = (bool *)mmap(NULL, sizeof(_Bool) * 25, PROT_READ | PROT_WRITE,
-                      MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+  stop = (bool *)mmap(NULL, sizeof(_Bool) * 25, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
 
 
 /*Controlli sui parametri inseriti da terminale. */

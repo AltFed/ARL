@@ -707,6 +707,15 @@ void req() {
       exit(1);
     }
     if (a == -1) { // chiudo subito senza che invio il pkt al server
+      pkt.ack = 0;
+      pkt.finbit=0;
+      strcpy(pkt.pl,"quit ");
+      printf("Client : send close pkt to server\n");
+      fflush(stdout);
+      if (sendto(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr, addrlen) < 0) {
+      perror("errore in sendto");
+      exit(1);
+    } 
       return;
     }
     printf("TEMP value %d  htons(temp) = %d\n",temp,htons(temp));
@@ -789,7 +798,15 @@ void req() {
       command_send("put ", buff);
       break;
     case -1:
-      
+      pkt.ack = 0;
+      pkt.finbit=0;
+      strcpy(pkt.pl,"quit ");
+      printf("Client : send close pkt to server\n");
+      fflush(stdout);
+      if (sendto(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr, addrlen) < 0) {
+      perror("errore in sendto");
+      exit(1);
+    } 
       return;
     }
   }
