@@ -656,7 +656,7 @@ void command_send(char *cd, char *nome_str) {
         printf("\n Server response : %s\n", pkt.pl);
         fflush(stdout);
         // implento la list
-        if (!strcmp(cd, "list")) {
+        if (!strcmp(cd, "list ")) {
             rcv_list();
         }
         // implento la get
