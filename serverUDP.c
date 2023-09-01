@@ -584,7 +584,6 @@ void send_list(int sockfd) {
         swnd++;
         // Invio l'ultimo pkt chiudo la connessione
         stay = false;
-        s = false;
         pkt.code = 1;
         seqnum++;
         pkt.id = seqnum;
@@ -802,7 +801,6 @@ si tratta di un pacchetto informativo(code = 0) ed è il primo. (id)*/
   printf("\nWait for next request my_number ind %d my bool value %d \n",
          my_number - 1, stop[my_number - 1]);
   fflush(stdout);
-  puts("ciaosfioasifoaisfoa");
 }
 
 
@@ -832,7 +830,7 @@ void child_main(int k) {
 /*Se nel main viene accettata ed assegnata una richiesta al processo, il vettore STOP viene impostato a TRUE per l'indice 
 interessato. Se il processo ha sul suo relativo indice TRUE, entrerà nella funzione send_control, che gestisce le richieste 
 applicative del client. */
-  while(1){
+  while(1){ 
     if (stop[k - 1]) { 
       send_control(listenfd, k); /* processa la richiesta */
     }

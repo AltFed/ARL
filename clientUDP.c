@@ -789,7 +789,7 @@ void req() {
       command_send("put ", buff);
       break;
     case -1:
-      // chiusura
+      
       return;
     }
   }
