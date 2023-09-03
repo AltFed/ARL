@@ -40,6 +40,7 @@ int sockfd; // descrittore alla socket creata per comunicare con il server
 struct sockaddr_in addr;
 struct st_pkt *rcv_win;
 int dynamics_timeout=0;
+bool adpt_timeout;
 socklen_t addrlen = sizeof(struct sockaddr_in);
 // struct st_pkt
 struct st_pkt {
@@ -229,7 +230,7 @@ void *mretr() {
   s = true;
   while (s) {
     puts("timeout started\n");
-    usleep(timeout);
+    usleep(dynamics_timeout);
     if (lt_ack_rcvd != seqnum) {
       puts("timeout finished\n");
       rit = true;
@@ -277,22 +278,20 @@ void *rcv_cong(void *sd) {
     exit(1);
   }  
   while (stay) {
-  rcv:
     if (recvfrom(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,
                  &addrlen) < 0) {
       perror("errore in recvfrom");
-      if (errno = EINTR)
-        goto rcv;
       exit(1);
     }
     if(swnd>0)
     swnd--;
-
     printf("Ricevuto pkt: id %d lt_rcvd %d swnd:%d\n", pkt.id, lt_ack_rcvd,swnd);
     fflush(stdout);
 
     if (pkt.id > lt_ack_rcvd ){
+      if(adpt_timeout){
       dynamics_timeout=dynamics_timeout+500; //timeout dynamic
+      }
       CongWin++;
       num = pkt.id + 1;
       lt_ack_rcvd = pkt.id;
@@ -666,7 +665,6 @@ void req() {
   pkt.code = 0;
   int a = 0, temp = 0, t = 0;
   while (1) {
-    sleep(1);
     a = 0, temp = 0, t = 0;
     // se ho gestito un errore e si è creato un loop chiudo
     if (loop) {
@@ -719,6 +717,7 @@ void req() {
         exit(1);
       }
     }
+    t=0;
     char buff[MAXLINE];
     switch (a) {
     case 0:
@@ -727,10 +726,17 @@ void req() {
         perror("Error fscanf");
         exit(1);
       }
+      while(dim < 1 || dim > 1000){
+        printf("inserire un valore della dimensione del buffer compreso tra 1 e 1000\n");
+        if (fscanf(stdin, "%d", &dim) == EOF) {
+        perror("Error fscanf");
+        exit(1);
+      }
+      }
       free_dim = dim;
       printf("\nInserire nome file\n");
       if ((temp = read(0, buff, sizeof(buff))) < 0) {
-        perror("Error fread");
+        perror("Error read");
         exit(1);
       }
       buff[temp - 1] = '\0';
@@ -743,22 +749,85 @@ void req() {
         perror("Error fscanf");
         exit(1);
       }
+      while(dim < 1 || dim > 1000){
+        printf("inserire un valore della dimensione del buffer compreso tra 1 e 1000\n");
+        if (fscanf(stdin, "%d", &dim) == EOF) {
+        perror("Error fscanf");
+        exit(1);
+      }
+      }
       free_dim = dim;
       command_send("list ",NULL); // passo direttamento la list alla command_send senza usare una funzione ausiliaria
       break;
     case 2:
+      char te[100]; 
       system("mkdir Client_Files");
-      printf("\nInserire TO in us\n");
+      //timeout dinamico ?
+      printf("\n< timeout adattivo s = si n = no >\n");
+      if(fgets(te,100,stdin) == NULL ){
+      perror("errore fgets");
+      exit(1);
+    }
+    //controllo timeout adattivo
+    while(strcmp(te,"s") || strcmp(te,"n")){
+    t++;
+    te[0]='\0';
+    if(fgets(te,100,stdin) == NULL ){
+      perror("errore fgets");
+      exit(1);
+    }
+    if(!strcmp(te,"s")){
+    adpt_timeout=true;
+  }else if(!strcmp(te,"n")){
+    adpt_timeout=false;
+  }
+  if (t > 5) {
+      printf("Inserito troppe volte il numero sbagliato\n");
+      exit(1);
+    }
+  }
+  t=0;
+      //ottengo il valore del Timeout
+      printf("\nInserire Timeout in us\n");
       if (fscanf(stdin, "%d", &timeout) == EOF) {
         perror("Error fscanf");
         exit(1);
       }
+        //controllo sul valore del timeout
+    while(timeout < 10000 || timeout > 120000000 ){
+      t++;
+      printf("inserire un timeout 10ms < timeout < 120s\n");
+      if (fscanf(stdin, "%d", &timeout) == EOF) {
+         perror("Error fscanf");
+         exit(1);
+        }
+    if (t > 5) {
+      printf("Inserito troppe volte il numero sbagliato\n");
+      exit(1);
+    }
+    }
+    t=0;
       dynamics_timeout=timeout;
+      //ottengo il valore della probabilità di errore
       printf("\nInserire p \n");
       if (fscanf(stdin, "%le", &p) == EOF) {
         perror("Error fscanf");
         exit(1);
       }
+      //controllo sul valore della probabilità di errore
+      while( p > 1 || p < 0){
+    t++;
+    printf("inserire una probabilità di errore compresa tra 0 e 1\n");
+    if (fscanf(stdin, "%d", &p) == EOF) {
+        perror("Error fscanf");
+        exit(1);
+      }
+    if (t > 5) {
+      printf("Inserito troppe volte il numero sbagliato\n");
+      exit(1);
+    }
+  }
+  t=0;
       printf("\nInserire nome file\n");
       if ((temp = read(0, buff, sizeof(buff))) < 0) {
         perror("Error fread");

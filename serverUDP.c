@@ -46,7 +46,7 @@ int num = 0;
 bool s = true;
 int dynamics_timeout=0;
 typedef void Sigfunc(int);
-
+bool adpt_timeout;
 // pkt struct
 struct st_pkt {
   int id;
@@ -62,7 +62,7 @@ void *mretr() {
   while (s) {
     check = seqnum;
     puts("timeout started\n");
-    usleep(timeout);
+    usleep(dynamics_timeout);
     if (lt_ack_rcvd != check) {
       puts("timeout finished\n");
       rit = true;
@@ -111,12 +111,9 @@ void *rcv_cong(void *sd) {
   }  
 
   while (stay) {
-  rcv:
     if (recvfrom(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,
                  &addrlen) < 0) {
       perror("errore in recvfrom");
-      if (errno = EINTR)
-        goto rcv;
       exit(1);
     }
     if(swnd > 0)
@@ -126,8 +123,9 @@ void *rcv_cong(void *sd) {
     fflush(stdout);
 
     if (pkt.id > lt_ack_rcvd ) {
-
-      dynamics_timeout=dynamics_timeout+500;  //timeout dinamico
+      if(adpt_timeout){
+        dynamics_timeout=dynamics_timeout+500;  //timeout dinamico
+      }
 
       CongWin++;
       // INSERIRE RESET TIMER A TIMEOUT COSI CHE QUANDO RICEVO ACK RIAVVIO TIMER
@@ -821,53 +819,113 @@ void sig_int(int signo) {
 
 /* Tutti i commenti fanno riferimento al codice sottostante.*/
 int main(int argc, char **argv) {
-  if (argc != 5) {
-    fprintf(stderr, "Utilizzo: ./serverUDP <probabilita' di errore> <numero di porta> <numero di processi child> <timeout in us> \n");
+  if (argc != 6) {
+    fprintf(stderr, "Utilizzo: ./serverUDP <probabilita' di errore> < numero di porta > < numero di processi child > < timeout in us > < timeout adattivo s = si n = no > \n");
     exit(1);
   }
 
-
+  int u = 0;
+  char ertt[100];
   /*Prendo in input da terminale le variabili necessarie */
   p = strtod(argv[1], NULL);
   SERV_PORT = atoi(argv[2]);
   nchildren = atoi(argv[3]);
   timeout = atoi(argv[4]);
+  strcpy(ertt,argv[5]);
+  printf("ertt == %s\n",ertt);
+  //controllo sul valore del timeout
+  while(timeout < 10000 || timeout > 120000000 ){
+    u++;
+    printf("inserire un timeout 10ms < timeout < 120s\n");
+    if (fscanf(stdin, "%d", &timeout) == EOF) {
+        perror("Error fscanf");
+        exit(1);
+      }
+    if (u > 5) {
+      printf("Inserito troppe volte il numero sbagliato\n");
+      exit(1);
+    }
+  }
+  //controllo sulla probabilità di errore
+  while( p > 1 || p < 0){
+    u++;
+    printf("inserire una probabilità di errore compresa tra 0 e 1\n");
+    if (fscanf(stdin, "%ld", &p) == EOF) {
+        perror("Error fscanf");
+        exit(1);
+      }
+      printf("p value %ld\n",p);
+    if (u > 5) {
+      printf("Inserito troppe volte il valore sbagliato\n");
+      exit(1);
+    }
+  }
+  //controllo sul timeout dinamico
+  while(strcmp(ertt,"s") || strcmp(ertt,"n")){
+    u++;
+    ertt[0]='\0';
+    printf("inserire s (se si vuole un timeout dinamico) o n (altrimenti)  \n");
+    if(fgets(ertt,100,stdin) == NULL ){
+      perror("errore fgets");
+      exit(1);
+    }
+      printf("ertt == %s\n",ertt);
+  if(!strcmp(ertt,"s")){
+    adpt_timeout=true;
+  }else if(!strcmp(ertt,"n")){
+    adpt_timeout=false;
+  }
+  if (u > 5) {
+      printf("Inserito troppe volte il valore sbagliato\n");
+      exit(1);
+    }
+  }
+  u=0;
+    //controllo sul valore dei figli
+  while (nchildren < 1 || nchildren > 25) {
+    u++;
+    char temp[100];
+    printf("Il numero dei child deve essere >= 1 o <=25");
+    if (fscanf(stdin, "%d", &nchildren) == EOF) {
+        perror("Error fscanf");
+        exit(1);
+      }
+    nchildren = atoi(temp);
+    if (u > 5) {
+      printf("Inserito troppe volte il numero sbagliato\n");
+      exit(1);
+    }
+  }
+  u = 0;
+
+  //controllo sul valore del Server port
+  while (SERV_PORT < 255) {
+    u++;
+    char temp[100];
+    temp[0]='\0';
+    fprintf(stderr, "Numero porta riservato. Inserire un nuovo valore \n");
+    if (fscanf(stdin, "%d", &SERV_PORT) == EOF) {
+        perror("Error fscanf");
+        exit(1);
+        } 
+    if (u > 5) {
+      printf("Inserito troppe volte il numero sbagliato\n");
+      exit(1);
+    }
+  }
   printf("\nProb inserita %f\n", p);
   printf("\nSERV_PORT inserito %d\n", SERV_PORT);
   printf("\nNumero childs %d\n ", nchildren);
   printf("\nTimeout in usec %d\n", timeout);
-
+  printf("\n Timeout dinamico %d\n", adpt_timeout);
   dynamics_timeout=timeout;
 
 /* Il vettore stop sottostante, è un vettore di booleani in memoria condivisa. Questo vettore tiene traccia di quali processi sono attivi
 ed in ascolto su una determinata socket. E' in memoria condivisa cosicchè tutti i processi possano tenerne traccia.*/
   stop = (bool *)mmap(NULL, sizeof(_Bool) * 25, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
 
-
-/*Controlli sui parametri inseriti da terminale. */
-  int u = 0, n = 0;
+  int n = 0,k=0,ind_child=0;
   bool e = true;
-  while (nchildren < 1 || nchildren > 25) {
-    u++;
-    char temp[100];
-    printf("Il numero dei child deve essere >= 1 o <=25");
-    fscanf(stdin, "%s", temp);
-    nchildren = atoi(temp);
-    if (u > 5) {
-      exit(1);
-    }
-  }
-  u = 0;
-  if (SERV_PORT < 255) {
-    char temp[100];
-    fprintf(stderr, "Numero porta riservato. Riprovare");
-    fscanf(stdin, "%s", temp);
-    SERV_PORT = atoi(temp);
-    if (u > 5) {
-      exit(1);
-    }
-  }
-
 
 /* Dichiaro le variabili che serviranno ad inizializzare le socket. */
   int listenfd;
@@ -877,7 +935,6 @@ ed in ascolto su una determinata socket. E' in memoria condivisa cosicchè tutti
     perror("Errore in socket");
     exit(1);
   }
-
 
   addr.sin_family = AF_INET;
 
@@ -907,9 +964,9 @@ ed in ascolto su una determinata socket. E' in memoria condivisa cosicchè tutti
 
 
 /*In questo ciclo for inserisco nell'array "pids" i PID dei figli che ottengo dalla funzione child_make*/
-  for (int i = 0; i < nchildren; i++) {
-    stop[i] = false;
-    pids[i] = child_make(i + 1); /* parent returns */
+  for (ind_child = 0; ind_child < nchildren; ind_child++) {
+    stop[ind_child] = false;
+    pids[ind_child] = child_make(ind_child + 1); /* parent returns */
   }
 
 
@@ -952,7 +1009,7 @@ a farsi assegnare un processo.*/
           sprintf(pkt.pl, "go");
           pkt.pl[2] = '\0';
           stop[i] = true;
-
+          k=0;
           printf(" i = %d value bool = %d\n", i, stop[i]);
           printf("Server: invio pkt di go port number %d \n ", pkt.id);
           if ((sendto(listenfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,
@@ -968,6 +1025,21 @@ a farsi assegnare un processo.*/
     }
 
     if (n == 0) {
+      k++;
+      if(k > 10){
+        nchildren++;
+        pids = (pid_t *)calloc(nchildren, sizeof(pid_t));
+        if (pids == NULL){
+            fprintf(stderr, "Errore in calloc");
+            exit(1);
+          }
+          if(ind_child <=25){
+            printf("Server : molte richieste di accesso creo un nuovo figlio \n");
+            ind_child++;
+            stop[ind_child] = false;
+            pids[ind_child] = child_make(ind_child + 1); /* parent returns */
+          }
+      }
       printf("invio wait \n");
       fflush(stdout);
       sprintf(pkt.pl, "wait");
