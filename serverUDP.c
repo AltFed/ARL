@@ -159,7 +159,7 @@ void *rcv_cong(void *sd) {
         fflush(stdout);
         stay = false;
         s = false;
-        return NULL;
+        return NULL;  
       }
 
     } else {
@@ -463,6 +463,9 @@ void rcv_put(char *file, int sockfd){
 }
 // gestice nello specifico il comando list
 void send_list(int sockfd) {
+  /* VALUTAZIONE PRESTAZIONI*/
+  struct timeval begin, end;
+  gettimeofday(&begin, 0);
   printf("Server : Send_list Alive\n");
   seqnum = 0;
   lt_ack_rcvd = 0;
@@ -603,6 +606,12 @@ void send_list(int sockfd) {
   
   // Chiusura della cartella  
   printf("Server : Chiudo la directory\n");
+    /*VALUTAZIONE PRESTAZIONI*/
+  gettimeofday(&end, 0);
+  long seconds = end.tv_sec - begin.tv_sec;
+  long microseconds = end.tv_usec - begin.tv_usec;
+  double elapsed = seconds + microseconds*1e-6;
+  printf("Get ha impiegato: %.4f seconds.\n", elapsed);
   printf("\nMSG TOTALI %d\n", msgTot);
   printf("\nMSG PERSI %d\n", msgPerso);
   printf("\nMSG INVIATI %d\n", msgInviati);
