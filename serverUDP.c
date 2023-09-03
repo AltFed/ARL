@@ -163,7 +163,13 @@ void *rcv_cong(void *sd) {
       }
 
     } else {
-      dynamics_timeout=timeout;
+      if(dynamics_timeout/2>timeout){
+      dynamics_timeout>>1;
+      }else{
+        dynamics_timeout = timeout;
+      }
+
+
       } 
     }
   s = false;
@@ -176,9 +182,9 @@ void *rcv_cong(void *sd) {
 // gestice nello specifico il comando get
 void send_get(char *str, int sockfd) {
 
-  /* VALUTAZIONE PRESTAZIONI*/
+  /* VALUTAZIONE PRESTAZIONI
   struct timeval begin, end;
-  gettimeofday(&begin, 0);
+  gettimeofday(&begin, 0);*/
 
 
 
@@ -313,19 +319,19 @@ void send_get(char *str, int sockfd) {
     exit(1);
   }
 
-  /*VALUTAZIONE PRESTAZIONI*/
+  /*VALUTAZIONE PRESTAZIONI
   gettimeofday(&end, 0);
   long seconds = end.tv_sec - begin.tv_sec;
   long microseconds = end.tv_usec - begin.tv_usec;
   double elapsed = seconds + microseconds*1e-6;
-  printf("Get ha impiegato: %.4f seconds.\n", elapsed);
+  printf("Get ha impiegato: %.4f seconds.\n", elapsed);*/
   printf("\nMSG TOTALI %d\n", msgTot);
   printf("\nMSG PERSI %d\n", msgPerso);
   printf("\nMSG INVIATI %d\n", msgInviati);
   printf("\n Dim CongWin finale %d\n", CongWin);
   printf("\n Swnd finale : %d\n", swnd);
   printf("\n PROB DI SCARTARE UN MSG %f\n", p);
-  printf("\n TIMEOUT FINALE  %d\n", dynamics_timeout);
+  //printf("\n TIMEOUT FINALE  %d\n", dynamics_timeout);
   fflush(stdout);
   free(retr);
   fclose(file);
@@ -452,6 +458,13 @@ void rcv_put(char *file, int sockfd){
 }
 // gestice nello specifico il comando list
 void send_list(int sockfd) {
+
+  /* VALUTAZIONE PRESTAZIONI*/
+  struct timeval begin, end;
+  gettimeofday(&begin, 0);
+
+
+
   printf("Server : Send_list Alive\n");
   seqnum = 0;
   lt_ack_rcvd = 0;
@@ -590,7 +603,12 @@ void send_list(int sockfd) {
   }
   printf("Server : Connessione terminata corretamente\n");
   // Chiusura della cartella  
-  printf("Server : Chiudo la directory\n");
+/*VALUTAZIONE PRESTAZIONI*/
+  gettimeofday(&end, 0);
+  long seconds = end.tv_sec - begin.tv_sec;
+  long microseconds = end.tv_usec - begin.tv_usec;
+  double elapsed = seconds + microseconds*1e-6;
+  printf("Get ha impiegato: %.4f seconds.\n", elapsed);
   printf("\nMSG TOTALI %d\n", msgTot);
   printf("\nMSG PERSI %d\n", msgPerso);
   printf("\nMSG INVIATI %d\n", msgInviati);
@@ -598,7 +616,6 @@ void send_list(int sockfd) {
   printf("\n Swnd finale : %d\n", swnd);
   printf("\n PROB DI SCARTARE UN MSG %f\n", p);
   printf("\n TIMEOUT FINALE  %d\n", dynamics_timeout);
-  fflush(stdout);
   free(retr);  
   free(nomi);
   return;
