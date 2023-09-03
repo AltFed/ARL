@@ -861,14 +861,15 @@ int main(int argc, char **argv) {
     }
   }
   //controllo sul timeout dinamico
-  while(strcmp(ertt,"s") || strcmp(ertt,"n")){
+  while(strcmp(ertt,"s") && strcmp(ertt,"n")){
     u++;
     ertt[0]='\0';
     printf("inserire s (se si vuole un timeout dinamico) o n (altrimenti)  \n");
-    if(fgets(ertt,100,stdin) == NULL ){
+    if(fgets(ertt,4,stdin) == NULL ){
       perror("errore fgets");
       exit(1);
     }
+    ertt[1]='\0';
       printf("ertt == %s\n",ertt);
   if(!strcmp(ertt,"s")){
     adpt_timeout=true;
