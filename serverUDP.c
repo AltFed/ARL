@@ -318,8 +318,7 @@ void send_get(char *str, int sockfd) {
   long seconds = end.tv_sec - begin.tv_sec;
   long microseconds = end.tv_usec - begin.tv_usec;
   double elapsed = seconds + microseconds*1e-6;
-  printf("Get ha impiegato: %.3f seconds.\n", elapsed);
-
+  printf("Get ha impiegato: %.4f seconds.\n", elapsed);
   printf("\nMSG TOTALI %d\n", msgTot);
   printf("\nMSG PERSI %d\n", msgPerso);
   printf("\nMSG INVIATI %d\n", msgInviati);
