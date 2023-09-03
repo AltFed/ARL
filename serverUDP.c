@@ -175,6 +175,13 @@ void *rcv_cong(void *sd) {
 }
 // gestice nello specifico il comando get
 void send_get(char *str, int sockfd) {
+
+  /* VALUTAZIONE PRESTAZIONI*/
+  struct timeval begin, end;
+  gettimeofday(&begin, 0);
+
+
+
    printf("\nServer : get alive \n");
    fflush(stdout);
   // variabili da resettare
@@ -305,6 +312,14 @@ void send_get(char *str, int sockfd) {
     perror("Error pthread_join");
     exit(1);
   }
+
+  /*VALUTAZIONE PRESTAZIONI*/
+  gettimeofday(&end, 0);
+  long seconds = end.tv_sec - begin.tv_sec;
+  long microseconds = end.tv_usec - begin.tv_usec;
+  double elapsed = seconds + microseconds*1e-6;
+  printf("Get ha impiegato: %.3f seconds.\n", elapsed);
+
   printf("\nMSG TOTALI %d\n", msgTot);
   printf("\nMSG PERSI %d\n", msgPerso);
   printf("\nMSG INVIATI %d\n", msgInviati);
@@ -697,11 +712,7 @@ si tratta di un pacchetto informativo(code = 0) ed è il primo. (id)*/
           exit(1);
         }
 /*La funzione send_get è la funziona che si occupa di inviare il file,  e come parametri avrà file_name e la socket. */
-        start = clock();//avvio timer per performance 
         send_get(file_name, sockfd);
-        end = clock();
-        cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
-        printf("\n PRESTAZIONI TEMPO DI ESECUZIONE GET %ld \n",cpu_time_used);
       }      
 /*Nel caso in cui il file non venga trovato, invio un paccheto con id = -1, ovvero indica un errore ed esco.*/
       else if (!found) {
@@ -728,12 +739,8 @@ si tratta di un pacchetto informativo(code = 0) ed è il primo. (id)*/
         perror("errore in sendto");
         exit(1);
       }
-/*Avvio la funzione send_list che si occuperà di inviare la lista degli elementi presenti nella cartella server_files. */   
-      start = clock();//avvio timer per performance    
+/*Avvio la funzione send_list che si occuperà di inviare la lista degli elementi presenti nella cartella server_files. */           
       send_list(sockfd);
-      end = clock();
-      cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
-      printf("\n PRESTAZIONI TEMPO DI ESECUZIONE GET %ld \n",cpu_time_used);
     }
 /*CASO PUT : Gestisco il caso in cui ricevo un comando PUT. Invio un ack come nel caso LIST. */
     if (!strcmp("put", command_received)) {
