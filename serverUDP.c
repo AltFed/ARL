@@ -47,6 +47,8 @@ bool s = true;
 int dynamics_timeout=0;
 typedef void Sigfunc(int);
 bool adpt_timeout;
+clock_t start, end;
+double cpu_time_used;
 // pkt struct
 struct st_pkt {
   int id;
@@ -156,6 +158,7 @@ void *rcv_cong(void *sd) {
         printf("Server : Client disconesso  correttamente \n");
         fflush(stdout);
         stay = false;
+        s = false;
         return NULL;
       }
 
@@ -467,6 +470,7 @@ void send_list(int sockfd) {
     printf("Impossibile aprire la cartella.\n");
     exit(1);
   }
+  usleep(50);
   while ((file = readdir(directory)) != NULL) {
     if (strcmp(file->d_name, ".") != 0 && strcmp(file->d_name, "..") != 0) {
       if ((nomi[c - 1] = malloc(strlen(file->d_name) + 1)) == NULL) {
@@ -669,7 +673,6 @@ if (!strcmp("quit",command_received)) {
         exit(1);
       }    
 
-
 /*Leggo nella cartella ogni entry, e scrivo nella variabile fullPath il percorso del file appena letto e faccio un controllo prima di 
 comparare il file letto con file_name. Se risultano uguali allora found è TRUE, altrimenti rimarrà FALSE. */
       while ((entry = readdir(dir)) != NULL && !found) {
@@ -689,13 +692,16 @@ si tratta di un pacchetto informativo(code = 0) ed è il primo. (id)*/
         pkt.code = 0;
         strcpy(pkt.pl, "File trovato.");
         printf("\nServer : %s\n", pkt.pl);
-        if ((sendto(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,
-                    addrlen)) < 0) {
+        if ((sendto(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,addrlen)) < 0) {
           perror("Errore in sendto");
           exit(1);
         }
 /*La funzione send_get è la funziona che si occupa di inviare il file,  e come parametri avrà file_name e la socket. */
+        start = clock();//avvio timer per performance 
         send_get(file_name, sockfd);
+        end = clock();
+        cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+        printf("\n PRESTAZIONI TEMPO DI ESECUZIONE GET %ld \n",cpu_time_used);
       }      
 /*Nel caso in cui il file non venga trovato, invio un paccheto con id = -1, ovvero indica un errore ed esco.*/
       else if (!found) {
@@ -722,8 +728,12 @@ si tratta di un pacchetto informativo(code = 0) ed è il primo. (id)*/
         perror("errore in sendto");
         exit(1);
       }
-/*Avvio la funzione send_list che si occuperà di inviare la lista degli elementi presenti nella cartella server_files. */      
+/*Avvio la funzione send_list che si occuperà di inviare la lista degli elementi presenti nella cartella server_files. */   
+      start = clock();//avvio timer per performance    
       send_list(sockfd);
+      end = clock();
+      cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+      printf("\n PRESTAZIONI TEMPO DI ESECUZIONE GET %ld \n",cpu_time_used);
     }
 /*CASO PUT : Gestisco il caso in cui ricevo un comando PUT. Invio un ack come nel caso LIST. */
     if (!strcmp("put", command_received)) {
@@ -832,7 +842,13 @@ int main(int argc, char **argv) {
   nchildren = atoi(argv[3]);
   timeout = atoi(argv[4]);
   strcpy(ertt,argv[5]);
-  printf("ertt == %s\n",ertt);
+  if(!strcmp(ertt,"s")){
+    puts("kcck");
+    adpt_timeout=true;
+  }else if(!strcmp(ertt,"n")){
+    puts("goggogogogo");
+    adpt_timeout=false;
+  }
   //controllo sul valore del timeout
   while(timeout < 10000 || timeout > 120000000 ){
     u++;
@@ -863,17 +879,18 @@ int main(int argc, char **argv) {
   //controllo sul timeout dinamico
   while(strcmp(ertt,"s") && strcmp(ertt,"n")){
     u++;
-    ertt[0]='\0';
     printf("inserire s (se si vuole un timeout dinamico) o n (altrimenti)  \n");
     if(fgets(ertt,4,stdin) == NULL ){
       perror("errore fgets");
       exit(1);
     }
     ertt[1]='\0';
-      printf("ertt == %s\n",ertt);
+    printf("ertt == %s\n",ertt);
   if(!strcmp(ertt,"s")){
+    puts("kcck");
     adpt_timeout=true;
   }else if(!strcmp(ertt,"n")){
+    puts("goggogogogo");
     adpt_timeout=false;
   }
   if (u > 5) {
@@ -885,13 +902,11 @@ int main(int argc, char **argv) {
     //controllo sul valore dei figli
   while (nchildren < 1 || nchildren > 25) {
     u++;
-    char temp[100];
     printf("Il numero dei child deve essere >= 1 o <=25");
     if (fscanf(stdin, "%d", &nchildren) == EOF) {
         perror("Error fscanf");
         exit(1);
       }
-    nchildren = atoi(temp);
     if (u > 5) {
       printf("Inserito troppe volte il numero sbagliato\n");
       exit(1);

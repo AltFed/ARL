@@ -41,6 +41,8 @@ struct sockaddr_in addr;
 struct st_pkt *rcv_win;
 int dynamics_timeout=0;
 bool adpt_timeout;
+clock_t start, end;
+double cpu_time_used;
 socklen_t addrlen = sizeof(struct sockaddr_in);
 // struct st_pkt
 struct st_pkt {
@@ -320,6 +322,7 @@ void *rcv_cong(void *sd) {
         printf("Server : Client disconesso  correttamente \n");
         fflush(stdout);
         stay = false;
+        s=false;
         return NULL;
       }
 
@@ -473,7 +476,6 @@ void snd_put(char *str, int sockfd) {
   free(rcv_win);
   fclose(file);
 }
-
 // implemento la rcv del comando list
 void rcv_list() {
   free_dim = dim;
@@ -640,7 +642,11 @@ void command_send(char *cd, char *nome_str) {
         }
         // implemento la put
         else if (!strcmp(cd, "put ")) {
+          start = clock();
           snd_put(nome_str, sockfd);
+          end = clock();
+          cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+          printf("\n PRESTAZIONI TEMPO DI ESECUZIONE GET %ld \n",cpu_time_used);
         }
       }
       // leggo tutti i byte nella socket mi serve nel caso in cui il client
@@ -768,14 +774,20 @@ void req() {
       perror("errore fgets");
       exit(1);
     }
+     if(!strcmp(te,"s")){
+    adpt_timeout=true;
+  }else if(!strcmp(te,"n")){
+    adpt_timeout=false;
+  }
     //controllo timeout adattivo
-    while(strcmp(te,"s") || strcmp(te,"n")){
+    while(strcmp(te,"s") && strcmp(te,"n")){
     t++;
     te[0]='\0';
-    if(fgets(te,100,stdin) == NULL ){
+    if(fgets(te,4,stdin) == NULL ){
       perror("errore fgets");
       exit(1);
     }
+    te[1]='\0';
     if(!strcmp(te,"s")){
     adpt_timeout=true;
   }else if(!strcmp(te,"n")){
