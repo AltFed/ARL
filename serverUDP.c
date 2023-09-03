@@ -167,7 +167,7 @@ void *rcv_cong(void *sd) {
       dynamics_timeout>>1;
       }else{
         dynamics_timeout = timeout;
-      }
+      } 
 
 
       } 
@@ -198,11 +198,16 @@ void send_get(char *str, int sockfd) {
   int size = 0;
   lt_rwnd = 1;
   struct st_pkt pkt;
+  pkt.code=0;
+  pkt.id=0;
+  pkt.rwnd=0;
+  pkt.pl[0]='\0';
   FILE *file;
   bool stay = true;
   int i = 0, msgInviati = 0, msgPerso = 0, msgTot = 0, dimpl = 0;
   double prob = 0;
   char path_file[MAXLINE];
+  path_file[0]='\0';
   pthread_t thread_id;
     //apro il file da leggere
   sprintf(path_file, "Server_Files/%s", str);
@@ -458,13 +463,6 @@ void rcv_put(char *file, int sockfd){
 }
 // gestice nello specifico il comando list
 void send_list(int sockfd) {
-
-  /* VALUTAZIONE PRESTAZIONI*/
-  struct timeval begin, end;
-  gettimeofday(&begin, 0);
-
-
-
   printf("Server : Send_list Alive\n");
   seqnum = 0;
   lt_ack_rcvd = 0;
@@ -602,13 +600,9 @@ void send_list(int sockfd) {
     exit(1);
   }
   printf("Server : Connessione terminata corretamente\n");
+  
   // Chiusura della cartella  
-/*VALUTAZIONE PRESTAZIONI*/
-  gettimeofday(&end, 0);
-  long seconds = end.tv_sec - begin.tv_sec;
-  long microseconds = end.tv_usec - begin.tv_usec;
-  double elapsed = seconds + microseconds*1e-6;
-  printf("Get ha impiegato: %.4f seconds.\n", elapsed);
+  printf("Server : Chiudo la directory\n");
   printf("\nMSG TOTALI %d\n", msgTot);
   printf("\nMSG PERSI %d\n", msgPerso);
   printf("\nMSG INVIATI %d\n", msgInviati);

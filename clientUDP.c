@@ -17,9 +17,9 @@
 #include <time.h>
 #include <unistd.h>
 #include <wait.h>
-#define SERV_PORT 5193
 #define MAXLINE 4096
 typedef void Sigfunc(int);
+int SERV_PORT;
 bool loop = false;
 int dim = 0;
 int free_dim = 0;
@@ -711,8 +711,6 @@ void req() {
       temp = port_number(sockfd);
       addr.sin_port = htons(temp); // assegna la porta presa dal server
     }
-    printf("code %d PL: %s", pkt.code, pkt.pl);
-    fflush(stdout);
     // gestisco il caso in cui il client inserisce un numero diverso da quello
     // desiderato
     while (a != 0 && a != 1 && a != 2 && a != -1) {
@@ -882,14 +880,15 @@ Sigfunc *signal(int signum, Sigfunc *func) {
 void sig_int(int signo) { exit(1); }
 
 int main(int argc, char *argv[]) {
-  if (argc != 2) { // controlla numero degli argomenti
-    fprintf(stderr, "utilizzo: <indirizzo IP server>\n");
+  if (argc != 3) { // controlla numero degli argomenti
+    fprintf(stderr, "utilizzo: <indirizzo IP server> <numero di porta uguale al server >\n");
     exit(1);
   }
   if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) { // crea il socket
     perror("errore in socket");
     exit(1);
   }
+  SERV_PORT = atoi(argv[2]);
   memset((void *)&addr, 0, sizeof(addr)); // azzera addr
   addr.sin_family = AF_INET;              // assegna il tipo di indirizzo
   addr.sin_port = htons(SERV_PORT);       // assegna il numero di porta
