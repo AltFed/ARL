@@ -162,7 +162,7 @@ void *rcv_cong(void *sd) {
         return NULL;  
       }
 
-    } else {
+    } else {  
       if(dynamics_timeout/2>timeout){
       dynamics_timeout>>1;
       }else{
