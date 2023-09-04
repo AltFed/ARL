@@ -70,6 +70,7 @@ int port_number(int sockfd) {
   pkt.code = 2;
   pkt.pl[0] = '\0';
   pkt.id = 0;
+  pkt.rwnd=0;
   bool rcv_winy = true;
   printf("Port_number : send request to Server\n");
   fflush(stdout);
@@ -77,10 +78,12 @@ int port_number(int sockfd) {
     perror("errore in sendto");
     exit(1);
   } 
+  while(pkt.id < SERV_PORT){
     if (recvfrom(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,&addrlen) < 0) {
       perror("errore in recvfrom");
       exit(1);
     }
+  }
   printf("Client : Server response : %s port number %d\n", pkt.pl, pkt.id);
   fflush(stdout);
   // se c'è wait ritrasmetto subito una nuova richiesta aspetto un tempo sleep
