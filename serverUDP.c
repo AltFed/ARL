@@ -178,6 +178,7 @@ void *rcv_cong(void *sd) {
       }
 
     } else {  
+      
       if(dynamics_timeout/2>timeout){
       dynamics_timeout>>1;
       }else{
@@ -236,7 +237,7 @@ void send_get(char *str, int sockfd) {
   fseek(file, 0, SEEK_SET);     // seek back to beginning of file
   dim = ((size) / MAXLINE) + 1; // +1 perchè arrotonda per difetto
   printf("dim : %d\n",dim);
-  sleep(5);
+  sleep(1);
   if ((retr = malloc(sizeof(struct st_pkt) * dim)) == NULL) {
     perror("Error malloc");
     exit(1);
@@ -289,7 +290,7 @@ void send_get(char *str, int sockfd) {
           printf("SEND_GET :: ACK = %d  swnd = %d CongWin = %d  lt_rwnd = %d\n",
                  pkt.id, swnd, CongWin, lt_rwnd);
           fflush(stdout);
-          usleep(300);
+          usleep(200);
           if ((sendto(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,
                       addrlen)) < 0) {
             perror("errore in sendto");
