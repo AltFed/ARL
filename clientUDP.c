@@ -623,7 +623,7 @@ void command_send(char *cd, char *nome_str) {
   FD_ZERO(&fds);
   FD_SET(sockfd, &fds);
   tv.tv_usec = 0; // ms waiting
-  tv.tv_sec = 10; // s waiting
+  tv.tv_sec = 5; // s waiting
   strcpy(str, cd);
   if (nome_str != NULL) {
     strcat(str + strlen(cd), nome_str);
@@ -638,7 +638,7 @@ void command_send(char *cd, char *nome_str) {
     exit(1);
   }
   pkt.id = -2;
-  while (pkt.id != 0 && pkt.id != -1) {
+  while (pkt.id != 0 && pkt.id != -1){
     i = select(sizeof(fds) * 8, &fds, NULL, NULL, &tv);
     if (i == 0) {
       printf("Client : Server disconesso riprovare \n");
