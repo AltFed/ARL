@@ -49,6 +49,8 @@ typedef void Sigfunc(int);
 bool adpt_timeout;
 clock_t start, end;
 double cpu_time_used;
+// array per mantenere i pkt
+struct st_pkt *retr;
 // pkt struct
 struct st_pkt {
   int id;
@@ -56,8 +58,18 @@ struct st_pkt {
   char pl[MAXLINE];
   int rwnd;
 };
-// array per mantenere i pkt
-struct st_pkt *retr;
+//predichiaro le funzioni 
+void *mretr();
+void *rcv_cong(void *);
+void send_get(char *, int );
+void rcv_put(char *, int );
+void send_list(int );
+void send_control(int , int );
+void child_main(int );
+pid_t child_make(int );
+Sigfunc *signal(int , Sigfunc *);
+void sig_int(int);
+///  
 void *mretr() {
   s = true;
   int check = 0;
@@ -99,8 +111,9 @@ void *mretr() {
 }
 // thread per la gestione del id cum
 void *rcv_cong(void *sd) {
-  int sockfd = sd;
-  fd = sd;
+  int sockfd;
+  sockfd= *(int*)sd;
+  fd = *(int*)sd;
   struct st_pkt pkt;
   int t = 0;
   pthread_t thread_id;
@@ -225,7 +238,7 @@ void send_get(char *str, int sockfd) {
     exit(1);
   }
   // creo il thread che mi legge le socket (lettura bloccante)
-  if (pthread_create(&thread_id, NULL, rcv_cong, sockfd) != 0) {
+  if (pthread_create(&thread_id, NULL, rcv_cong, &sockfd) != 0) {
     perror("error pthread_create");
     exit(1);
   }
@@ -487,7 +500,7 @@ void send_list(int sockfd) {
     exit(1);
   }
   // creo il thread che mi legge le socket
-  if (pthread_create(&thread_id, NULL, rcv_cong, sockfd) != 0) {
+  if (pthread_create(&thread_id, NULL, rcv_cong,&sockfd) != 0) {
     perror("error pthread_create");
     exit(1);
   }
@@ -892,11 +905,11 @@ int main(int argc, char **argv) {
   while( p > 1 || p < 0){
     u++;
     printf("inserire una probabilità di errore compresa tra 0 e 1\n");
-    if (fscanf(stdin, "%ld", &p) == EOF) {
+    if (fscanf(stdin, "%lf", &p) == EOF) {
         perror("Error fscanf");
         exit(1);
       }
-      printf("p value %ld\n",p);
+      printf("p value %f\n",p);
     if (u > 5) {
       printf("Inserito troppe volte il valore sbagliato\n");
       exit(1);

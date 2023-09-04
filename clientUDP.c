@@ -51,11 +51,18 @@ struct st_pkt {
   char pl[MAXLINE];
   int rwnd;
 };
-//funzioni
-void cget();
+//predichiaro le funzioni 
+int port_number(int);
 void req();
 void command_send(char *, char *);
-
+void *mretr();
+void *rcv_cong(void *);
+void rcv_get(char *);
+void snd_put(char *, int );
+void rcv_list();
+Sigfunc *signal(int , Sigfunc *);
+void sig_int(int);
+///  
 int port_number(int sockfd) {
   addr.sin_port = htons(SERV_PORT);
   struct st_pkt pkt;
@@ -66,7 +73,7 @@ int port_number(int sockfd) {
   bool rcv_winy = true;
   printf("Port_number : send request to Server\n");
   fflush(stdout);
-  if (sendto(sockfd, &pkt, sizeof(pkt), 0, (struct addr *)&addr, addrlen) < 0) {
+  if (sendto(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr, addrlen) < 0) {
     perror("errore in sendto");
     exit(1);
   } 
@@ -267,8 +274,8 @@ void *mretr() {
 }
 
 void *rcv_cong(void *sd) {
-   int sockfd = sd;
-  fd = sd;
+   int sockfd = *(int*)sd;
+  fd = *(int*)sd;
   struct st_pkt pkt;
   int t = 0;
   pthread_t thread_id;
@@ -384,7 +391,7 @@ void snd_put(char *str, int sockfd) {
     exit(1);
   }
   // creo il thread che mi legge le socket (lettura bloccante)
-  if (pthread_create(&thread_id, NULL, rcv_cong, sockfd) != 0) {
+  if (pthread_create(&thread_id, NULL, rcv_cong, &sockfd) != 0) {
     perror("error pthread_create");
     exit(1);
   }
@@ -664,7 +671,7 @@ void command_send(char *cd, char *nome_str) {
           snd_put(nome_str, sockfd);
           end = clock();
           cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
-          printf("\n PRESTAZIONI TEMPO DI ESECUZIONE GET %ld \n",cpu_time_used);
+          printf("\n PRESTAZIONI TEMPO DI ESECUZIONE GET %f \n",cpu_time_used);
         }
       }
       // leggo tutti i byte nella socket mi serve nel caso in cui il client
@@ -846,7 +853,7 @@ void req() {
       while( p > 1 || p < 0){
     t++;
     printf("inserire una probabilità di errore compresa tra 0 e 1\n");
-    if (fscanf(stdin, "%d", &p) == EOF) {
+    if (fscanf(stdin, "%le", &p) == EOF) {
         perror("Error fscanf");
         exit(1);
       }
