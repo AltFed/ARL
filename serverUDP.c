@@ -74,12 +74,10 @@ void sig_int(int);
 
 void *mretr() {
   s = true;
-  int check = 0;
   while (s) {
-    check = seqnum;
     puts("timeout started\n");
     usleep(dynamics_timeout);
-    if (lt_ack_rcvd != check) {
+    if (lt_ack_rcvd != seqnum) {
       puts("timeout finished\n");
       rit = true;
       struct st_pkt pkt;
@@ -176,7 +174,8 @@ void *rcv_cong(void *sd) {
         s = false;
         return NULL;  
       }
-    } else {  
+    } else { 
+      if(pkt.id != lt_ack_rcvd ) 
       wert=true;
       if(dynamics_timeout/2>timeout){
       dynamics_timeout>>1;
@@ -885,10 +884,8 @@ int main(int argc, char **argv) {
   timeout = atoi(argv[4]);
   strcpy(ertt,argv[5]);
   if(!strcmp(ertt,"s")){
-    puts("kcck");
     adpt_timeout=true;
   }else if(!strcmp(ertt,"n")){
-    puts("goggogogogo");
     adpt_timeout=false;
   }
   //controllo sul valore del timeout
@@ -929,10 +926,8 @@ int main(int argc, char **argv) {
     ertt[1]='\0';
     printf("ertt == %s\n",ertt);
   if(!strcmp(ertt,"s")){
-    puts("kcck");
     adpt_timeout=true;
   }else if(!strcmp(ertt,"n")){
-    puts("goggogogogo");
     adpt_timeout=false;
   }
   if (u > 5) {
