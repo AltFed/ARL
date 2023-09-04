@@ -170,6 +170,7 @@ void rcv_get(char *file) {
       // file però altrimenti non scrivo
       if (free_dim != 0) {
         int t = 0;
+        puts("Writing\n");
         for (t = 0; t < dim - free_dim; t++) {
           // printf("Indice %d - PL : %s\n", t, rcv_win[t].pl);
           fflush(stdout);
@@ -177,6 +178,7 @@ void rcv_get(char *file) {
             perror("Error in write rcv_get\n");
             exit(1);
           }
+          printf("T : %d\n",t);
         }
       }
       stay = false;

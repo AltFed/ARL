@@ -89,8 +89,13 @@ void *mretr() {
       k = lt_ack_rcvd;
       //  implemento la ritrasmissione di tutti i pkt dopo lt_ack_rcvd
       swnd = 0;
+<<<<<<< HEAD
       while (k < seqnum && k < lt_ack_rcvd+200) {
         while (swnd < CongWin && swnd < lt_rwnd && k < lt_ack_rcvd+200) {
+=======
+      while (k < seqnum) {
+        while (swnd < CongWin && swnd < lt_rwnd && k <seqnum) {
+>>>>>>> 0eda25f13e330c12f9edd2dc17b2615a98b6e605
           if ((sendto(fd, &retr[k], sizeof(pkt), 0, (struct sockaddr *)&addr,
                       addrlen)) < 0) {
             perror("errore in sendto");
@@ -289,6 +294,7 @@ void send_get(char *str, int sockfd) {
           printf("SEND_GET :: ACK = %d  swnd = %d CongWin = %d  lt_rwnd = %d\n",
                  pkt.id, swnd, CongWin, lt_rwnd);
           fflush(stdout);
+          usleep(300);
           if ((sendto(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,
                       addrlen)) < 0) {
             perror("errore in sendto");
