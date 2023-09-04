@@ -14,7 +14,7 @@
 #include <sys/stat.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
-#include <time.h>
+#include <sys/time.h>
 #include <unistd.h>
 #include <wait.h>
 #define MAXLINE 4096
@@ -755,7 +755,7 @@ void req() {
         perror("Error fscanf");
         exit(1);
       }
-      while(dim < 10 || dim > 1000){
+      while(dim < 10 || dim > 10000){
         printf("inserire un valore della dimensione del buffer compreso tra 10 e 1000\n");
         if (fscanf(stdin, "%d", &dim) == EOF) {
         perror("Error fscanf");

@@ -70,6 +70,7 @@ pid_t child_make(int );
 Sigfunc *signal(int , Sigfunc *);
 void sig_int(int);
 ///  
+
 void *mretr() {
   s = true;
   int check = 0;
@@ -88,8 +89,9 @@ void *mretr() {
       k = lt_ack_rcvd;
       //  implemento la ritrasmissione di tutti i pkt dopo lt_ack_rcvd
       swnd = 0;
-      while (k < seqnum) {
-        while (swnd < CongWin && swnd < lt_rwnd && k < seqnum) {
+      while (k < seqnum && k < lt_ack_rcvd+200) {
+        while (swnd < CongWin && swnd < lt_rwnd && k < lt_ack_rcvd+200) {
+          usleep(400);
           if ((sendto(fd, &retr[k], sizeof(pkt), 0, (struct sockaddr *)&addr,
                       addrlen)) < 0) {
             perror("errore in sendto");
@@ -141,8 +143,9 @@ void *rcv_cong(void *sd) {
       if(adpt_timeout){
         dynamics_timeout=dynamics_timeout+500;  //timeout dinamico
       }
-
+      if(CongWin<1000){
       CongWin++;
+      }
       // INSERIRE RESET TIMER A TIMEOUT COSI CHE QUANDO RICEVO ACK RIAVVIO TIMER
       num = pkt.id + 1;
       lt_ack_rcvd = pkt.id;
@@ -195,9 +198,9 @@ void *rcv_cong(void *sd) {
 // gestice nello specifico il comando get
 void send_get(char *str, int sockfd) {
 
-  /* VALUTAZIONE PRESTAZIONI
+  /* VALUTAZIONE PRESTAZIONI*/
   struct timeval begin, end;
-  gettimeofday(&begin, 0);*/
+  gettimeofday(&begin, 0);
 
 
 
@@ -233,6 +236,8 @@ void send_get(char *str, int sockfd) {
   size = ftell(file);           // get current file pointer
   fseek(file, 0, SEEK_SET);     // seek back to beginning of file
   dim = ((size) / MAXLINE) + 1; // +1 perchè arrotonda per difetto
+  printf("dim : %d\n",dim);
+  sleep(5);
   if ((retr = malloc(sizeof(struct st_pkt) * dim)) == NULL) {
     perror("Error malloc");
     exit(1);
@@ -247,6 +252,7 @@ void send_get(char *str, int sockfd) {
       if ((dimpl = fread(pkt.pl, 1, sizeof(pkt.pl), file)) == MAXLINE) {
         seqnum++;
         swnd++;
+        usleep(400);
         pkt.code = 0;
         pkt.id = seqnum;
         // mantengo CongWin pkt
@@ -266,7 +272,7 @@ void send_get(char *str, int sockfd) {
                  pkt.id, swnd, CongWin, lt_rwnd);
         } else {
           // Trasmetto con successo
-          if (lt_ack_rcvd < seqnum - 10) { // se lt_ack è molto piccolo rallento(flow_control)
+         /* if (lt_ack_rcvd < seqnum - 10) { // se lt_ack è molto piccolo rallento(flow_control)
             // rallento flow control
             bytes_psecond = 10;
             if (setsockopt(sockfd, SOL_SOCKET, SO_MAX_PACING_RATE,
@@ -281,7 +287,7 @@ void send_get(char *str, int sockfd) {
               perror("Error setsockopt");
               exit(1);
             }
-          }
+        }*/
           printf("SEND_GET :: ACK = %d  swnd = %d CongWin = %d  lt_rwnd = %d\n",
                  pkt.id, swnd, CongWin, lt_rwnd);
           fflush(stdout);
@@ -337,12 +343,12 @@ void send_get(char *str, int sockfd) {
     exit(1);
   }
 
-  /*VALUTAZIONE PRESTAZIONI
+  /*VALUTAZIONE PRESTAZIONI*/
   gettimeofday(&end, 0);
   long seconds = end.tv_sec - begin.tv_sec;
   long microseconds = end.tv_usec - begin.tv_usec;
   double elapsed = seconds + microseconds*1e-6;
-  printf("Get ha impiegato: %.4f seconds.\n", elapsed);*/
+  printf("Get ha impiegato: %.4f seconds.\n", elapsed);
   printf("\nMSG TOTALI %d\n", msgTot);
   printf("\nMSG PERSI %d\n", msgPerso);
   printf("\nMSG INVIATI %d\n", msgInviati);
@@ -889,9 +895,9 @@ int main(int argc, char **argv) {
     adpt_timeout=false;
   }
   //controllo sul valore del timeout
-  while(timeout < 10000 || timeout > 120000000 ){
+  while(timeout < 500 || timeout > 120000000 ){
     u++;
-    printf("inserire un timeout 10ms < timeout < 120s\n");
+    printf("inserire un timeout 0.5ms < timeout < 120s\n");
     if (fscanf(stdin, "%d", &timeout) == EOF) {
         perror("Error fscanf");
         exit(1);
