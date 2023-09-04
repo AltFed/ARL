@@ -327,7 +327,11 @@ void *rcv_cong(void *sd) {
       }
 
     } else {
-      dynamics_timeout=timeout;
+       if(dynamics_timeout/2>timeout){
+      dynamics_timeout>>1;
+      }else{
+        dynamics_timeout = timeout;
+      }  
       }  
     }
       s = false;
@@ -744,8 +748,8 @@ void req() {
         perror("Error fscanf");
         exit(1);
       }
-      while(dim < 1 || dim > 1000){
-        printf("inserire un valore della dimensione del buffer compreso tra 1 e 1000\n");
+      while(dim < 10 || dim > 1000){
+        printf("inserire un valore della dimensione del buffer compreso tra 10 e 1000\n");
         if (fscanf(stdin, "%d", &dim) == EOF) {
         perror("Error fscanf");
         exit(1);
