@@ -339,6 +339,10 @@ void *rcv_cong(void *sd) {
 }
 // implemento la snd del comando put
 void snd_put(char *str, int sockfd) {
+  /* VALUTAZIONE PRESTAZIONI*/
+  struct timeval begin, end;
+  gettimeofday(&begin, 0);
+
   printf("\nClient : put alive \n");
   fflush(stdout);
   // variabili 
@@ -350,6 +354,10 @@ void snd_put(char *str, int sockfd) {
   lt_rwnd = 1;
   int size = 0;
   struct st_pkt pkt;
+  pkt.code=0;
+  pkt.id=0;
+  pkt.rwnd=0;
+  pkt.pl[0]='\0';
   FILE *file;
   bool stay = true;
   int i = 0, msgInviati = 0, msgPerso = 0, msgTot = 0, dimpl = 0;
@@ -466,6 +474,12 @@ void snd_put(char *str, int sockfd) {
     perror("Error pthread_join");
     exit(1);
   }
+   /*VALUTAZIONE PRESTAZIONI*/
+  gettimeofday(&end, 0);
+  long seconds = end.tv_sec - begin.tv_sec;
+  long microseconds = end.tv_usec - begin.tv_usec;
+  double elapsed = seconds + microseconds*1e-6;
+  printf("Get ha impiegato: %.4f seconds.\n", elapsed);
   printf("\nMSG TOTALI %d\n", msgTot);
   printf("\nMSG PERSI %d\n", msgPerso);
   printf("\nMSG INVIATI %d\n", msgInviati);
