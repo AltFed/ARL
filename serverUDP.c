@@ -91,7 +91,6 @@ void *mretr() {
       swnd = 0;
       while (k < seqnum && k < lt_ack_rcvd+200) {
         while (swnd < CongWin && swnd < lt_rwnd && k < lt_ack_rcvd+200) {
-          usleep(400);
           if ((sendto(fd, &retr[k], sizeof(pkt), 0, (struct sockaddr *)&addr,
                       addrlen)) < 0) {
             perror("errore in sendto");
@@ -252,7 +251,6 @@ void send_get(char *str, int sockfd) {
       if ((dimpl = fread(pkt.pl, 1, sizeof(pkt.pl), file)) == MAXLINE) {
         seqnum++;
         swnd++;
-        usleep(400);
         pkt.code = 0;
         pkt.id = seqnum;
         // mantengo CongWin pkt
