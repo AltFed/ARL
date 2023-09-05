@@ -875,8 +875,8 @@ int main(int argc, char **argv) {
     exit(1);
   }
 
-  int u = 0;
-  char ertt[100];
+  int u = 0,y=0;
+  char ertt[100],buff[MAXLINE];
   /*Prendo in input da terminale le variabili necessarie */
   p = strtod(argv[1], NULL);
   SERV_PORT = atoi(argv[2]);
@@ -892,9 +892,13 @@ int main(int argc, char **argv) {
   while(timeout < 500 || timeout > 120000000 ){
     u++;
     printf("inserire un timeout 0.5ms < timeout < 120s\n");
-    if (fscanf(stdin, "%d", &timeout) == EOF) {
+    if (y=(fscanf(stdin, "%d", &timeout)) == EOF) {
         perror("Error fscanf");
         exit(1);
+      }
+      if(y < 1){
+        fgets(buff,MAXLINE,stdin);
+        buff[0]='\0';
       }
     if (u > 5) {
       printf("Inserito troppe volte il numero sbagliato\n");
@@ -905,11 +909,14 @@ int main(int argc, char **argv) {
   while( p > 1 || p < 0){
     u++;
     printf("inserire una probabilità di errore compresa tra 0 e 1\n");
-    if (fscanf(stdin, "%lf", &p) == EOF) {
+    if (y=(fscanf(stdin, "%le", &p)) == EOF) {
         perror("Error fscanf");
         exit(1);
       }
-      printf("p value %f\n",p);
+      if(y < 1){
+        fgets(buff,MAXLINE,stdin);
+        buff[0]='\0';
+      }
     if (u > 5) {
       printf("Inserito troppe volte il valore sbagliato\n");
       exit(1);
@@ -940,9 +947,13 @@ int main(int argc, char **argv) {
   while (nchildren < 1 || nchildren > 25) {
     u++;
     printf("Il numero dei child deve essere >= 1 o <=25");
-    if (fscanf(stdin, "%d", &nchildren) == EOF) {
+    if (y=(fscanf(stdin, "%d", &nchildren)) == EOF) {
         perror("Error fscanf");
         exit(1);
+      }
+      if(y < 1){
+        fgets(buff,MAXLINE,stdin);
+        buff[0]='\0';
       }
     if (u > 5) {
       printf("Inserito troppe volte il numero sbagliato\n");
@@ -957,10 +968,14 @@ int main(int argc, char **argv) {
     char temp[100];
     temp[0]='\0';
     fprintf(stderr, "Numero porta riservato. Inserire un nuovo valore \n");
-    if (fscanf(stdin, "%d", &SERV_PORT) == EOF) {
+    if (y=(fscanf(stdin, "%d", &SERV_PORT)) == EOF) {
         perror("Error fscanf");
         exit(1);
-        } 
+      }
+      if(y < 1){
+        fgets(buff,MAXLINE,stdin);
+        buff[0]='\0';
+      }
     if (u > 5) {
       printf("Inserito troppe volte il numero sbagliato\n");
       exit(1);

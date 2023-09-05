@@ -699,9 +699,10 @@ void req() {
   struct st_pkt pkt;
   pkt.id = 0;
   pkt.code = 0;
-  int a = 0, temp = 0, t = 0;
+  int a = 0, temp = 0, t = 0,y=0;
+  char buff[MAXLINE];
   while (1) {
-    a = 0, temp = 0, t = 0;
+    a = 0, temp = 0, t = 0,buff[0]='\0';
     // se ho gestito un errore e si è creato un loop chiudo
     if (loop) {
       break;
@@ -709,10 +710,14 @@ void req() {
     temp = port_number(sockfd);
     addr.sin_port = htons(temp); // assegna la porta presa dal server
     printf("\nInserire numero:\nget = 0\nlist = 1\nput = 2\nexit = -1\n");
-    if (fscanf(stdin, "%d", &a) == EOF) {
-      perror("Error fscanf");
-      exit(1);
-    }
+    if (y=(fscanf(stdin, "%d", &a)) == EOF) {
+        perror("Error fscanf");
+        exit(1);
+      }
+      if(y < 1){
+        fgets(buff,MAXLINE,stdin);
+        buff[0]='\0';
+      }
     if (a == -1) { // chiudo subito senza che invio il pkt al server
       pkt.id = 0;
       pkt.code= 0;
@@ -742,9 +747,13 @@ void req() {
     while (a != 0 && a != 1 && a != 2 && a != -1) {
       t++;
       printf("\nInserire numero:\nget = 0\nlist = 1\nput = 2\nexit = -1\n");
-      if (fscanf(stdin, "%d", &a) == EOF) {
+      if (y=(fscanf(stdin, "%d", &a)) == EOF) {
         perror("Error fscanf");
         exit(1);
+      }
+      if(y < 1){
+        fgets(buff,MAXLINE,stdin);
+        buff[0]='\0';
       }
       if (t > 5) {
         printf("\nClient : troppi tentativi falliti riavviare il processo\n");
@@ -752,21 +761,34 @@ void req() {
       }
     }
     t=0;
-    char buff[MAXLINE];
     switch (a) {
     case 0:
       printf("\nInserire dimensione buff\n");
-      if (fscanf(stdin, "%d", &dim) == EOF) {
+      if (y=(fscanf(stdin, "%d", &dim)) == EOF) {
         perror("Error fscanf");
         exit(1);
+      }
+      if(y < 1){
+        fgets(buff,MAXLINE,stdin);
+        buff[0]='\0';
       }
       while(dim < 10 || dim > 10000){
+        t++;
         printf("inserire un valore della dimensione del buffer compreso tra 10 e 1000\n");
-        if (fscanf(stdin, "%d", &dim) == EOF) {
+        if (y=(fscanf(stdin, "%d", &dim)) == EOF) {
         perror("Error fscanf");
         exit(1);
       }
+      if(y < 1){
+        fgets(buff,MAXLINE,stdin);
+        buff[0]='\0';
       }
+      if (t > 5) {
+        printf("\nClient : troppi tentativi falliti riavviare il processo\n");
+        exit(1);
+      }
+      }
+      t=0;
       free_dim = dim;
       printf("\nInserire nome file\n");
       if ((temp = read(0, buff, sizeof(buff))) < 0) {
@@ -779,17 +801,31 @@ void req() {
 
     case 1:
       printf("\nInserire dimensione buff\n");
-      if (fscanf(stdin, "%d", &dim) == EOF) {
+      if (y=(fscanf(stdin, "%d", &dim)) == EOF) {
         perror("Error fscanf");
         exit(1);
       }
-      while(dim < 1 || dim > 1000){
+      if(y < 1){
+        fgets(buff,MAXLINE,stdin);
+        buff[0]='\0';
+      }
+      while(dim < 1 || dim > 10000){
+        t++;
         printf("inserire un valore della dimensione del buffer compreso tra 1 e 1000\n");
-        if (fscanf(stdin, "%d", &dim) == EOF) {
+        if (y=(fscanf(stdin, "%d", &dim)) == EOF) {
         perror("Error fscanf");
         exit(1);
       }
+      if(y < 1){
+        fgets(buff,MAXLINE,stdin);
+        buff[0]='\0';
       }
+      if (t > 5) {
+        printf("\nClient : troppi tentativi falliti riavviare il processo\n");
+        exit(1);
+      }
+      }
+      t=0;
       free_dim = dim;
       command_send("list ",NULL); // passo direttamento la list alla command_send senza usare una funzione ausiliaria
       break;
@@ -822,25 +858,33 @@ void req() {
     adpt_timeout=false;
   }
   if (t > 5) {
-      printf("Inserito troppe volte il numero sbagliato\n");
+      printf("Inserito troppe volte il valore sbagliato\n");
       exit(1);
     }
   }
   t=0;
       //ottengo il valore del Timeout
       printf("\nInserire Timeout in us\n");
-      if (fscanf(stdin, "%d", &timeout) == EOF) {
+      if (y=(fscanf(stdin, "%d", &timeout)) == EOF) {
         perror("Error fscanf");
         exit(1);
+      }
+      if(y < 1){
+        fgets(buff,MAXLINE,stdin);
+        buff[0]='\0';
       }
         //controllo sul valore del timeout
     while(timeout < 10000 || timeout > 120000000 ){
       t++;
       printf("inserire un timeout 10ms < timeout < 120s\n");
-      if (fscanf(stdin, "%d", &timeout) == EOF) {
-         perror("Error fscanf");
-         exit(1);
-        }
+      if (y=(fscanf(stdin, "%d", &timeout)) == EOF) {
+        perror("Error fscanf");
+        exit(1);
+      }
+      if(y < 1){
+        fgets(buff,MAXLINE,stdin);
+        buff[0]='\0';
+      }
     if (t > 5) {
       printf("Inserito troppe volte il numero sbagliato\n");
       exit(1);
@@ -850,17 +894,25 @@ void req() {
       dynamics_timeout=timeout;
       //ottengo il valore della probabilità di errore
       printf("\nInserire p \n");
-      if (fscanf(stdin, "%le", &p) == EOF) {
+      if (y=(fscanf(stdin, "%le", &p)) == EOF) {
         perror("Error fscanf");
         exit(1);
+      }
+      if(y < 1){
+        fgets(buff,MAXLINE,stdin);
+        buff[0]='\0';
       }
       //controllo sul valore della probabilità di errore
       while( p > 1 || p < 0){
     t++;
     printf("inserire una probabilità di errore compresa tra 0 e 1\n");
-    if (fscanf(stdin, "%le", &p) == EOF) {
+    if (y=(fscanf(stdin, "%le", &p)) == EOF) {
         perror("Error fscanf");
         exit(1);
+      }
+      if(y < 1){
+        fgets(buff,MAXLINE,stdin);
+        buff[0]='\0';
       }
     if (t > 5) {
       printf("Inserito troppe volte il numero sbagliato\n");
