@@ -66,19 +66,38 @@ void sig_int(int);
 int port_number(int sockfd) {
   addr.sin_port = htons(SERV_PORT);
   struct st_pkt pkt;
-  int temp = 0;
+  int temp = 0,n=0;
   pkt.code = 2;
   pkt.pl[0] = '\0';
   pkt.id = 0;
   pkt.rwnd=0;
+  fd_set fds;
+  struct timeval tv;
+  FD_ZERO(&fds);
+  FD_SET(sockfd, &fds);
+  tv.tv_usec = 0;
+  tv.tv_sec = 5;
   bool rcv_winy = true;
   printf("Port_number : send request to Server\n");
   fflush(stdout);
   if (sendto(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr, addrlen) < 0) {
     perror("errore in sendto");
     exit(1);
-  } 
+  }
+  printf("cici\n"); 
   while(pkt.id < SERV_PORT){
+    n = select(sizeof(fds) * 8, &fds, NULL, NULL, &tv);
+    if(n == 0 ){
+      printf("Client: Server ancora non connesso aspetto\n");
+      sleep(5);
+      if (sendto(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr, addrlen) < 0) {
+    perror("errore in sendto");
+    exit(1);
+  } 
+    }else if(n == -1){
+      perror("error select");
+      exit(1);
+    }
     if (recvfrom(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,&addrlen) < 0) {
       perror("errore in recvfrom");
       exit(1);
