@@ -1022,8 +1022,7 @@ ed in ascolto su una determinata socket. E' in memoria condivisa cosicchè tutti
   }
 
 
-/* Implemento la logica della prefork con file locking. Inoltre viene allocata un'area di memoria per mantenere
-  il PID dei child process. */
+/*Creo un array per salvare i pids dei processo child. */
   pids = (pid_t *)calloc(nchildren, sizeof(pid_t));
   if (pids == NULL) {
     fprintf(stderr, "Errore in calloc");
@@ -1096,12 +1095,12 @@ a farsi assegnare un processo.*/
       k++;
       if(k > 5){
         nchildren++;
-        pids = (pid_t *)calloc(nchildren, sizeof(pid_t));
+        pids = (pid_t *)reallocarray(pids,nchildren, sizeof(pid_t));
         if (pids == NULL){
             fprintf(stderr, "Errore in calloc");
             exit(1);
           }
-          if(ind_child <=25){
+          if(nchildren <=25){
             printf("Server : molte richieste di accesso creo un nuovo figlio \n");
             ind_child++;
             stop[ind_child] = false;

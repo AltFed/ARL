@@ -640,7 +640,7 @@ void command_send(char *cd, char *nome_str) {
   FD_ZERO(&fds);
   FD_SET(sockfd, &fds);
   tv.tv_usec = 0; // ms waiting
-  tv.tv_sec = 5; // s waiting
+  tv.tv_sec = 10; // s waiting
   strcpy(str, cd);
   if (nome_str != NULL) {
     strcat(str + strlen(cd), nome_str);
