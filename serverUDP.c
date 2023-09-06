@@ -660,7 +660,7 @@ allora il client non ha risposto in tempo, e verrà inviato un pacchetto di CLOS
   FD_ZERO(&fds);
   FD_SET(sockfd, &fds);
   tv.tv_usec = 0;
-  tv.tv_sec = 30;
+  tv.tv_sec = 40;
   n = select(sizeof(fds) * 8, &fds, NULL, NULL, &tv);
   if (n == 0) {
     printf("Server : Client non risponde\n");
@@ -1093,18 +1093,18 @@ a farsi assegnare un processo.*/
 
     if (n == 0) {
       k++;
-      if(k > 5){
+      if(k > 2){
         nchildren++;
         pids = (pid_t *)reallocarray(pids,nchildren, sizeof(pid_t));
         if (pids == NULL){
-            fprintf(stderr, "Errore in calloc");
+            fprintf(stderr, "Errore in realloc");
             exit(1);
           }
           if(nchildren <=25){
             printf("Server : molte richieste di accesso creo un nuovo figlio \n");
-            ind_child++;
             stop[ind_child] = false;
             pids[ind_child] = child_make(ind_child + 1); /* parent returns */
+            ind_child++;
           }
       }
       printf("invio wait \n");
