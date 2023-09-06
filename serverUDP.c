@@ -1094,7 +1094,7 @@ a farsi assegnare un processo.*/
 
     if (n == 0) {
       k++;
-      if(k > 10){
+      if(k > 5){
         nchildren++;
         pids = (pid_t *)calloc(nchildren, sizeof(pid_t));
         if (pids == NULL){

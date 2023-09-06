@@ -84,7 +84,6 @@ int port_number(int sockfd) {
     perror("errore in sendto");
     exit(1);
   }
-  printf("cici\n"); 
   while(pkt.id < SERV_PORT){
     n = select(sizeof(fds) * 8, &fds, NULL, NULL, &tv);
     if(n == 0 ){
@@ -200,7 +199,6 @@ void rcv_get(char *file) {
             perror("Error in write rcv_get\n");
             exit(1);
           }
-          printf("T : %d\n",t);
         }
       }
       stay = false;
