@@ -41,8 +41,6 @@ struct sockaddr_in addr;
 struct st_pkt *rcv_win;
 int dynamics_timeout=0;
 bool adpt_timeout;
-clock_t start, end;
-double cpu_time_used;
 socklen_t addrlen = sizeof(struct sockaddr_in);
 // struct st_pkt
 struct st_pkt {
@@ -375,7 +373,6 @@ void snd_put(char *str, int sockfd) {
   /* VALUTAZIONE PRESTAZIONI*/
   struct timeval begin, end;
   gettimeofday(&begin, 0);
-
   printf("\nClient : put alive \n");
   fflush(stdout);
   // variabili 
@@ -690,11 +687,7 @@ void command_send(char *cd, char *nome_str) {
         }
         // implemento la put
         else if (!strcmp(cd, "put ")) {
-          start = clock();
           snd_put(nome_str, sockfd);
-          end = clock();
-          cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
-          printf("\n PRESTAZIONI TEMPO DI ESECUZIONE GET %f \n",cpu_time_used);
         }
       }
       // leggo tutti i byte nella socket mi serve nel caso in cui il client

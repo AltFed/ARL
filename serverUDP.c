@@ -48,7 +48,6 @@ int dynamics_timeout=0;
 typedef void Sigfunc(int);
 bool adpt_timeout;
 clock_t start, end;
-double cpu_time_used;
 bool wert=false;
 // array per mantenere i pkt
 struct st_pkt *retr;
