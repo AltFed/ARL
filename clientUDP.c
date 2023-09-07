@@ -42,6 +42,7 @@ struct sockaddr_in addr;
 struct st_pkt *rcv_win;
 int dynamics_timeout=0;
 bool adpt_timeout;
+bool dup=false;
 socklen_t addrlen = sizeof(struct sockaddr_in);
 // struttura del pkt
 struct st_pkt {
@@ -298,7 +299,7 @@ void *mretr() {
       k = lt_ack_rcvd;
       //implemento la ritrasmissione di tutti i pkt dopo lt_ack_rcvd
       swnd = 0;
-      // ritrasmetto tutti i pkt dal pkt con id=last_ack_rcvd 
+      // ritrasmetto tutti i pkt dal pkt con id=last_ack_rcvd  fino all'ultimo pkt trasmesso
       while (k < seqnum) {
         while (swnd < CongWin && swnd < lt_rwnd && k < seqnum) {
           if ((sendto(fd, &rcv_win[k], sizeof(pkt), 0, (struct sockaddr *)&addr,
@@ -314,13 +315,13 @@ void *mretr() {
       printf("Server : tutti i pkt sono stati ritrasmessi\n");
       fflush(stdout);
       if (k == dim) {
-        s = false; // prova poi si cambia
+        s = false;
       }
       rit = false;
     }
   }
 }
-
+//rcv_cong : processo che riceve i pkt e implementa i controlli 
 void *rcv_cong(void *sd) {
    int sockfd = *(int*)sd;
   fd = *(int*)sd;
@@ -328,24 +329,27 @@ void *rcv_cong(void *sd) {
   int t = 0;
   pthread_t thread_id;
   lt_ack_rcvd = 0;
-  // Wait until timeout or data received.
   bool stay = true;
+  //creo il thread per la ritrasmissione 
   if (pthread_create(&thread_id, NULL, mretr, NULL) != 0) {
     perror("error pthread_create");
     exit(1);
   }  
   while (stay) {
+    //aspetto di ricevere un pkt 
     if (recvfrom(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,
                  &addrlen) < 0) {
       perror("errore in recvfrom");
       exit(1);
     }
-    if(swnd>0)
+    if(swnd > 0)
     swnd--;
     printf("Ricevuto pkt: id %d lt_rcvd %d swnd:%d\n", pkt.id, lt_ack_rcvd,swnd);
     fflush(stdout);
-
+    //entro nell'if solo se il pkt ricevuto ha un id nuovo quindi non è arrivato fuori ordine
     if (pkt.id > lt_ack_rcvd ){
+      dup=false;
+      //se adpt_timeout=true sole se l'utente ha inserito l'opzione
       if(adpt_timeout){
       dynamics_timeout=dynamics_timeout+500; //timeout dynamic
       }
@@ -354,12 +358,12 @@ void *rcv_cong(void *sd) {
       lt_ack_rcvd = pkt.id;
       // ogni volta che ricevo un id nuovo avvio il timer
       lt_rwnd = pkt.rwnd;
-      // se è un id nuovo entro qui
-      //  se non ho errore allora leggo e vedo l id che il receiver mi invia
+      // se ricevo un pkt con payload = slow allora rallento in quanto il server sta scrivendo sul file
       if (!strcmp(pkt.pl, "slow")) {
         printf("\nSLOW RCVD\n");
         fflush(stdout);
         bytes_psecond = 100;
+        //gestisco quanti bytes al secondo il processo può inviare trasmite la socket
         if (setsockopt(sockfd, SOL_SOCKET, SO_MAX_PACING_RATE, &bytes_psecond,
                        sizeof(bytes_psecond)) < 0) {
           perror("Error setsockopt");
@@ -367,12 +371,14 @@ void *rcv_cong(void *sd) {
         }
       } else {
         bytes_psecond = 1000;
+        //gestisco quanti bytes al secondo il processo può inviare trasmite la socket
         if (setsockopt(sockfd, SOL_SOCKET, SO_MAX_PACING_RATE, &bytes_psecond,
                        sizeof(bytes_psecond)) < 0) {
           perror("Error setsockopt");
           exit(1);
         }
       }
+      //se pkt.code == 1 e pkt.id == seqnum allora chiudo la connessione ho ricevuto il terminatore
       if (pkt.code == 1 && pkt.id == seqnum) {
         printf("Server : Client disconesso  correttamente \n");
         fflush(stdout);
@@ -382,6 +388,9 @@ void *rcv_cong(void *sd) {
       }
 
     } else {
+      // se ricevo un id duplicato allora imposto dup = true cosi da 
+      if(pkt.id != lt_ack_rcvd ) 
+      dup=true;
        if(dynamics_timeout/2>timeout){
       dynamics_timeout>>1;
       }else{
@@ -447,7 +456,7 @@ void snd_put(char *str, int sockfd) {
     // invio da 0 a CongWin pkt e poi mi aspetto di ricevere come lastack quello
     // dell'ultimo pkt inviato poi continuo
     if (lt_ack_rcvd == seqnum && stay == true && !rit) {
-      while (swnd < CongWin && stay == true && swnd < lt_rwnd && !rit) {
+      while (swnd < CongWin && stay == true && swnd < lt_rwnd && !rit && !dup) {
         if ((dimpl = fread(pkt.pl, 1, sizeof(pkt.pl), file)) == MAXLINE) {
           seqnum++;
           swnd++;
@@ -456,8 +465,6 @@ void snd_put(char *str, int sockfd) {
           // mantengo CongWin pkt
           rcv_win[i] = pkt;
           i++;
-          // cicliclo
-          i = i % dim;
           // aumento la dim del vettore che mi salva i pkt
           prob = (double)rand() / RAND_MAX;
           if (prob < p) {
@@ -493,8 +500,8 @@ void snd_put(char *str, int sockfd) {
           // la lettura la fa il thread cosi non mi blocco io main thread
         } else if (feof(file)) {
           while (lt_ack_rcvd != seqnum) {
-            // Aspetto che il thread legga last id
-            usleep(5);
+          // Aspetto che il thread legga last ack
+            usleep(200);
           }
           seqnum++;
           pkt.id = seqnum;

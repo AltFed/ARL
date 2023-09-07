@@ -197,8 +197,6 @@ void send_get(char *str, int sockfd) {
   struct timeval begin, end;
   gettimeofday(&begin, 0);
 
-
-
    printf("\nServer : get alive \n");
    fflush(stdout);
   // variabili da resettare
@@ -252,8 +250,6 @@ void send_get(char *str, int sockfd) {
         // mantengo CongWin pkt
         retr[i] = pkt;
         i++;
-        // cicliclo
-        i = i % dim;
         // aumento la dim del vettore che mi salva i pkt
         prob = (double)rand() / RAND_MAX;
         if (prob < p) {
@@ -298,7 +294,7 @@ void send_get(char *str, int sockfd) {
       } else if (feof(file)) {
         while (lt_ack_rcvd != seqnum) {
            // Aspetto che il thread legga last ack
-            usleep(5);
+            usleep(200);
         }
         seqnum++;
         swnd++;
@@ -550,7 +546,7 @@ void send_list(int sockfd) {
 
   while (stay) {
     // Lettura dei file all'interno della cartella
-    while (swnd < CongWin && stay == true && swnd < lt_rwnd && !rit) {
+    while (swnd < CongWin && stay == true && swnd < lt_rwnd && !rit && !dup) {
       // memorizzo i nomi
       if(c>0){
       temp = strlen(nomi[c - 1]);
@@ -566,7 +562,6 @@ void send_list(int sockfd) {
       pkt.code = 0;
       retr[i] = pkt;
       i++;
-      i = i % dim;
       prob = (double)rand() / RAND_MAX;
       if (prob < p) {
         msgPerso++;
