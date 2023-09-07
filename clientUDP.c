@@ -342,6 +342,7 @@ void *rcv_cong(void *sd) {
       perror("errore in recvfrom");
       exit(1);
     }
+    //swnd: ci permette di tenere traccia del numero di pkt in "volo" decrementiamo tale numero ogni pkt ricevuto indifferentemente se l'id sia duplicato o nuovo
     if(swnd > 0)
     swnd--;
     printf("Ricevuto pkt: id %d lt_rcvd %d swnd:%d\n", pkt.id, lt_ack_rcvd,swnd);
@@ -349,15 +350,14 @@ void *rcv_cong(void *sd) {
     //entro nell'if solo se il pkt ricevuto ha un id nuovo quindi non è arrivato fuori ordine
     if (pkt.id > lt_ack_rcvd ){
       id_dup=false;
-      //se adpt_timeout=true sole se l'utente ha inserito l'opzione
+      //se adpt_timeout=true sole se l'utente ha inserito l'opzione di timeout dynamic
       if(adpt_timeout){
       dynamics_timeout=dynamics_timeout+500; //timeout dynamic
       }
       CongWin++;
       num = pkt.id + 1;
       lt_ack_rcvd = pkt.id;
-      // ogni volta che ricevo un id nuovo avvio il timer
-      lt_rwnd = pkt.rwnd;
+      lt_rwnd = pkt.rwnd; //assegno un nuovo valore alla lt_rwnd che tiene conto della dimensione libera del buffer del server 
       // se ricevo un pkt con payload = slow allora rallento in quanto il server sta scrivendo sul file
       if (!strcmp(pkt.pl, "slow")) {
         printf("\nSLOW RCVD\n");
@@ -383,12 +383,12 @@ void *rcv_cong(void *sd) {
         printf("Server : Client disconesso  correttamente \n");
         fflush(stdout);
         stay = false;
-        s=false;
+        s=false;  //blocco il while della ritrasmissione
         return NULL;
       }
 
     } else {
-      // se ricevo un id duplicato allora imposto id_dup = true cosi da 
+      // se ricevo un id duplicato allora imposto id_dup = true cosi da bloccare la trasmissione dei in questo caso della snd_put in quanto mi rendo conto che tutti i nuovi pkt inviati andranno comunque persi poichè arriveranno fuori ordine.
       if(pkt.id != lt_ack_rcvd ) 
       id_dup=true;
        if(dynamics_timeout/2>timeout){
@@ -410,7 +410,8 @@ void snd_put(char *str, int sockfd) {
   /* VALUTAZIONE PRESTAZIONI*/
   struct timeval begin, end;
   gettimeofday(&begin, 0);
-  printf("\nClient : put alive \n");
+  ///
+  printf("\nClient : Put alive \n");
   fflush(stdout);
   // variabili 
   seqnum = 0;
@@ -442,32 +443,32 @@ void snd_put(char *str, int sockfd) {
   size = ftell(file);           // get current file pointer
   fseek(file, 0, SEEK_SET);     // seek back to beginning of file
   dim = ((size) / MAXLINE) + 1; // +1 perchè arrotonda per difetto
+  //alloco l'array per mantenere i pkt inviati, array che sarà utilizzato per la ritrasmissione
   if ((rcv_win = malloc(sizeof(struct st_pkt) * dim)) == NULL) {
     perror("Error malloc");
     exit(1);
   }
-  // creo il thread che mi legge le socket (lettura bloccante)
+  // creo il thread che implementa la ricezione e il loro controllo
   if (pthread_create(&thread_id, NULL, rcv_cong, &sockfd) != 0) {
     perror("error pthread_create");
     exit(1);
   }
   while (stay) {
-    // se last id non è uguale al mio seqnum mi fermo altrimenti entro dentro e
-    // invio da 0 a CongWin pkt e poi mi aspetto di ricevere come lastack quello
-    // dell'ultimo pkt inviato poi continuo
+    // se last id non è uguale al mio seqnum mi fermo altrimenti entro dentro e se non sto ritrasmettendo i pkt 
     if (lt_ack_rcvd == seqnum && stay == true && !rit) {
+      // se il numero di pkt in volo è < della dimensione della CongWin e < dello spazio ancora libero in memoria lato server ed non sto ritrasmettendo e non ho ricevuto un id duplicato entro 
       while (swnd < CongWin && stay == true && swnd < lt_rwnd && !rit && !id_dup) {
+        //leggo il file finchè la fread non legge meno di MAXLINE in questo caso sono arrivato a fine file
         if ((dimpl = fread(pkt.pl, 1, sizeof(pkt.pl), file)) == MAXLINE) {
-          seqnum++;
-          swnd++;
-          pkt.code = 0;
-          pkt.id = seqnum;
-          // mantengo CongWin pkt
+          seqnum++; //aumento il numero di pkt 
+          swnd++;   //aumento il numero di pkt in "volo"
+          pkt.code = 0; //imposto il pkt come informativo 
+          pkt.id = seqnum; 
+          //mantengo il pkt nell'array
           rcv_win[i] = pkt;
           i++;
-          // aumento la dim del vettore che mi salva i pkt
-          prob = (double)rand() / RAND_MAX;
-          if (prob < p) {
+          prob = (double)rand() / RAND_MAX; //implemento la probabilità di errore
+          if (prob < p) { //implemento l'errore
             msgPerso++;
             msgTot++;
             // Il messaggio è stato perso
@@ -476,6 +477,7 @@ void snd_put(char *str, int sockfd) {
             continue;
           } else {
             // Trasmetto con successo
+            /*
             if (lt_ack_rcvd < seqnum - 10) { // se lt_ack è molto piccolo rallento(flow_control)
               // rallento flow control
               bytes_psecond = 10;
@@ -490,6 +492,7 @@ void snd_put(char *str, int sockfd) {
                 exit(1);
               }
             }
+            */
             if ((sendto(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,addrlen)) < 0) {
               perror("errore in sendto");
               exit(1);
@@ -497,21 +500,19 @@ void snd_put(char *str, int sockfd) {
             msgInviati++;
             msgTot++;
           }
-          // la lettura la fa il thread cosi non mi blocco io main thread
-        } else if (feof(file)) {
-          while (lt_ack_rcvd != seqnum) {
-          // Aspetto che il thread legga last ack
-            usleep(200);
+        } else if (feof(file)) {  //entro solo se ho letto tutto il file
+          while (lt_ack_rcvd != seqnum) { //aspetto di sincronizzare last ack rcvd con il numero associato all'ultimo pkt trasmesso
+            usleep(200);//sleep cosi da non rimanere schedulato
           }
-          seqnum++;
-          pkt.id = seqnum;
-          pkt.code = 1;
-          pkt.pl[dimpl] = '\0';
-          rcv_win[i] = pkt;
+          seqnum++; //aumento il seqnum 
+          pkt.id = seqnum; 
+          pkt.code = 1; //pkt.cod=1 pkt di chiusura ho letto tutto il file 
+          pkt.pl[dimpl] = '\0'; // payload vuoto 
+          rcv_win[i] = pkt;//mantengo il pkt per la ritrasmissione
           stay = false;
-          swnd++;
+          swnd++; //incremento il numero di pkt in volo
           printf("\nServer: send last pkt %d  \n ",seqnum);
-          prob = (double)rand() / RAND_MAX;
+          prob = (double)rand() / RAND_MAX; //implemento la probabilità di errore
           if (prob < p) {
             // Il messaggio è stato perso
             msgPerso++;
@@ -534,7 +535,7 @@ void snd_put(char *str, int sockfd) {
       }
     }
   }
-  // aspetto la terminazione del thread che legge
+  // aspetto la terminazione del thread che legge(rcv_cong)
   if (pthread_join(thread_id, NULL) != 0) {
     perror("Error pthread_join");
     exit(1);
@@ -553,13 +554,15 @@ void snd_put(char *str, int sockfd) {
   printf("\n PROB DI SCARTARE UN MSG %f\n", p);
   printf("\n TIMEOUT FINALE  %d\n", dynamics_timeout);
   fflush(stdout);
+  //libero-chiudo i vari descrittori
   free(rcv_win);
   fclose(file);
 }
 // implemento la rcv del comando list
 void rcv_list() {
-  free_dim = dim;
+  free_dim = dim; //valore di dim impostato dall'utente per maggiore flessibilità
   struct st_pkt pkt;
+  //alloco l'array che mantiene i pkt
   if ((rcv_win = malloc(sizeof(struct st_pkt) * dim)) == NULL) {
     perror("Error malloc");
     exit(1);
@@ -569,16 +572,16 @@ void rcv_list() {
   int n = 0, i = 0,k = 0;
   bool stay = true, different = false;
   while (stay) {
-    // incremento n
+    // incremento n se ho ricevuto un pkt con un id nuovo 
     if (!different) {
       n++;
     }
+    //aspetto di ricevere i pkt dal server
     if ((recvfrom(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,&addrlen)) < 0) {
       perror("errore in recvfrom");
       exit(1);
     }
-    // se mi arriva un id che ho già salvato non lo mantengo nell'array
-    // code == 1 allora chiudo la connessione
+    // se pkt.code == 1  e pkt.id == n allora chiudo la connessione(pkt di chiusura e con id che mi aspettavo) 
     if (pkt.code == 1 && pkt.id == n) {
       printf("\nClient : last pkt :  id = %d free_dim %d\n", pkt.id, free_dim);
       fflush(stdout);
@@ -588,17 +591,18 @@ void rcv_list() {
       // cicliclo
       i = i % dim;
       free_dim--;
-      // invio subito id cum
       pkt.id = n;
-      pkt.code = 1;
+      pkt.code = 1;//invio un pkt di chiusura confermo la chiusura al server
       pkt.rwnd = free_dim;
       printf("\n Client : Confermo chiusura\n");
       fflush(stdout);
+      //invio il pkt
       if (sendto(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,addrlen) < 0) {
         perror("errore in sendto");
         exit(1);
       }
       printf("Client : List -> ::\n ");
+      //stampo a schermo tutti i nomi dei file, ricevuti dal server
       if (free_dim != 0) {
         int t = 0;
         for (t = 0; t < dim - free_dim; t++) {
@@ -607,25 +611,24 @@ void rcv_list() {
         puts("\n");
       }
       stay = false;
-      // se il code è 0 e il numero di pkt è quello che mi aspettavo scrivo
-      // sul file il pkt ricevuto
+      // se il code è 0 e il numero di pkt è quello che mi aspettavo mantengo il pkt nella rcv_win e invio un pkt al server per il riscontro
     } else if (pkt.code == 0 && pkt.id == n) {
       rcv_win[i] = pkt;
       i++;
       // cicliclo
       i = i % dim;
-      different = false;
+      different = false;  //posso incrementare n
       free_dim--;
       printf("Client : pkt ricevuto : id = %d free_dim %d\n", pkt.id, free_dim);
       fflush(stdout);
       pkt.id = n;
-      pkt.code = 0;
+      pkt.code = 0; //pkt informativo
       pkt.rwnd = free_dim;
-      if (free_dim == 0) {
-        printf("Client : send slow to Server\n");
-        fflush(stdout);
+      if (free_dim == 0) {  //solo se la rcv_win è piena scrivo sul file cosi da migliorare in generale le prestazioni del processo
         strcpy(pkt.pl, "slow");
-        pkt.rwnd = dim; 
+        pkt.rwnd = dim;
+        printf("Client : send slow to Server\n");
+        fflush(stdout); 
       }
       if (sendto(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,
                  addrlen) < 0) {
@@ -657,7 +660,7 @@ void rcv_list() {
   }
   free(rcv_win);
 }
-// funzione che implementare la send to server
+// command_send: funzione principale che crea il pkt di richiesta, il quale sarà inviato al processo child del server
 void command_send(char *cd, char *nome_str) {
   struct st_pkt pkt;
   int temp = 0;
@@ -682,15 +685,17 @@ void command_send(char *cd, char *nome_str) {
   fflush(stdout);
   strcpy(pkt.pl, str);
   pkt.code = 0;
-  // Invia al server il pacchetto di richiesta
+  pkt.id = 0;
+  // Invia al server il pacchetto di richiesta al server
   if (sendto(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr, addrlen) < 0) {
     perror("errore in sendto");
     exit(1);
   }
   pkt.id = -2;
   while (pkt.id != 0 && pkt.id != -1){
-    i = select(sizeof(fds) * 8, &fds, NULL, NULL, &tv);
+    i = select(sizeof(fds) * 8, &fds, NULL, NULL, &tv); //implemeto la select cosi da gestire  i diversi casi
     if (i == 0) {
+      //se la select scade e quindi non ho ricevuto nessun pkt dal server per 10 s esco il server è off
       printf("Client : Server disconesso riprovare \n");
       exit(1);
     } else if (i == -1) {
@@ -702,13 +707,13 @@ void command_send(char *cd, char *nome_str) {
         perror("errore in recvfrom");
         exit(1);
       }
-      if (pkt.id == -1) {
+      if (pkt.id == -1) { //errore 
         printf("\n Error Server = %s\n", pkt.pl);
         fflush(stdout);
         req(); // gestisco possibili errori
-        loop = true;
+        loop = true;  //gestisco il caso in cui rientro nella req più volte si crea un loop che viene gestisco da questo bool
         return;
-      } else if (pkt.id == temp) {
+      } else if (pkt.id == temp) {  //entro se il server risponde correttamente
         printf("\n Server response : %s\n", pkt.pl);
         fflush(stdout);
         // implento la list
@@ -724,6 +729,9 @@ void command_send(char *cd, char *nome_str) {
         else if (!strcmp(cd, "put ")) {
           snd_put(nome_str, sockfd);
         }
+      }else{
+        printf("Client : ho ricevuto un pkt sospetto chiudo\n");
+        exit(1);
       }
       // leggo tutti i byte nella socket mi serve nel caso in cui il client
       // vuole comunicare nuovamente con la stessa socket
@@ -748,18 +756,19 @@ void req() {
   int a = 0, temp = 0, t = 0,y=0;
   char buff[MAXLINE];
   while (1) {
-    a = 0, temp = 0, t = 0,buff[0]='\0';
+    a = 0, temp = 0, t = 0,buff[0]='\0';  //resetto i valori dei parametri in caso di richieste cicliche 
     // se ho gestito un errore e si è creato un loop chiudo
     if (loop) {
       break;
     }
-    temp = port_number(sockfd);
+    temp = port_number(sockfd); //richiedo il numero di porta al server
     addr.sin_port = htons(temp); // assegna la porta presa dal server
     printf("\nInserire numero:\nget = 0\nlist = 1\nput = 2\nexit = -1\n");
     if (y=(fscanf(stdin, "%d", &a)) == EOF) {
         perror("Error fscanf");
         exit(1);
       }
+      //gestisco il caso in cui la scanf riceve un elemento diverso dalla tipologia richiesta(uguale per l'implementazioni a seguire con la y)
       if(y < 1){
         fgets(buff,MAXLINE,stdin);
         buff[0]='\0';
@@ -783,9 +792,10 @@ void req() {
         exit(-1);
       }
     }
+    //se ricevo code = 3 e il payload è Close vuol dire che il server si è disconesso perchè il pkt ha impiegato troppo tempo ad arrivare(probabile congestione della rete)
     if (pkt.code == 3 && !strcmp(pkt.pl, "Close")) {
       printf("Client : Server close connection\n");
-      temp = port_number(sockfd);
+      temp = port_number(sockfd);//richiedo il numero di porta 
       addr.sin_port = htons(temp); // assegna la porta presa dal server
     }
     // gestisco il caso in cui il client inserisce un numero diverso da quello
@@ -797,6 +807,7 @@ void req() {
         perror("Error fscanf");
         exit(1);
       }
+      //vedere sopra dove implemento per la prima volta tale gestione dell'errore
       if(y < 1){
         fgets(buff,MAXLINE,stdin);
         buff[0]='\0';
@@ -807,6 +818,7 @@ void req() {
       }
     }
     t=0;
+    //switch per gestire le varie opzioni che l'utente può scegliere 
     switch (a) {
     case 0:
       printf("\nInserire dimensione buff\n");
@@ -877,7 +889,7 @@ void req() {
       break;
     case 2:
       char te[100]; 
-      system("mkdir Client_Files");
+      system("mkdir Client_Files"); //creo la directory dove voglio immagazzinare il file
       //timeout dinamico ?
       printf("\n< timeout adattivo s = si n = no >\n");
       if(fgets(te,100,stdin) == NULL ){
@@ -975,6 +987,7 @@ void req() {
       command_send("put ", buff);
       break;
     case -1:
+    //implemento la chisura del client il quale invierà un pkt al server per liberare il processo lato server
       pkt.id = 0;
       pkt.code=0;
       strcpy(pkt.pl,"quit ");
