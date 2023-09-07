@@ -48,7 +48,7 @@ int dynamics_timeout=0;
 typedef void Sigfunc(int);
 bool adpt_timeout;
 clock_t start, end;
-bool wert=false;
+bool dup=false;
 // array per mantenere i pkt
 struct st_pkt *retr;
 // pkt struct
@@ -135,7 +135,7 @@ void *rcv_cong(void *sd) {
     printf("Ricevuto pkt: ack %d lt_rcvd %d swnd:%d\n", pkt.id, lt_ack_rcvd,swnd);
     fflush(stdout);
     if (pkt.id > lt_ack_rcvd ) {
-      wert=false;
+      dup=false;
       if(adpt_timeout){
         dynamics_timeout=dynamics_timeout+500;  //timeout dinamico
       }
@@ -175,7 +175,7 @@ void *rcv_cong(void *sd) {
       }
     } else { 
       if(pkt.id != lt_ack_rcvd ) 
-      wert=true;
+      dup=true;
       if(dynamics_timeout/2>timeout){
       dynamics_timeout>>1;
       }else{
@@ -243,7 +243,7 @@ void send_get(char *str, int sockfd) {
     exit(1);
   }
   while (stay) {
-    while (swnd < CongWin && stay == true && swnd < lt_rwnd && !rit && !wert) {
+    while (swnd < CongWin && stay == true && swnd < lt_rwnd && !rit && !dup) {
       if ((dimpl = fread(pkt.pl, 1, sizeof(pkt.pl), file)) == MAXLINE) {
         seqnum++;
         swnd++;
