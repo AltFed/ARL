@@ -19,6 +19,7 @@
 #include <wait.h>
 #define MAXLINE 4096
 typedef void Sigfunc(int);
+//variabili globali 
 int SERV_PORT;
 bool loop = false;
 int dim = 0;
@@ -42,7 +43,7 @@ struct st_pkt *rcv_win;
 int dynamics_timeout=0;
 bool adpt_timeout;
 socklen_t addrlen = sizeof(struct sockaddr_in);
-// struct st_pkt
+// struttura del pkt
 struct st_pkt {
   int id;
   int code;
@@ -60,8 +61,9 @@ void snd_put(char *, int );
 void rcv_list();
 Sigfunc *signal(int , Sigfunc *);
 void sig_int(int);
-///  
-int port_number(int sockfd) {
+///////////////
+//port_number : invia un pkt al server con pkt.code=2 (un pkt di richiesta) che permette al client di ottenere il numero di porta di un processo child del server disponibile a soddisfare la richiesta.
+int port_number(int sockfd) { 
   addr.sin_port = htons(SERV_PORT);
   struct st_pkt pkt;
   int temp = 0,n=0;
@@ -82,11 +84,12 @@ int port_number(int sockfd) {
     perror("errore in sendto");
     exit(1);
   }
-  while(pkt.id < SERV_PORT){
+  while(pkt.id < SERV_PORT){  //il child non può avere un numero di porta minore del server 
     n = select(sizeof(fds) * 8, &fds, NULL, NULL, &tv);
     if(n == 0 ){
+      //se la select scade vuol dire che ho inviato un pkt al server ma nessuno ha risposto allora il processo del server che gestisce le richieste è off
       printf("Client: Server ancora non connesso aspetto\n");
-      sleep(5);
+      sleep(3);
       if (sendto(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr, addrlen) < 0) {
     perror("errore in sendto");
     exit(1);
@@ -95,6 +98,7 @@ int port_number(int sockfd) {
       perror("error select");
       exit(1);
     }
+    //aspetto di ricevere il pkt di risposta da parte del server 
     if (recvfrom(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,&addrlen) < 0) {
       perror("errore in recvfrom");
       exit(1);
@@ -102,12 +106,13 @@ int port_number(int sockfd) {
   }
   printf("Client : Server response : %s port number %d\n", pkt.pl, pkt.id);
   fflush(stdout);
-  // se c'è wait ritrasmetto subito una nuova richiesta aspetto un tempo sleep
+  // se ricevo wait ritrasmetto subito una nuova richiesta aspetto un tempo sleep
+  //il server ristituisce un pkt con payload wait se tutti i processi che eseguono le richieste del client sono occupati
   if (!strcmp(pkt.pl, "wait")) {
     printf("Server response : wait\n");
     fflush(stdout);
     while (rcv_winy) {
-      sleep(1);
+      usleep(400); //aspetto cosi che i processi possano liberarsi
       pkt.code = 2;
       if (temp == 10) { // dopo 10 volte di fila che provo a connettermi esco
         printf("\nClient : Impossibile connettersi con il Server attualmente \n");
@@ -115,16 +120,27 @@ int port_number(int sockfd) {
         exit(1);
       }
       temp++;
+      //invio una nuova richiesta al server di connessione 
       if (sendto(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,addrlen) < 0) {
         perror("errore in sendto");
         exit(1);
       }
+      n = select(sizeof(fds) * 8, &fds, NULL, NULL, &tv);
+      if( n == 0){
+        printf("Client : Il Server ha chiuso la connessione\n");
+        exit(1);
+      }else if( n == -1 ){
+        perror("error select");
+        exit(1);
+      }
+      //aspetto di ricevere una risposta 
       if (recvfrom(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,&addrlen) < 0) {
         perror("errore in recvfrom");
         exit(1);
       }
       printf("Client : Server response : %s port number %d\n", pkt.pl, pkt.id);
       fflush(stdout);
+      // se ricevo un pkt con payload go allora ho ottenuto il numero di porta di un processo del server ed esco dal while
       if (!strcmp(pkt.pl, "go")){
         rcv_winy = false;
       }
@@ -139,6 +155,7 @@ int port_number(int sockfd) {
 void rcv_get(char *file) {
   free_dim = dim;
   struct st_pkt pkt;
+  //alloco  un array per mantenere i pkt che saranno poi usati per la ritrasmissione 
   if ((rcv_win = malloc(sizeof(struct st_pkt) * dim)) == NULL) {
     perror("Error malloc");
     exit(1);
@@ -151,20 +168,24 @@ void rcv_get(char *file) {
   bool stay = true, different = false;
   char path_file[MAXLINE];
   sprintf(path_file, "Client_Files/%s", file);
+  // apro/creo il file 
   if ((fptr= fopen(path_file, "w+")) == NULL) {
     perror("Error opening file");
     exit(1);
   }
   while (stay) {
     // incremento n
+    // se differente é false vuol dire che ho ricevuto un pkt in ordine quindi incremento il mio contatore locale n altrimentri non lo incremento e aspetto di ricevere l'id corretto
     if (!different) {
       n++;
     }
+    //aspetto di ricevere un pkt dal server 
     if ((recvfrom(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr, &addrlen)) < 0) {
       perror("errore in recvfrom");
       exit(1);
     }
-    //  se mi arriva un id che ho già salvato non lo mantengo nell'array code == 1 allora chiudo la connessione
+    //  se mi arriva un id che ho già salvato non lo mantengo nell'array
+    // se pkt.code == 1 allora chiudo la connessione e pkt.id == n ( ovvero è un pkt con un id che mi aspettavo quindi non è arrivato fuori ordine)
     if (pkt.code == 1 && pkt.id == n) {
       printf("Client Get  last pkt rcvd : id = %d free_dim %d\n", pkt.id, free_dim);
       fflush(stdout);
@@ -173,20 +194,20 @@ void rcv_get(char *file) {
       // cicliclo
       i = i % dim;
       free_dim--;
-      // invio subito id cum
+      // invio subito id 
       pkt.id = n;
       pkt.code = 1;
       pkt.rwnd = free_dim;
       printf("\n Client : Server close connection \n");
       printf("\n Client : Confermo chiusura\n");
       fflush(stdout);
+      //invio un pkt per confermare la chiusura
       if (sendto(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,
                  addrlen) < 0) {
         perror("errore in sendto");
         exit(1);
       }
-      // se mi arriva come unico pkt un pkt di fine rapporto chiudo e scrivo sul
-      // file però altrimenti non scrivo
+      // se chiudo e la free_dim è != 0 allora devono scrivere sul file dato che non scrivo subito il payload di un pkt che ho ricevuto ma solo se ho occupato tutto l'array che mantiene i vari pkt(più performante)
       if (free_dim != 0) {
         int t = 0;
         puts("Writing\n");
@@ -200,7 +221,7 @@ void rcv_get(char *file) {
         }
       }
       stay = false;
-      // se il code è 0 e il numero di pkt è quello che mi aspettavo scrivo sul file il pkt ricevuto
+      // se pkt.code = 0 e pkt.id = n allora ho ricevuto un pkt informativo con un id che mi aspettavo lo immagazzino e se free_dim = 0 scrivo tutti i pkt salvati sul file 
     } else if (pkt.code == 0 && pkt.id == n) {
       rcv_win[i] = pkt;
       i++;
@@ -213,6 +234,7 @@ void rcv_get(char *file) {
       pkt.id = n;
       pkt.code = 0;
       pkt.rwnd = free_dim;
+      //se free_dim = 0 per prima cosa invio subito la slow per rallentare il server 
       if (free_dim == 0) {
         printf("Client :  send slow to Server\n");
         fflush(stdout);
@@ -223,6 +245,7 @@ void rcv_get(char *file) {
         perror("errore in sendto");
         exit(1);
       }
+      //scrivo i dati ricevuto sul file 
       if (free_dim == 0){
         int t = 0;
         free_dim = dim;
@@ -252,25 +275,30 @@ void rcv_get(char *file) {
       }
     }
   }
+  //chiudo-free i vari puntatori
   fclose(fptr);
   free(rcv_win);
 }
+//mretr: implementa la ritrasmissione dei pkt che il client ha inviato al server
 void *mretr() {
   s = true;
   while (s) {
     puts("timeout started\n");
+    //implemento il timeout
     usleep(dynamics_timeout);
     if (lt_ack_rcvd != seqnum) {
       puts("timeout finished\n");
       rit = true;
       struct st_pkt pkt;
       int k;
+      // dimezzo la ConWin
       if (CongWin > 1) {
         CongWin = CongWin>>1;
       }
       k = lt_ack_rcvd;
       //implemento la ritrasmissione di tutti i pkt dopo lt_ack_rcvd
       swnd = 0;
+      // ritrasmetto tutti i pkt dal pkt con id=last_ack_rcvd 
       while (k < seqnum) {
         while (swnd < CongWin && swnd < lt_rwnd && k < seqnum) {
           if ((sendto(fd, &rcv_win[k], sizeof(pkt), 0, (struct sockaddr *)&addr,
