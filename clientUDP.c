@@ -42,7 +42,7 @@ struct sockaddr_in addr;
 struct st_pkt *rcv_win;
 int dynamics_timeout=0;
 bool adpt_timeout;
-bool dup=false;
+bool id_dup=false;
 socklen_t addrlen = sizeof(struct sockaddr_in);
 // struttura del pkt
 struct st_pkt {
@@ -348,7 +348,7 @@ void *rcv_cong(void *sd) {
     fflush(stdout);
     //entro nell'if solo se il pkt ricevuto ha un id nuovo quindi non è arrivato fuori ordine
     if (pkt.id > lt_ack_rcvd ){
-      dup=false;
+      id_dup=false;
       //se adpt_timeout=true sole se l'utente ha inserito l'opzione
       if(adpt_timeout){
       dynamics_timeout=dynamics_timeout+500; //timeout dynamic
@@ -388,9 +388,9 @@ void *rcv_cong(void *sd) {
       }
 
     } else {
-      // se ricevo un id duplicato allora imposto dup = true cosi da 
+      // se ricevo un id duplicato allora imposto id_dup = true cosi da 
       if(pkt.id != lt_ack_rcvd ) 
-      dup=true;
+      id_dup=true;
        if(dynamics_timeout/2>timeout){
       dynamics_timeout>>1;
       }else{
@@ -456,7 +456,7 @@ void snd_put(char *str, int sockfd) {
     // invio da 0 a CongWin pkt e poi mi aspetto di ricevere come lastack quello
     // dell'ultimo pkt inviato poi continuo
     if (lt_ack_rcvd == seqnum && stay == true && !rit) {
-      while (swnd < CongWin && stay == true && swnd < lt_rwnd && !rit && !dup) {
+      while (swnd < CongWin && stay == true && swnd < lt_rwnd && !rit && !id_dup) {
         if ((dimpl = fread(pkt.pl, 1, sizeof(pkt.pl), file)) == MAXLINE) {
           seqnum++;
           swnd++;
