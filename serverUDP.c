@@ -347,7 +347,8 @@ void send_get(char *str, int sockfd) {
   printf("Get ha impiegato: %.4f seconds.\n", elapsed);
   printf("\nMSG TOTALI %d\n", msgTot);
   printf("\nMSG PERSI %d\n", msgPerso);
-  printf("\nMSG INVIATI %d\n", msgInviati);
+  printf("\nMSG INVIATI CORRETAMENTE %d\n", msgInviati);
+  printf("\nMSG RITRASMESSI %d\n",msgRitr);
   printf("\n Dim CongWin finale %d\n", CongWin);
   printf("\n Swnd finale : %d\n", swnd);
   printf("\n PROB DI SCARTARE UN MSG %f\n", p);
@@ -629,7 +630,8 @@ void send_list(int sockfd) {
   printf("Get ha impiegato: %.4f seconds.\n", elapsed);
   printf("\nMSG TOTALI %d\n", msgTot);
   printf("\nMSG PERSI %d\n", msgPerso);
-  printf("\nMSG INVIATI %d\n", msgInviati);
+  printf("\nMSG INVIATI CORRETAMENTE %d\n", msgInviati);
+  printf("\nMSG RITRASMESSI %d\n",msgRitr);
   printf("\n Dim CongWin finale %d\n", CongWin);
   printf("\n Swnd finale : %d\n", swnd);
   printf("\n PROB DI SCARTARE UN MSG %f\n", p);
