@@ -91,7 +91,10 @@ void *mretr() {
       swnd = 0;
       // ritrasmetto tutti i pkt dal pkt con id=last_ack_rcvd  fino all'ultimo pkt trasmesso
       while (k < seqnum) {
-        while (swnd < CongWin && swnd < lt_rwnd && k <seqnum) {
+        while (swnd < CongWin && swnd < lt_rwnd && k < seqnum) {
+           printf("MRETR:: ACK = %d  swnd = %d CongWin = %d  lt_rwnd = %d check = %d\n",
+                 retr[k].id, swnd, CongWin, lt_rwnd,check);
+          fflush(stdout);
           if ((sendto(fd, &retr[k], sizeof(pkt), 0, (struct sockaddr *)&addr,
                       addrlen)) < 0) {
             perror("errore in sendto");
@@ -311,7 +314,7 @@ void send_get(char *str, int sockfd) {
         retr[i] = pkt;//mantengo il pkt per la ritrasmissione
         stay = false;
         printf("\nServer : send last pkt %d  \n", seqnum);
-        prob = (double)rand() / RAND_MAX;/implemento la probabilità di errore
+        prob = (double)rand() / RAND_MAX;//implemento la probabilità di errore
         if (prob < p){
           // Il messaggio è stato perso
           msgPerso++;
