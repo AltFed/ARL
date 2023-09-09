@@ -282,11 +282,13 @@ void rcv_get(char *file) {
 //mretr: implementa la ritrasmissione dei pkt che il client ha inviato al server
 void *mretr() {
   s = true;
+  int check=0;
   while (s) {
+    check=seqnum;
     puts("timeout started\n");
     //implemento il timeout
     usleep(dynamics_timeout);
-    if (lt_ack_rcvd != seqnum) {
+    if (lt_ack_rcvd != check) {
       puts("timeout finished\n");
       rit = true;
       struct st_pkt pkt;
