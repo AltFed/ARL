@@ -496,7 +496,6 @@ void snd_put(char *str, int sockfd) {
             printf("SEND_GET :: ACK = %d  swnd = %d CongWin = %d  lt_rwnd = %d\n",
                  pkt.id, swnd, CongWin, lt_rwnd);
           fflush(stdout);
-         
             usleep(200);
             if ((sendto(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,addrlen)) < 0) {
               perror("errore in sendto");
