@@ -42,7 +42,6 @@ pid_t *pids;
 struct sockaddr_in addr;
 socklen_t addrlen = sizeof(struct sockaddr_in);
 bool rit = false;
-int num = 0;
 bool s = true;
 int dynamics_timeout=0;
 typedef void Sigfunc(int);
@@ -146,7 +145,6 @@ void *rcv_cong(void *sd) {
         dynamics_timeout=dynamics_timeout+500;  //timeout dinamico
       }
       CongWin++;
-      num = pkt.id + 1;
       lt_ack_rcvd = pkt.id;
       lt_rwnd = pkt.rwnd;//assegno un nuovo valore alla lt_rwnd che tiene conto della dimensione libera del buffer del client 
       // se è un id nuovo entro qui

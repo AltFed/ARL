@@ -26,7 +26,6 @@ int dim = 0;
 int free_dim = 0;
 int seqnum = 0;
 int lt_ack_rcvd = 0;
-int num = 0;
 int lt_rwnd = 1;
 int fd;
 int swnd = 0;
@@ -355,7 +354,6 @@ void *rcv_cong(void *sd) {
       dynamics_timeout=dynamics_timeout+500; //timeout dynamic
       }
       CongWin++;
-      num = pkt.id + 1;
       lt_ack_rcvd = pkt.id;
       lt_rwnd = pkt.rwnd; //assegno un nuovo valore alla lt_rwnd che tiene conto della dimensione libera del buffer del server 
       // se ricevo un pkt con payload = slow allora rallento in quanto il server sta scrivendo sul file
