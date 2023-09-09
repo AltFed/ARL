@@ -834,9 +834,9 @@ void req() {
         fgets(buff,MAXLINE,stdin);
         buff[0]='\0';
       }
-      while(dim < 10 || dim > 10000){
+      while(dim < 1000 || dim > 1000000){
         t++;
-        printf("inserire un valore della dimensione del buffer compreso tra 10 e 1000\n");
+        printf("inserire un valore della dimensione in byte del buffer compreso tra 1Kb e 1Mb ( 1000 e 1000000)\n");
         if (y=(fscanf(stdin, "%d", &dim)) == EOF) {
         perror("Error fscanf");
         exit(1);

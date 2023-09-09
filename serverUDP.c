@@ -368,7 +368,7 @@ void send_get(char *str, int sockfd) {
 void rcv_put(char *file, int sockfd){
   printf("\n Server : Put function alive\n");
   fflush(stdout);
-  dim = 100; //fissiamo il valore dell'array che mantiene i pkt per poi scriverli sul file
+  dim = 4096; //fissiamo il valore dell'array che mantiene i pkt per poi scriverli sul file
   free_dim = dim;
   struct st_pkt pkt;
     //alloco l'array che mantiene i pkt
