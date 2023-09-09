@@ -496,7 +496,7 @@ void snd_put(char *str, int sockfd) {
             printf("SEND_GET :: ACK = %d  swnd = %d CongWin = %d  lt_rwnd = %d\n",
                  pkt.id, swnd, CongWin, lt_rwnd);
           fflush(stdout);
-          if(dim > 1000)
+         
             usleep(200);
             if ((sendto(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr,addrlen)) < 0) {
               perror("errore in sendto");
@@ -872,9 +872,9 @@ void req() {
         fgets(buff,MAXLINE,stdin);
         buff[0]='\0';
       }
-      while(dim < 1 || dim > 10000){
+      while(dim < 1000 || dim > 1000000){
         t++;
-        printf("inserire un valore della dimensione del buffer compreso tra 1 e 1000\n");
+        printf("inserire un valore della dimensione in byte del buffer compreso tra 1Kb e 1Mb ( 1000 e 1000000)\n");
         if (y=(fscanf(stdin, "%d", &dim)) == EOF) {
         perror("Error fscanf");
         exit(1);
