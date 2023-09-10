@@ -379,7 +379,7 @@ void rcv_put(char *file, int sockfd){
   FILE *fptr;
   // creo il file se già esiste lo cancello tanto voglio quello aggiornato
   int n = 0, i = 0;
-  bool stay = true, different = false;
+  bool stay = true, different = true;
   char path_file[MAXLINE];
   sprintf(path_file, "Server_Files/%s", file);
   if ((fptr = fopen(path_file, "w+")) == NULL) {
@@ -388,7 +388,7 @@ void rcv_put(char *file, int sockfd){
   }
   while (stay) {
     // incremento n se ho ricevuto un pkt con un id nuovo 
-    if (!different) {
+    if (different) {
       n++;
     }
     //aspetto di ricevere i pkt dal server
@@ -433,7 +433,7 @@ void rcv_put(char *file, int sockfd){
       i++;
       // cicliclo
       i = i % dim;
-      different = false;
+      different = true;
       free_dim--;
       printf("Server : pkt ricevuto : ack = %d free_dim %d\n", pkt.id, free_dim);
       fflush(stdout);
@@ -471,7 +471,7 @@ void rcv_put(char *file, int sockfd){
     // bufferizzazione lato rcv
     else if (stay == true && pkt.id != n) {
       // non incremento n pongo diff = true
-      different = true;
+      different = false;
       // invio al sender un id comulativo fino a dove ho ricevuto
       printf("Server : pkt fuori ordine num %d  invio id %d \n", pkt.id, n - 1);
       fflush(stdout);
