@@ -36,6 +36,7 @@ double p = 0;
 bool s = true;
 long int bytes_psecond = 0;
 bool rit = false;
+bool snd=false;
 int sockfd; // descrittore alla socket creata per comunicare con il server
 struct sockaddr_in addr;
 struct st_pkt *rcv_win;
@@ -282,6 +283,7 @@ void rcv_get(char *file) {
 //mretr: implementa la ritrasmissione dei pkt che il client ha inviato al server
 void *mretr() {
   s = true;
+  snd=false;
   int check=0;
   while (s) {
     check=seqnum;
@@ -313,6 +315,7 @@ void *mretr() {
           k++;
         }  
       }
+      snd=true;
       printf("Server : tutti i pkt sono stati ritrasmessi\n");
       fflush(stdout);
       if (k == dim) {
@@ -389,7 +392,7 @@ void *rcv_cong(void *sd) {
 
     } else {
       // se ricevo un id duplicato allora imposto id_dup = true cosi da bloccare la trasmissione dei in questo caso della snd_put in quanto mi rendo conto che tutti i nuovi pkt inviati andranno comunque persi poichè arriveranno fuori ordine.
-      //if(pkt.id != lt_ack_rcvd ) 
+      if(!snd)
       id_dup=true;
        if(dynamics_timeout*2<timeout){
       dynamics_timeout<<1;
