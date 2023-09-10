@@ -352,8 +352,8 @@ void *rcv_cong(void *sd) {
     if (pkt.id > lt_ack_rcvd ){
       id_dup=false;
       //se adpt_timeout=true sole se l'utente ha inserito l'opzione di timeout dynamic
-      if(adpt_timeout){
-      dynamics_timeout=dynamics_timeout+500; //timeout dynamic
+      if(adpt_timeout && dynamics_timeout > 5000){
+      dynamics_timeout=dynamics_timeout-100; //timeout dynamic
       }
       CongWin++;
       lt_ack_rcvd = pkt.id;
@@ -391,8 +391,8 @@ void *rcv_cong(void *sd) {
       // se ricevo un id duplicato allora imposto id_dup = true cosi da bloccare la trasmissione dei in questo caso della snd_put in quanto mi rendo conto che tutti i nuovi pkt inviati andranno comunque persi poichè arriveranno fuori ordine.
       //if(pkt.id != lt_ack_rcvd ) 
       id_dup=true;
-       if(dynamics_timeout/2>timeout){
-      dynamics_timeout>>1;
+       if(dynamics_timeout*2<timeout){
+      dynamics_timeout<<1;
       }else{
         dynamics_timeout = timeout;
       }  
