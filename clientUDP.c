@@ -389,7 +389,7 @@ void *rcv_cong(void *sd) {
 
     } else {
       // se ricevo un id duplicato allora imposto id_dup = true cosi da bloccare la trasmissione dei in questo caso della snd_put in quanto mi rendo conto che tutti i nuovi pkt inviati andranno comunque persi poichè arriveranno fuori ordine.
-      if(pkt.id != lt_ack_rcvd ) 
+      //if(pkt.id != lt_ack_rcvd ) 
       id_dup=true;
        if(dynamics_timeout/2>timeout){
       dynamics_timeout>>1;
