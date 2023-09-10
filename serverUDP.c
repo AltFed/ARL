@@ -723,7 +723,7 @@ il nome del file (se presente), e gestisco i vari casi. */
     }
 
 /*CASO QUIT : Client scollegato chiudo la connesione */
-if (!strcmp("quit",command_received)) {
+if ( pkt.code == 3 && !strcmp("quit",command_received)) {
   printf("Server : Client close connection\n");
 }
 

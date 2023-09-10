@@ -779,7 +779,7 @@ void req() {
       }
     if (a == -1) { // chiudo subito senza che invio il pkt al server
       pkt.id = 0;
-      pkt.code= 0;
+      pkt.code= 3;
       strcpy(pkt.pl,"quit ");
       printf("Client : send close pkt to server\n");
       fflush(stdout);
