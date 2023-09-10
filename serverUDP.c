@@ -913,9 +913,9 @@ int main(int argc, char **argv) {
     adpt_timeout=false;
   }
   //controllo sul valore del timeout
-  while(timeout < 10000 || timeout > 120000000 ){
+  while(timeout < 500 || timeout > 120000000 ){
     u++;
-    printf("inserire un timeout 10ms < timeout < 120s\n");
+    printf("inserire un timeout 0.5ms < timeout < 120s\n");
     if (y=(fscanf(stdin, "%d", &timeout)) == EOF) {
         perror("Error fscanf");
         exit(1);
