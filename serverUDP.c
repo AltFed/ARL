@@ -47,6 +47,7 @@ int dynamics_timeout=0;
 typedef void Sigfunc(int);
 bool adpt_timeout;
 bool id_dup=false;
+bool snd=false;
 // array per mantenere i pkt
 struct st_pkt *retr;
 // pkt struct
@@ -71,6 +72,7 @@ void sig_int(int);
 //mretr: implementa la ritrasmissione dei pkt che il server ha inviato al client
 void *mretr() {
   s = true;
+  snd=false;
   int check=0;
   while (s) {
     check=seqnum;
@@ -106,6 +108,7 @@ void *mretr() {
           k++;
         } 
       }
+      snd=true;
       printf("Server : tutti i pkt sono stati ritrasmessi\n");
       fflush(stdout);
       if (k == dim) {
@@ -185,6 +188,7 @@ void *rcv_cong(void *sd) {
     } else { 
        // se ricevo un id duplicato allora imposto id_dup = true cosi da bloccare la trasmissione dei in questo caso della snd_put in quanto mi rendo conto che tutti i nuovi pkt inviati andranno comunque persi poichè arriveranno fuori ordine.
       //if(pkt.id != lt_ack_rcvd ) 
+      if(!snd)
       id_dup=true;
       if(dynamics_timeout*2>timeout){
       dynamics_timeout<<1;
