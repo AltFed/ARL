@@ -458,7 +458,7 @@ void snd_put(char *str, int sockfd) {
   }
   while (stay) {
     // se last id non è uguale al mio seqnum mi fermo altrimenti entro dentro e se non sto ritrasmettendo i pkt 
-    if (lt_ack_rcvd == seqnum && stay == true && !rit) {
+    if (lt_ack_rcvd == seqnum && stay == true && !rit && !id_dup) {
       // se il numero di pkt in volo è < della dimensione della CongWin e < dello spazio ancora libero in memoria lato server ed non sto ritrasmettendo e non ho ricevuto un id duplicato entro 
       while (swnd < CongWin && stay == true && swnd < lt_rwnd && !rit && !id_dup) {
         //leggo il file finchè la fread non legge meno di MAXLINE in questo caso sono arrivato a fine file
@@ -903,6 +903,7 @@ void req() {
       perror("errore fgets");
       exit(1);
     }
+    te[1]='\0';
      if(!strcmp(te,"s")){
     adpt_timeout=true;
   }else if(!strcmp(te,"n")){
